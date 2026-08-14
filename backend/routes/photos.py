@@ -94,7 +94,8 @@ def _reverse_geocode(lat: float, lng: float) -> str:
         url = "https://api.bigdatacloud.net/data/reverse-geocode-client?" + urllib.parse.urlencode(
             {"latitude": lat, "longitude": lng, "localityLanguage": "en"}
         )
-        with urllib.request.urlopen(url, timeout=6) as resp:
+        req = urllib.request.Request(url, headers={"User-Agent": "GalleryApp/1.0"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode())
         city = data.get("city") or data.get("locality") or data.get("principalSubdivision") or ""
         country = data.get("countryName", "")
