@@ -20,6 +20,12 @@ export default function Footer() {
           <a href="/gallery" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
             Gallery
           </a>
+          <a href="/albums" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
+            Albums
+          </a>
+          <a href="/blog" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
+            Blog
+          </a>
           <a href="/map" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
             Footprints
           </a>

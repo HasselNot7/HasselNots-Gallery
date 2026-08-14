@@ -304,9 +304,9 @@ export default function GallerySection({
                                 className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out"
                                 loading="lazy"
                               />
-                              <div className="absolute inset-0 bg-primary/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-4">
+                              <div className="absolute inset-0 bg-primary/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-4 pb-2">
                                 <span className="text-label-caps text-white text-[10px]">CAPTURE DATE</span>
-                                <span className="text-metadata-sm text-mint-accent text-[11px]">
+                                <span className="text-metadata-sm text-white text-[11px]">
                                   {formatDate(photo.shoot_time)}
                                   {photo.shoot_time && ` // ${formatTime(photo.shoot_time)}`}
                                 </span>

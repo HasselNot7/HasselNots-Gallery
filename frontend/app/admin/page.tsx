@@ -332,6 +332,8 @@ export default function AdminPage() {
     for (const [k, v] of Object.entries(editForm)) {
       if (k === "latitude" || k === "longitude") {
         payload[k] = v ? parseFloat(v) : null;
+      } else if (k === "album_id") {
+        payload[k] = v ? parseInt(v) : null;
       } else {
         payload[k] = v;
       }
