@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import PhotoLocationPanel from "@/components/PhotoLocationPanel";
 import ViewCounter from "@/components/ViewCounter";
 import CommentSection from "@/components/CommentSection";
+import PhotoLightbox from "@/components/PhotoLightbox";
 import type { Metadata } from "next";
 
 const BASE = "http://SITE_DOMAIN_PLACEHOLDER";
@@ -83,14 +84,16 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
           <div className="lg:col-span-8">
-            <div className="border border-border-subtle overflow-hidden">
-              <img
-                src={getPhotoImageUrl(photo.id)}
-                alt={photo.title}
-                className="w-full h-auto object-contain bg-surface-dim"
-                style={{ maxHeight: "80vh" }}
-              />
-            </div>
+            <PhotoLightbox src={getPhotoImageUrl(photo.id)} alt={photo.title || "Untitled"}>
+              <div className="border border-border-subtle overflow-hidden">
+                <img
+                  src={getPhotoImageUrl(photo.id)}
+                  alt={photo.title}
+                  className="w-full h-auto object-contain bg-surface-dim"
+                  style={{ maxHeight: "80vh" }}
+                />
+              </div>
+            </PhotoLightbox>
           </div>
 
           <div className="lg:col-span-4">

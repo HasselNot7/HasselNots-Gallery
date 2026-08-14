@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 @theme inline {
   --color-background: #f8faf8;
   --color-foreground: #191c1b;
@@ -71,64 +69,6 @@
   --spacing-section-gap: 120px;
 }
 
-/* 暗色模式：覆盖全部设计令牌 */
-.dark {
-  --color-background: #101412;
-  --color-foreground: #e2e5e3;
-
-  --color-primary: #a9cfb9;
-  --color-primary-container: #2d4f3e;
-  --color-primary-fixed: #163828;
-  --color-primary-fixed-dim: #2d4f3e;
-  --color-on-primary: #002113;
-  --color-on-primary-container: #a9cfb9;
-  --color-on-primary-fixed: #c5ebd4;
-  --color-on-primary-fixed-variant: #a9cfb9;
-  --color-inverse-primary: #163828;
-
-  --color-secondary: #8cd4a4;
-  --color-secondary-container: #1e4c32;
-  --color-secondary-fixed: #1e4c32;
-  --color-secondary-fixed-dim: #2d5e40;
-  --color-on-secondary: #00210d;
-  --color-on-secondary-container: #b1eebe;
-  --color-on-secondary-fixed: #b4f1c1;
-  --color-on-secondary-fixed-variant: #b1eebe;
-
-  --color-tertiary: #78dc77;
-  --color-tertiary-container: #005514;
-  --color-tertiary-fixed: #005514;
-  --color-on-tertiary: #002204;
-  --color-on-tertiary-container: #94f990;
-
-  --color-error: #ffb4ab;
-  --color-error-container: #93000a;
-  --color-on-error: #690005;
-  --color-on-error-container: #ffdad6;
-
-  --color-surface: #101412;
-  --color-surface-dim: #101412;
-  --color-surface-bright: #363b38;
-  --color-surface-variant: #414844;
-  --color-surface-container: #1a1f1c;
-  --color-surface-container-low: #161b18;
-  --color-surface-container-lowest: #0b0f0d;
-  --color-surface-container-high: #242a26;
-  --color-surface-container-highest: #2f3531;
-  --color-surface-tint: #a9cfb9;
-  --color-on-surface: #e2e5e3;
-  --color-on-surface-variant: #c1c8c2;
-  --color-inverse-surface: #e2e5e3;
-  --color-inverse-on-surface: #2e3130;
-
-  --color-outline: #8b938d;
-  --color-outline-variant: #414844;
-
-  --color-border-subtle: #242a26;
-  --color-mint-accent: #1e4c32;
-  --color-deep-charcoal: #e2e5e3;
-}
-
 @layer base {
   body {
     background: var(--color-background);
@@ -149,13 +89,10 @@
 
 @layer components {
   .glass-panel {
-    background: rgba(16, 20, 18, 0.7);
+    background: rgba(248, 250, 248, 0.7);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--color-border-subtle);
-  }
-  .dark .glass-panel {
-    background: rgba(16, 20, 18, 0.75);
   }
 
   .text-display-lg {
