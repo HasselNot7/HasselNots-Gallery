@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PhotoLocationPanel from "@/components/PhotoLocationPanel";
 import ViewCounter from "@/components/ViewCounter";
+import CommentSection from "@/components/CommentSection";
 import type { Metadata } from "next";
 
 const BASE = "http://SITE_DOMAIN_PLACEHOLDER";
@@ -131,6 +132,11 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
                     {photo.camera_model}
                   </span>
                 )}
+                {photo.tags && photo.tags.split(",").filter(Boolean).map((t) => (
+                  <span key={t} className="inline-flex items-center px-3 py-1 bg-surface-container border border-border-subtle text-label-caps text-on-surface-variant rounded-md">
+                    {t.trim()}
+                  </span>
+                ))}
                 {photo.latitude && photo.longitude && (
                   <span className="px-3 py-1 bg-surface-container border border-border-subtle text-label-caps text-on-surface-variant flex items-center gap-1 rounded-md">
                     <span className="material-symbols-outlined text-[14px]">location_on</span>
@@ -166,6 +172,8 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
           thumbnail={getPhotoImageUrl(photo.id, true)}
           camera={photo.camera_model}
         />
+
+        <CommentSection photoId={photo.id} title={`Comments (${photo.title || "Untitled"})`} />
       </main>
       <Footer />
     </div>

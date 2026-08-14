@@ -75,9 +75,6 @@ export default async function GalleryPage() {
           <div>STREAM: OK</div>
         </div>
 
-        {/* Center-left vertical dashed line */}
-        <div className="absolute left-1/4 top-1/4 bottom-1/4 z-20 w-px pointer-events-none hidden lg:block border-l border-dashed border-primary/15" />
-
         <div className="max-w-[1800px] mx-auto relative z-10 px-0 md:px-4">
           <GallerySection initialPhotos={items} initialTotal={total} />
         </div>

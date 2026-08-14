@@ -45,6 +45,21 @@ export interface Photo {
   original_longitude: number | null;
   image_width: number;
   image_height: number;
+  views: number;
+  tags: string;
+  album_id: number | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Album {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  cover_photo_id: number | null;
+  photo_count: number;
   is_published: boolean;
   created_at: string;
   updated_at: string;

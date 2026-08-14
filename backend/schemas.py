@@ -35,6 +35,8 @@ class PhotoOut(BaseModel):
     image_width: int
     image_height: int
     views: int = 0
+    tags: str = ""
+    album_id: Optional[int] = None
     is_published: bool
     created_at: datetime
     updated_at: datetime
@@ -56,6 +58,8 @@ class PhotoUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     location_name: Optional[str] = None
+    tags: Optional[str] = None
+    album_id: Optional[int] = None
 
 
 class BatchDelete(BaseModel):
@@ -107,6 +111,54 @@ class ArticleUpdate(BaseModel):
     tags: Optional[str] = None
     cover_photo_id: Optional[int] = None
     is_published: Optional[bool] = None
+
+
+class AlbumOut(BaseModel):
+    id: int
+    slug: str
+    title: str
+    description: str
+    cover_photo_id: Optional[int] = None
+    photo_count: int = 0
+    is_published: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AlbumCreate(BaseModel):
+    slug: str = ""
+    title: str
+    description: str = ""
+    cover_photo_id: Optional[int] = None
+    is_published: bool = True
+
+
+class AlbumUpdate(BaseModel):
+    slug: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    cover_photo_id: Optional[int] = None
+    is_published: Optional[bool] = None
+
+
+class CommentOut(BaseModel):
+    id: int
+    photo_id: Optional[int] = None
+    article_id: Optional[int] = None
+    author: str
+    content: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CommentCreate(BaseModel):
+    photo_id: Optional[int] = None
+    article_id: Optional[int] = None
+    author: str
+    content: str
 
 
 class SettingsOut(BaseModel):

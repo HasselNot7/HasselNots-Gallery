@@ -2,6 +2,7 @@ import { fetchArticle, getPhotoImageUrl } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ViewCounter from "@/components/ViewCounter";
+import CommentSection from "@/components/CommentSection";
 import type { Metadata } from "next";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -103,6 +104,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <span>{article.slug}</span>
           <ViewCounter kind="article" slug={article.slug} currentViews={article.views} />
         </div>
+
+        <CommentSection articleId={article.slug} title={`Comments (${article.title})`} />
       </main>
       <Footer />
     </div>

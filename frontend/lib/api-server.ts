@@ -24,9 +24,32 @@ export interface Photo {
   image_width: number;
   image_height: number;
   views: number;
+  tags: string;
+  album_id: number | null;
   is_published: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface Album {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  cover_photo_id: number | null;
+  photo_count: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Comment {
+  id: number;
+  photo_id: number | null;
+  article_id: number | null;
+  author: string;
+  content: string;
+  created_at: string;
 }
 
 export interface Article {
@@ -91,6 +114,23 @@ export async function fetchArticle(slug: string): Promise<Article> {
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
+}
+
+export async function fetchAlbums(): Promise<Album[]> {
+  const res = await fetch(`${API_BASE}/api/albums?published_only=true`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchAlbumPhotos(albumId: number): Promise<Photo[]> {
+  const res = await fetch(
+    `${API_BASE}/api/photos?published_only=true&album_id=${albumId}&skip=0&limit=100`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()).items;
 }
 
 export interface SiteSettings {

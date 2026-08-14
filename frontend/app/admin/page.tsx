@@ -148,8 +148,22 @@ export default function AdminPage() {
   });
   const [articleSaving, setArticleSaving] = useState(false);
 
+  // Albums management
+  const [albums, setAlbums] = useState<any[]>([]);
+  const [albumModal, setAlbumModal] = useState<null | { editing: boolean; album?: any }>(null);
+  const [albumForm, setAlbumForm] = useState<Record<string, string>>({
+    slug: "",
+    title: "",
+    description: "",
+    cover_photo_id: "",
+  });
+  const [albumSaving, setAlbumSaving] = useState(false);
+
   // Active tab
-  const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos" | "blog">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos" | "blog" | "albums" | "analytics">("settings");
+
+  // Analytics
+  const [analytics, setAnalytics] = useState<any>(null);
 
   // Sort order for photo management
   const [sortBy, setSortBy] = useState<"shoot" | "upload">("shoot");
@@ -165,7 +179,9 @@ export default function AdminPage() {
     { id: "settings" as const, label: "Site Settings", icon: "settings" },
     { id: "upload" as const, label: "Upload Photos", icon: "cloud_upload" },
     { id: "photos" as const, label: "Photo Management", icon: "photo_library" },
+    { id: "albums" as const, label: "Albums", icon: "photo_album" },
     { id: "blog" as const, label: "Blog", icon: "article" },
+    { id: "analytics" as const, label: "Analytics", icon: "monitoring" },
   ];
 
   useEffect(() => {
@@ -176,12 +192,33 @@ export default function AdminPage() {
     loadPhotos();
     loadSettings();
     loadArticles();
+    loadAlbums();
   }, [router]);
+
+  const loadAlbums = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/albums?published_only=false`);
+      if (res.ok) setAlbums(await res.json());
+    } catch {
+      // ignore
+    }
+  };
 
   const loadArticles = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/articles?published_only=false`);
       if (res.ok) setArticles(await res.json());
+    } catch {
+      // ignore
+    }
+  };
+
+  const loadAnalytics = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/analytics`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) setAnalytics(await res.json());
     } catch {
       // ignore
     }
@@ -284,6 +321,8 @@ export default function AdminPage() {
       latitude: photo.latitude?.toString() || "",
       longitude: photo.longitude?.toString() || "",
       location_name: photo.location_name || "",
+      tags: photo.tags || "",
+      album_id: photo.album_id ? String(photo.album_id) : "",
     });
   };
 
@@ -605,6 +644,68 @@ export default function AdminPage() {
     }
   };
 
+  const openAlbumEditor = (album?: any) => {
+    setAlbumModal({ editing: !!album, album });
+    setAlbumForm({
+      slug: album?.slug || "",
+      title: album?.title || "",
+      description: album?.description || "",
+      cover_photo_id: album?.cover_photo_id ? String(album.cover_photo_id) : "",
+    });
+  };
+
+  const handleSaveAlbum = async () => {
+    if (!albumForm.title.trim()) return;
+    setAlbumSaving(true);
+    const payload = {
+      slug: albumForm.slug,
+      title: albumForm.title,
+      description: albumForm.description,
+      cover_photo_id: albumForm.cover_photo_id ? parseInt(albumForm.cover_photo_id) : null,
+      is_published: true,
+    };
+    try {
+      const editing = albumModal?.editing;
+      const slug = albumModal?.album?.slug;
+      const res = await fetch(
+        `${API_BASE}/api/albums${editing && slug ? `/${slug}` : ""}`,
+        {
+          method: editing && slug ? "PATCH" : "POST",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (res.ok) {
+        setAlbumModal(null);
+        await loadAlbums();
+      }
+    } catch {
+      // ignore
+    } finally {
+      setAlbumSaving(false);
+    }
+  };
+
+  const handleDeleteAlbum = async (slug: string) => {
+    try {
+      await fetch(`${API_BASE}/api/albums/${slug}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      await loadAlbums();
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleTabSwitch = (tab: any) => {
+    setActiveTab(tab);
+    if (tab === "analytics") loadAnalytics();
+  };
+
   const handleLogout = () => {
     clearToken();
     router.push("/");
@@ -722,7 +823,7 @@ export default function AdminPage() {
           {TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabSwitch(tab.id)}
               className={`flex items-center gap-2 px-3 sm:px-5 py-3 text-label-caps border-b-2 transition-all -mb-px whitespace-nowrap rounded-none ${
                 activeTab === tab.id
                   ? "border-primary text-primary"
@@ -1406,7 +1507,254 @@ export default function AdminPage() {
           )}
         </div>
         )}
+        {/* Albums Management */}
+        {activeTab === "albums" && (
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="text-headline-lg text-primary">Albums</h2>
+            <button onClick={() => openAlbumEditor()} className="btn-primary !py-3">
+              <span className="material-symbols-outlined text-[16px] align-middle mr-1">add</span>
+              New Album
+            </button>
+          </div>
+
+          {albums.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle text-on-surface-variant">
+              <span className="material-symbols-outlined text-6xl mb-4">photo_album</span>
+              <p className="text-headline-mobile text-on-surface-variant">No albums yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {albums.map((album) => (
+                <div key={album.id} className="border border-border-subtle bg-surface overflow-hidden">
+                  <a href={`/album/${album.slug}`} className="block aspect-[4/3] bg-surface-container relative">
+                    {album.cover_photo_id ? (
+                      <img src={getPhotoImageUrl(album.cover_photo_id, true)} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-5xl text-outline">photo_album</span>
+                      </div>
+                    )}
+                    <span className="absolute bottom-2 right-2 text-metadata-sm text-white bg-primary/70 px-2 py-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      {album.photo_count}
+                    </span>
+                  </a>
+                  <div className="p-4 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-body-md text-on-surface truncate font-medium">{album.title}</div>
+                      <div className="text-metadata-sm text-outline truncate" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        /album/{album.slug}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => openAlbumEditor(album)}
+                        className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors"
+                        title="Edit"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete album "${album.title}"? Photos will be kept.`)) handleDeleteAlbum(album.slug);
+                        }}
+                        className="w-8 h-8 flex items-center justify-center hover:text-error transition-colors"
+                        title="Delete"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        )}
+
+        {/* Analytics */}
+        {activeTab === "analytics" && (
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-headline-lg text-primary">Analytics</h2>
+            <button onClick={loadAnalytics} className="text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:border-primary hover:text-primary transition-all">
+              Refresh
+            </button>
+          </div>
+
+          {!analytics ? (
+            <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle text-on-surface-variant">
+              <span className="material-symbols-outlined text-6xl mb-4">monitoring</span>
+              <p className="text-metadata-sm text-outline uppercase">Loading analytics...</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-8">
+              {/* 统计卡片 */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {[
+                  { label: "Today PV", value: analytics.today_pv },
+                  { label: "Today UV", value: analytics.today_uv },
+                  { label: "Week PV", value: analytics.week_pv },
+                  { label: "Total PV", value: analytics.total_pv },
+                  { label: "Total UV", value: analytics.total_uv },
+                ].map((s) => (
+                  <div key={s.label} className="border border-border-subtle p-4 bg-surface-bright">
+                    <div className="text-headline-lg text-primary">{s.value}</div>
+                    <div className="text-label-caps text-outline uppercase">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 7 天 PV 曲线（简单条形） */}
+              <div>
+                <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">LAST 7 DAYS</h3>
+                <div className="flex items-end gap-2 h-32">
+                  {analytics.daily.map((d: any) => {
+                    const max = Math.max(...analytics.daily.map((x: any) => x.pv), 1);
+                    return (
+                      <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                        <span className="text-metadata-sm text-on-surface-variant">{d.pv}</span>
+                        <div
+                          className="w-full bg-primary/70 hover:bg-primary transition-all rounded-t-md"
+                          style={{ height: `${Math.max((d.pv / max) * 100, 3)}%` }}
+                        />
+                        <span className="text-[9px] text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          {d.date.slice(5)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* 热门页面 */}
+                <div>
+                  <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">TOP PAGES (7D)</h3>
+                  <div className="flex flex-col gap-2">
+                    {analytics.top_pages.length === 0 && <p className="text-metadata-sm text-outline">No data yet</p>}
+                    {analytics.top_pages.map((p: any) => (
+                      <div key={p.path} className="flex items-center justify-between text-metadata-sm">
+                        <span className="text-on-surface truncate" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{p.path}</span>
+                        <span className="text-primary">{p.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* 热门照片 */}
+                <div>
+                  <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">TOP PHOTOS</h3>
+                  <div className="flex flex-col gap-2">
+                    {analytics.top_photos.length === 0 && <p className="text-metadata-sm text-outline">No data yet</p>}
+                    {analytics.top_photos.map((p: any) => (
+                      <a key={p.id} href={`/photo/${p.id}`} className="flex items-center justify-between text-metadata-sm hover:text-primary transition-colors">
+                        <span className="text-on-surface truncate">{p.title}</span>
+                        <span className="text-primary ml-2">{p.views}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+                {/* 热门文章 */}
+                <div>
+                  <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">TOP ARTICLES</h3>
+                  <div className="flex flex-col gap-2">
+                    {analytics.top_articles.length === 0 && <p className="text-metadata-sm text-outline">No data yet</p>}
+                    {analytics.top_articles.map((a: any) => (
+                      <a key={a.slug} href={`/blog/${a.slug}`} className="flex items-center justify-between text-metadata-sm hover:text-primary transition-colors">
+                        <span className="text-on-surface truncate">{a.title}</span>
+                        <span className="text-primary ml-2">{a.views}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        )}
       </main>
+
+      {/* Album Edit Modal */}
+      {albumModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm"
+          onClick={() => setAlbumModal(null)}
+        >
+          <div
+            className="bg-surface max-w-lg w-full border border-primary/20 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-border-subtle">
+              <h3 className="text-headline-lg text-primary">
+                {albumModal.editing ? `Edit Album: ${albumModal.album?.slug}` : "New Album"}
+              </h3>
+              <button
+                onClick={() => setAlbumModal(null)}
+                className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-label-caps text-outline block mb-1">Title *</label>
+                <input
+                  type="text"
+                  value={albumForm.title}
+                  onChange={(e) => setAlbumForm({ ...albumForm, title: e.target.value })}
+                  className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
+                  placeholder="Ulanqab Trip"
+                />
+              </div>
+              <div>
+                <label className="text-label-caps text-outline block mb-1">Slug (URL)</label>
+                <input
+                  type="text"
+                  value={albumForm.slug}
+                  onChange={(e) => setAlbumForm({ ...albumForm, slug: e.target.value })}
+                  className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
+                  placeholder="ulanqab-trip"
+                />
+              </div>
+              <div>
+                <label className="text-label-caps text-outline block mb-1">Description</label>
+                <textarea
+                  value={albumForm.description}
+                  onChange={(e) => setAlbumForm({ ...albumForm, description: e.target.value })}
+                  rows={3}
+                  className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-label-caps text-outline block mb-1">Cover Photo ID (optional)</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={albumForm.cover_photo_id}
+                  onChange={(e) => setAlbumForm({ ...albumForm, cover_photo_id: e.target.value })}
+                  className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
+                  placeholder="e.g. 20"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t border-border-subtle">
+              <button
+                onClick={() => setAlbumModal(null)}
+                className="text-label-caps px-4 py-2 border border-border-subtle text-on-surface-variant hover:text-primary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveAlbum}
+                disabled={albumSaving || !albumForm.title.trim()}
+                className="btn-primary"
+              >
+                {albumSaving ? "Saving..." : "Save Album"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Article Edit Modal */}
       {articleModal && (
@@ -1560,6 +1908,7 @@ export default function AdminPage() {
                 { key: "latitude", label: "Latitude", type: "text" },
                 { key: "longitude", label: "Longitude", type: "text" },
                 { key: "location_name", label: "Location Name", type: "text" },
+                { key: "tags", label: "Tags (comma separated)", type: "text" },
               ].map((field) => (
                 <div key={field.key}>
                   <label className="text-label-caps text-outline block mb-1">{field.label}</label>
@@ -1580,6 +1929,19 @@ export default function AdminPage() {
                   )}
                 </div>
               ))}
+              <div>
+                <label className="text-label-caps text-outline block mb-1">Album</label>
+                <select
+                  value={editForm.album_id || ""}
+                  onChange={(e) => setEditForm({ ...editForm, album_id: e.target.value })}
+                  className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
+                >
+                  <option value="">No album</option>
+                  {albums.map((a) => (
+                    <option key={a.id} value={String(a.id)}>{a.title}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Modal footer */}

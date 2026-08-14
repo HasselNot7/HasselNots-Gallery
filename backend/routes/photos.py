@@ -245,12 +245,18 @@ def list_photos(
     published_only: bool = Query(True),
     skip: int = Query(0, ge=0),
     limit: int = Query(12, ge=1, le=100),
+    album_id: int | None = Query(None),
+    tag: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     query = db.query(Photo)
     if published_only and (current_user is None or not current_user.is_admin):
         query = query.filter(Photo.is_published == True)
+    if album_id is not None:
+        query = query.filter(Photo.album_id == album_id)
+    if tag:
+        query = query.filter(Photo.tags.like(f"%{tag}%"))
 
     total = query.count()
     photos = query.order_by(Photo.shoot_time.desc().nullslast(), Photo.created_at.desc()).offset(skip).limit(limit).all()
@@ -670,6 +676,10 @@ def update_photo(
         photo.longitude = payload.longitude
     if payload.location_name is not None:
         photo.location_name = payload.location_name
+    if payload.tags is not None:
+        photo.tags = payload.tags
+    if payload.album_id is not None:
+        photo.album_id = payload.album_id
     photo.updated_at = datetime.datetime.utcnow()
     db.commit()
     db.refresh(photo)

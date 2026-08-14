@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { isAuthenticated, clearToken } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -24,6 +25,7 @@ export default function Navbar() {
   const links = [
     { href: "/", label: "Home" },
     { href: "/gallery", label: "Gallery" },
+    { href: "/albums", label: "Albums" },
     { href: "/blog", label: "Blog" },
     { href: "/map", label: "Footprints" },
   ];
@@ -41,6 +43,7 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center gap-3 md:gap-6">
+        <ThemeToggle />
         {links.map((link) => (
           <Link
             key={link.href}
