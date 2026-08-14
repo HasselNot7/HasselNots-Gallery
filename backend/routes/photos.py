@@ -435,6 +435,11 @@ def upload_photo(
             import piexif
             exif_bytes = base64.b64decode(exif_base64)
             piexif.insert(exif_bytes, file_path)
+            # Client-compressed pixels are already orientation-correct; drop the
+            # orientation flag so it is not applied twice (double rotation).
+            exif_dict = piexif.load(file_path)
+            exif_dict["0th"].pop(274, None)
+            piexif.insert(piexif.dump(exif_dict), file_path)
             img = Image.open(file_path)
             exif_data = _read_exif(img)
         except Exception as e:
