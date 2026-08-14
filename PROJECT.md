@@ -156,11 +156,20 @@ gallery/
 | GET | `/api/photos/{id}` | 单张照片详情 | 否 |
 | GET | `/api/photos/{id}/image` | 照片原图 | 否 |
 | GET | `/api/photos/{id}/thumbnail` | 照片缩略图 | 否 |
+| POST | `/api/photos/{id}/view` | 照片浏览量 +1 | 否 |
+| POST | `/api/photos/{id}/location` | 设置照片拍摄位置（自动反编码地名） | 是 |
+| POST | `/api/photos/{id}/location/reset` | 复原 EXIF 原始位置 | 是 |
 | POST | `/api/photos/upload` | 上传照片（自动提取 EXIF） | 是 |
 | POST | `/api/photos/batch-delete` | 批量删除照片（body: `{"ids":[1,2]}`） | 是 |
 | POST | `/api/photos/batch-status` | 批量发布/隐藏（body: `{"ids":[1,2],"is_published":true}`） | 是 |
 | PATCH | `/api/photos/{id}` | 更新照片标题/描述/发布状态 | 是 |
 | DELETE | `/api/photos/{id}` | 删除照片及文件 | 是 |
+| GET | `/api/articles` | 文章列表（`published_only` 过滤） | 否 |
+| GET | `/api/articles/{slug}` | 文章详情（Markdown 渲染为 HTML） | 否 |
+| POST | `/api/articles` | 新建文章 | 是 |
+| PATCH | `/api/articles/{slug}` | 更新文章 | 是 |
+| DELETE | `/api/articles/{slug}` | 删除文章 | 是 |
+| POST | `/api/articles/{slug}/view` | 文章浏览量 +1 | 否 |
 
 ### 上传请求示例
 

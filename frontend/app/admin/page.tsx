@@ -135,8 +135,21 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [photoSaving, setPhotoSaving] = useState(false);
 
+  // Blog management
+  const [articles, setArticles] = useState<any[]>([]);
+  const [articleModal, setArticleModal] = useState<null | { editing: boolean; article?: any }>(null);
+  const [articleForm, setArticleForm] = useState<Record<string, string>>({
+    slug: "",
+    title: "",
+    excerpt: "",
+    tags: "",
+    cover_photo_id: "",
+    content_md: "",
+  });
+  const [articleSaving, setArticleSaving] = useState(false);
+
   // Active tab
-  const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos" | "blog">("settings");
 
   // Sort order for photo management
   const [sortBy, setSortBy] = useState<"shoot" | "upload">("shoot");
@@ -152,6 +165,7 @@ export default function AdminPage() {
     { id: "settings" as const, label: "Site Settings", icon: "settings" },
     { id: "upload" as const, label: "Upload Photos", icon: "cloud_upload" },
     { id: "photos" as const, label: "Photo Management", icon: "photo_library" },
+    { id: "blog" as const, label: "Blog", icon: "article" },
   ];
 
   useEffect(() => {
@@ -161,7 +175,17 @@ export default function AdminPage() {
     }
     loadPhotos();
     loadSettings();
+    loadArticles();
   }, [router]);
+
+  const loadArticles = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/articles?published_only=false`);
+      if (res.ok) setArticles(await res.json());
+    } catch {
+      // ignore
+    }
+  };
 
   const loadPhotos = async () => {
     try {
@@ -491,6 +515,83 @@ export default function AdminPage() {
       await loadPhotos();
     } catch (err) {
       console.error("Update failed:", err);
+    }
+  };
+
+  const openArticleEditor = (article?: any) => {
+    setArticleModal({ editing: !!article, article });
+    setArticleForm({
+      slug: article?.slug || "",
+      title: article?.title || "",
+      excerpt: article?.excerpt || "",
+      tags: article?.tags || "",
+      cover_photo_id: article?.cover_photo_id ? String(article.cover_photo_id) : "",
+      content_md: article?.content_md || "",
+    });
+  };
+
+  const handleSaveArticle = async () => {
+    if (!articleForm.title.trim() && !articleForm.slug.trim()) return;
+    setArticleSaving(true);
+    const payload = {
+      slug: articleForm.slug,
+      title: articleForm.title,
+      excerpt: articleForm.excerpt,
+      tags: articleForm.tags,
+      cover_photo_id: articleForm.cover_photo_id ? parseInt(articleForm.cover_photo_id) : null,
+      content_md: articleForm.content_md,
+      is_published: true,
+    };
+    try {
+      const editing = articleModal?.editing;
+      const slug = articleModal?.article?.slug;
+      const res = await fetch(
+        `${API_BASE}/api/articles${editing && slug ? `/${slug}` : ""}`,
+        {
+          method: editing && slug ? "PATCH" : "POST",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (res.ok) {
+        setArticleModal(null);
+        await loadArticles();
+      }
+    } catch {
+      // ignore
+    } finally {
+      setArticleSaving(false);
+    }
+  };
+
+  const handleToggleArticlePublish = async (article: any) => {
+    try {
+      await fetch(`${API_BASE}/api/articles/${article.slug}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ is_published: !article.is_published }),
+      });
+      await loadArticles();
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDeleteArticle = async (slug: string) => {
+    try {
+      await fetch(`${API_BASE}/api/articles/${slug}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      await loadArticles();
+    } catch {
+      // ignore
     }
   };
 
@@ -1210,7 +1311,201 @@ export default function AdminPage() {
           )}
         </div>
         )}
+
+        {/* Blog Management */}
+        {activeTab === "blog" && (
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="text-headline-lg text-primary">Blog Management</h2>
+            <button
+              onClick={() => openArticleEditor()}
+              className="btn-primary !py-3"
+            >
+              <span className="material-symbols-outlined text-[16px] align-middle mr-1">add</span>
+              New Post
+            </button>
+          </div>
+
+          {articles.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle text-on-surface-variant">
+              <span className="material-symbols-outlined text-6xl mb-4">article</span>
+              <p className="text-headline-mobile text-on-surface-variant">No posts yet</p>
+            </div>
+          ) : (
+            <div className="flex flex-col border border-border-subtle">
+              <div className="grid grid-cols-12 gap-4 border-b border-border-subtle p-4 text-label-caps text-outline bg-surface-bright">
+                <div className="col-span-4">Title</div>
+                <div className="col-span-3">Slug</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-3 flex justify-end">Actions</div>
+              </div>
+              {articles.map((article) => (
+                <div
+                  key={article.id}
+                  className="grid grid-cols-12 gap-4 border-b border-border-subtle p-4 items-center hover:bg-mint-accent/5 transition-colors"
+                >
+                  <div className="col-span-4 min-w-0">
+                    <div className="text-body-md text-on-surface truncate font-medium">{article.title || "Untitled"}</div>
+                    <div className="text-metadata-sm text-outline mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      {new Date(article.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })} · {article.views} views
+                    </div>
+                  </div>
+                  <div className="col-span-3 text-metadata-sm text-on-surface-variant truncate" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    /blog/{article.slug}
+                  </div>
+                  <div className="col-span-2">
+                    <button
+                      onClick={() => handleToggleArticlePublish(article)}
+                      className={`text-label-caps px-2 py-1 ${
+                        article.is_published
+                          ? "bg-mint-accent/50 text-primary"
+                          : "bg-surface-variant text-on-surface-variant"
+                      }`}
+                    >
+                      {article.is_published ? "PUBLISHED" : "DRAFT"}
+                    </button>
+                  </div>
+                  <div className="col-span-3 flex justify-end gap-2">
+                    <button
+                      onClick={() => openArticleEditor(article)}
+                      className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors"
+                      title="Edit"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                    <a
+                      href={`/blog/${article.slug}`}
+                      className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors"
+                      title="View"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">visibility</span>
+                    </a>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete "${article.title}"?`)) handleDeleteArticle(article.slug);
+                      }}
+                      className="w-8 h-8 flex items-center justify-center hover:text-error transition-colors"
+                      title="Delete"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        )}
       </main>
+
+      {/* Article Edit Modal */}
+      {articleModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm"
+          onClick={() => setArticleModal(null)}
+        >
+          <div
+            className="bg-surface max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-primary/20 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-border-subtle sticky top-0 bg-surface z-10">
+              <h3 className="text-headline-lg text-primary">
+                {articleModal.editing ? `Edit Post: ${articleModal.article?.slug}` : "New Post"}
+              </h3>
+              <button
+                onClick={() => setArticleModal(null)}
+                className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-label-caps text-outline block mb-1">Title *</label>
+                  <input
+                    type="text"
+                    value={articleForm.title}
+                    onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })}
+                    className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
+                    placeholder="My First Post"
+                  />
+                </div>
+                <div>
+                  <label className="text-label-caps text-outline block mb-1">Slug (URL)</label>
+                  <input
+                    type="text"
+                    value={articleForm.slug}
+                    onChange={(e) => setArticleForm({ ...articleForm, slug: e.target.value })}
+                    className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
+                    placeholder="my-first-post"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-label-caps text-outline block mb-1">Excerpt</label>
+                <input
+                  type="text"
+                  value={articleForm.excerpt}
+                  onChange={(e) => setArticleForm({ ...articleForm, excerpt: e.target.value })}
+                  className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
+                  placeholder="Short summary shown in the blog list"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-label-caps text-outline block mb-1">Tags (comma separated)</label>
+                  <input
+                    type="text"
+                    value={articleForm.tags}
+                    onChange={(e) => setArticleForm({ ...articleForm, tags: e.target.value })}
+                    className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
+                    placeholder="travel, sydney, b&w"
+                  />
+                </div>
+                <div>
+                  <label className="text-label-caps text-outline block mb-1">Cover Photo ID (optional)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={articleForm.cover_photo_id}
+                    onChange={(e) => setArticleForm({ ...articleForm, cover_photo_id: e.target.value })}
+                    className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
+                    placeholder="e.g. 20"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-label-caps text-outline block mb-1">Content (Markdown)</label>
+                <textarea
+                  value={articleForm.content_md}
+                  onChange={(e) => setArticleForm({ ...articleForm, content_md: e.target.value })}
+                  rows={14}
+                  className="w-full border border-border-subtle p-3 text-body-md bg-surface focus:outline-none focus:border-primary font-mono resize-y"
+                  placeholder={"# Title\n\nWrite your post in Markdown...\n\n- supports **bold**, images, code blocks"}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 border-t border-border-subtle sticky bottom-0 bg-surface">
+              <button
+                onClick={() => setArticleModal(null)}
+                className="text-label-caps px-4 py-2 border border-border-subtle text-on-surface-variant hover:text-primary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveArticle}
+                disabled={articleSaving || !articleForm.title.trim()}
+                className="btn-primary"
+              >
+                {articleSaving ? "Saving..." : "Save Post"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Photo Edit Modal */}
       {editingPhoto && (

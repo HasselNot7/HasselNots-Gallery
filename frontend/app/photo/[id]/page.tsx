@@ -2,6 +2,29 @@ import { fetchPhoto, getPhotoImageUrl, Photo } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PhotoLocationPanel from "@/components/PhotoLocationPanel";
+import ViewCounter from "@/components/ViewCounter";
+import type { Metadata } from "next";
+
+const BASE = "http://SITE_DOMAIN_PLACEHOLDER";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const photo = await fetchPhoto(parseInt(id));
+    return {
+      title: photo.title || "Photo",
+      description: photo.description || (photo.location_name ? `Shot at ${photo.location_name}` : undefined),
+      openGraph: {
+        title: photo.title || "Photo",
+        description: photo.description || undefined,
+        type: "website",
+        images: [{ url: `${BASE}${getPhotoImageUrl(photo.id)}` }],
+      },
+    };
+  } catch {
+    return { title: "Photo" };
+  }
+}
 
 export default async function PhotoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -73,7 +96,10 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
             <div className="sticky top-[84px] md:top-[100px] flex flex-col gap-6">
               <div className="border-b border-border-subtle pb-4">
                 <h1 className="text-headline-lg text-primary mb-1">{photo.title || "Untitled"}</h1>
-                {shootDate && <span className="text-metadata-sm text-outline">{shootDate}</span>}
+                <div className="flex items-center gap-3 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  {shootDate && <span>{shootDate}</span>}
+                  <ViewCounter kind="photo" slug={String(photo.id)} currentViews={photo.views} />
+                </div>
               </div>
 
               {photo.description && (

@@ -550,6 +550,16 @@ def reset_photo_location(
     return PhotoOut.model_validate(photo)
 
 
+@router.post("/{photo_id}/view")
+def increment_photo_view(photo_id: int, db: Session = Depends(get_db)):
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    photo.views = (photo.views or 0) + 1
+    db.commit()
+    return {"ok": True, "views": photo.views}
+
+
 @router.patch("/{photo_id}", response_model=PhotoOut)
 def update_photo(
     photo_id: int,

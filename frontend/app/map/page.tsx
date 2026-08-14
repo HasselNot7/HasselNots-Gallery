@@ -171,13 +171,13 @@ export default async function MapPage() {
                   <div className="flex flex-col gap-4">
                     {Object.values(locations).map((loc, i) => (
                       <div key={i} className="border-b border-primary/10 pb-4 last:border-0">
-                        <div className="flex items-start gap-2 mb-2">
-                          <span className="material-symbols-outlined text-[16px] text-primary shrink-0 mt-0.5">location_on</span>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="material-symbols-outlined text-[16px] text-primary shrink-0">location_on</span>
                           <span className="text-metadata-sm text-on-surface break-words">
                             {loc.name}
                           </span>
                         </div>
-                        <div className="text-body-md font-medium text-primary mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <div className="text-metadata-sm font-medium text-primary mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                           {loc.count} Photo{loc.count > 1 ? "s" : ""}
                         </div>
                         <div className="flex gap-1 overflow-x-auto pb-1">

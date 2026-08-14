@@ -34,6 +34,7 @@ class PhotoOut(BaseModel):
     original_longitude: Optional[float] = None
     image_width: int
     image_height: int
+    views: int = 0
     is_published: bool
     created_at: datetime
     updated_at: datetime
@@ -69,6 +70,43 @@ class BatchStatus(BaseModel):
 class PhotoLocationUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+
+
+class ArticleOut(BaseModel):
+    id: int
+    slug: str
+    title: str
+    content_md: str
+    content_html: str = ""
+    excerpt: str
+    tags: str
+    cover_photo_id: Optional[int] = None
+    views: int = 0
+    is_published: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ArticleCreate(BaseModel):
+    slug: str
+    title: str
+    content_md: str = ""
+    excerpt: str = ""
+    tags: str = ""
+    cover_photo_id: Optional[int] = None
+    is_published: bool = False
+
+
+class ArticleUpdate(BaseModel):
+    slug: Optional[str] = None
+    title: Optional[str] = None
+    content_md: Optional[str] = None
+    excerpt: Optional[str] = None
+    tags: Optional[str] = None
+    cover_photo_id: Optional[int] = None
+    is_published: Optional[bool] = None
 
 
 class SettingsOut(BaseModel):

@@ -24,6 +24,7 @@ export default function Navbar() {
   const links = [
     { href: "/", label: "Home" },
     { href: "/gallery", label: "Gallery" },
+    { href: "/blog", label: "Blog" },
     { href: "/map", label: "Footprints" },
   ];
 
@@ -45,7 +46,7 @@ export default function Navbar() {
             key={link.href}
             href={link.href}
             style={{ fontFamily: "var(--font-sigma)" }}
-            className={`text-label-caps pb-1 transition-colors ${
+            className={`text-label-caps text-[12px] pb-1 transition-colors ${
               pathname === link.href
                 ? "text-primary border-b-2 border-primary"
                 : "text-on-surface-variant hover:text-primary"

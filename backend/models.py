@@ -41,7 +41,27 @@ class Photo(Base):
     image_width = Column(Integer, default=0)
     image_height = Column(Integer, default=0)
 
+    views = Column(Integer, default=0)
+
     is_published = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+
+class Article(Base):
+    __tablename__ = "articles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String, unique=True, index=True, nullable=False)
+    title = Column(String, nullable=False)
+    content_md = Column(String, default="")
+    excerpt = Column(String, default="")
+    tags = Column(String, default="")
+    cover_photo_id = Column(Integer, default=None)
+
+    views = Column(Integer, default=0)
+
+    is_published = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 

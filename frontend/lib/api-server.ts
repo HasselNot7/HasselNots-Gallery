@@ -23,6 +23,22 @@ export interface Photo {
   original_longitude: number | null;
   image_width: number;
   image_height: number;
+  views: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Article {
+  id: number;
+  slug: string;
+  title: string;
+  content_md: string;
+  content_html: string;
+  excerpt: string;
+  tags: string;
+  cover_photo_id: number | null;
+  views: number;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -55,6 +71,22 @@ export async function fetchGeotaggedPhotos(): Promise<Photo[]> {
 
 export async function fetchPhoto(id: number): Promise<Photo> {
   const res = await fetch(`${API_BASE}/api/photos/${id}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchArticles(): Promise<Article[]> {
+  const res = await fetch(`${API_BASE}/api/articles?published_only=true`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchArticle(slug: string): Promise<Article> {
+  const res = await fetch(`${API_BASE}/api/articles/${slug}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
