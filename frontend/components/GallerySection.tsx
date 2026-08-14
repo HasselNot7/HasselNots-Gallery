@@ -258,48 +258,69 @@ export default function GallerySection({
             </div>
           ) : (
             <>
+              {/* flex 多列瀑布流（不用 CSS columns，避免阴影被碎片裁剪） */}
               <div
                 ref={gridRef}
-                className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4 space-y-4"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
               >
-                {photos.map((photo, idx) => {
-                  const year = yearOf(photo);
-                  return (
-                    <button
-                      key={photo.id}
-                      data-year={year}
-                      onClick={() => setLightboxIndex(idx)}
-                      className="group relative overflow-hidden rounded-lg border border-border-subtle bg-surface block w-full break-inside-avoid shadow-sm transition-shadow duration-500 ease-out hover:shadow-xl hover:shadow-primary/10 scroll-mt-40 text-left cursor-pointer"
-                    >
-                      <div
-                        className="relative w-full overflow-hidden rounded-lg bg-surface-dim"
-                        style={{
-                          aspectRatio: photo.image_width && photo.image_height
-                            ? `${photo.image_width} / ${photo.image_height}`
-                            : "4 / 3",
-                        }}
-                      >
-                        <img
-                          src={getPhotoImageUrl(photo.id, true)}
-                          alt={photo.title}
-                          className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-primary/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-4">
-                          <span className="text-label-caps text-white text-[10px]">CAPTURE DATE</span>
-                          <span className="text-metadata-sm text-mint-accent text-[11px]">
-                            {formatDate(photo.shoot_time)}
-                            {photo.shoot_time && ` // ${formatTime(photo.shoot_time)}`}
-                          </span>
-                          <div className="mt-3 border-t border-white/20 pt-3 flex justify-between items-center">
-                            <span className="text-[16px] font-medium text-white leading-tight">{photo.title || "Untitled"}</span>
-                            <span className="material-symbols-outlined text-white text-[18px]">open_in_full</span>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
+                {(() => {
+                  const breakpoints = [
+                    { at: 0, n: 1 },
+                    { at: 640, n: 2 },
+                    { at: 1024, n: 3 },
+                    { at: 1280, n: 4 },
+                    { at: 1536, n: 5 },
+                  ];
+                  const colCount =
+                    typeof window === "undefined"
+                      ? 3
+                      : [...breakpoints].reverse().find((b) => window.innerWidth >= b.at)?.n || 1;
+                  const columns: typeof photos[][] = Array.from({ length: colCount }, () => []);
+                  photos.forEach((p, i) => columns[i % colCount].push(p));
+                  return columns.map((col, c) => (
+                    <div key={c} className="flex flex-col gap-6 min-w-0">
+                      {col.map((photo) => {
+                        const idx = photos.indexOf(photo);
+                        const year = yearOf(photo);
+                        return (
+                          <button
+                            key={photo.id}
+                            data-year={year}
+                            onClick={() => setLightboxIndex(idx)}
+                            className="group relative overflow-hidden rounded-lg border border-border-subtle bg-surface block w-full shadow-[0_2px_6px_rgba(0,0,0,0.10),0_12px_28px_rgba(0,0,0,0.14)] transition-all duration-500 ease-out hover:-translate-y-1.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.20),0_28px_56px_rgba(0,0,0,0.28)] scroll-mt-40 text-left cursor-pointer"
+                          >
+                            <div
+                              className="relative w-full overflow-hidden rounded-lg bg-surface-dim"
+                              style={{
+                                aspectRatio: photo.image_width && photo.image_height
+                                  ? `${photo.image_width} / ${photo.image_height}`
+                                  : "4 / 3",
+                              }}
+                            >
+                              <img
+                                src={getPhotoImageUrl(photo.id, true)}
+                                alt={photo.title}
+                                className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-0 bg-primary/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-4">
+                                <span className="text-label-caps text-white text-[10px]">CAPTURE DATE</span>
+                                <span className="text-metadata-sm text-mint-accent text-[11px]">
+                                  {formatDate(photo.shoot_time)}
+                                  {photo.shoot_time && ` // ${formatTime(photo.shoot_time)}`}
+                                </span>
+                                <div className="mt-3 border-t border-white/20 pt-3 flex justify-between items-center">
+                                  <span className="text-[16px] font-medium text-white leading-tight">{photo.title || "Untitled"}</span>
+                                  <span className="material-symbols-outlined text-white text-[18px]">open_in_full</span>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ));
+                })()}
               </div>
 
               <div ref={sentinelRef} className="flex justify-center mt-12 py-2">
