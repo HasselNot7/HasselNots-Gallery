@@ -60,8 +60,8 @@
   --color-mint-accent: #d1e7d3;
   --color-deep-charcoal: #1a1c1a;
 
-  --font-display: var(--font-sigma), "Hanken Grotesk", system-ui, sans-serif;
-  --font-body: "Inter", system-ui, sans-serif;
+  --font-display: var(--font-sigma), "Hanken Grotesk", "Noto Serif SC", system-ui, sans-serif;
+  --font-body: "Inter", "Noto Serif SC", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
   --spacing-grid-margin: 40px;

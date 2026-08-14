@@ -12,4 +12,5 @@ aiofiles==24.1.0
 exifread==3.0.0
 piexif==1.1.3
 markdown==3.10.3
+boto3==1.43.71
 pydantic==2.10.4

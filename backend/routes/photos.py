@@ -8,7 +8,7 @@ import urllib.parse
 from fractions import Fraction
 from io import BytesIO
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
@@ -17,6 +17,7 @@ from database import get_db
 from models import Photo
 from schemas import PhotoOut, PhotoUpdate, BatchDelete, BatchStatus, PhotoLocationUpdate
 from auth import get_current_user, require_admin
+import storage
 
 # Register HEIF/HEIC opener so PIL can decode iPhone photos
 try:
@@ -46,6 +47,19 @@ def _resolve_path(stored_path: str) -> str:
     if os.path.exists(stored_path):
         return stored_path
     return local
+
+
+def _remove_media(stored_paths):
+    """Delete stored media files (local or remote R2 object)."""
+    for stored in stored_paths:
+        if not stored:
+            continue
+        if storage.is_remote(stored):
+            storage.delete_object(stored)
+        else:
+            path = _resolve_path(stored)
+            if path and os.path.exists(path):
+                os.remove(path)
 
 
 def _reverse_geocode(lat: float, lng: float) -> str:
@@ -261,10 +275,7 @@ def batch_delete_photos(
 ):
     photos = db.query(Photo).filter(Photo.id.in_(payload.ids)).all()
     for photo in photos:
-        for stored in (photo.file_path, photo.thumbnail_path):
-            path = _resolve_path(stored)
-            if path and os.path.exists(path):
-                os.remove(path)
+        _remove_media((photo.file_path, photo.thumbnail_path))
         db.delete(photo)
     db.commit()
     return {"ok": True, "deleted": len(photos)}
@@ -296,6 +307,12 @@ def get_photo_image(photo_id: int, db: Session = Depends(get_db)):
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
+    if storage.is_remote(photo.file_path):
+        url = storage.public_url(photo.file_path)
+        if not url:
+            raise HTTPException(status_code=404, detail="File not found")
+        headers = {"Cache-Control": "public, max-age=31536000, immutable"} if storage.PUBLIC_URL else {}
+        return RedirectResponse(url, status_code=302, headers=headers)
     path = _resolve_path(photo.file_path)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -307,7 +324,14 @@ def get_photo_thumbnail(photo_id: int, db: Session = Depends(get_db)):
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
-    path = _resolve_path(photo.thumbnail_path or photo.file_path)
+    stored = photo.thumbnail_path or photo.file_path
+    if storage.is_remote(stored):
+        url = storage.public_url(stored)
+        if not url:
+            raise HTTPException(status_code=404, detail="File not found")
+        headers = {"Cache-Control": "public, max-age=31536000, immutable"} if storage.PUBLIC_URL else {}
+        return RedirectResponse(url, status_code=302, headers=headers)
+    path = _resolve_path(stored)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(path)
@@ -501,6 +525,25 @@ def upload_photo(
     # Snapshot the EXIF-derived coordinates so the admin can reset manual edits later
     photo.original_latitude = photo.latitude
     photo.original_longitude = photo.longitude
+
+    # Upload to R2 if configured; keep local files otherwise
+    r2_file = storage.upload_file(file_path, f"photos/{os.path.basename(file_path)}")
+    r2_thumb = storage.upload_file(thumb_path, f"photos/{os.path.basename(thumb_path)}")
+    if r2_file:
+        if r2_thumb is None:
+            storage.delete_object(r2_file)
+        else:
+            photo.file_path = r2_file
+            photo.thumbnail_path = r2_thumb
+            # Local copies are no longer needed once safely in R2
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                if os.path.exists(thumb_path):
+                    os.remove(thumb_path)
+            except OSError:
+                pass
+
     db.add(photo)
     db.commit()
     db.refresh(photo)
@@ -612,10 +655,7 @@ def delete_photo(
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
-    for stored in (photo.file_path, photo.thumbnail_path):
-        path = _resolve_path(stored)
-        if path and os.path.exists(path):
-            os.remove(path)
+    _remove_media((photo.file_path, photo.thumbnail_path))
     db.delete(photo)
     db.commit()
     return {"ok": True}

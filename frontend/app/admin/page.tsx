@@ -713,7 +713,7 @@ export default function AdminPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-3 sm:px-5 py-3 text-label-caps border-b-2 transition-all -mb-px whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3 sm:px-5 py-3 text-label-caps border-b-2 transition-all -mb-px whitespace-nowrap rounded-none ${
                 activeTab === tab.id
                   ? "border-primary text-primary"
                   : "border-transparent text-on-surface-variant hover:text-primary hover:border-primary/30"
