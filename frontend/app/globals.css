@@ -1,0 +1,177 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme inline {
+  --color-background: #f8faf8;
+  --color-foreground: #191c1b;
+
+  --color-primary: #163828;
+  --color-primary-container: #2d4f3e;
+  --color-primary-fixed: #c5ebd4;
+  --color-primary-fixed-dim: #a9cfb9;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #9ac0aa;
+  --color-on-primary-fixed: #002113;
+  --color-on-primary-fixed-variant: #2c4e3d;
+  --color-inverse-primary: #a9cfb9;
+
+  --color-secondary: #316944;
+  --color-secondary-container: #b1eebe;
+  --color-secondary-fixed: #b4f1c1;
+  --color-secondary-fixed-dim: #98d4a6;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #366e47;
+  --color-on-secondary-fixed: #00210d;
+  --color-on-secondary-fixed-variant: #16512e;
+
+  --color-tertiary: #003b0b;
+  --color-tertiary-container: #005514;
+  --color-tertiary-fixed: #94f990;
+  --color-tertiary-fixed-dim: #78dc77;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #69cd6a;
+  --color-on-tertiary-fixed: #002204;
+  --color-on-tertiary-fixed-variant: #005313;
+
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
+
+  --color-surface: #f8faf8;
+  --color-surface-dim: #d8dad9;
+  --color-surface-bright: #f8faf8;
+  --color-surface-variant: #e1e3e1;
+  --color-surface-container: #eceeec;
+  --color-surface-container-low: #f2f4f2;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-high: #e6e9e7;
+  --color-surface-container-highest: #e1e3e1;
+  --color-surface-tint: #436653;
+  --color-on-surface: #191c1b;
+  --color-on-surface-variant: #414844;
+  --color-inverse-surface: #2e3130;
+  --color-inverse-on-surface: #eff1ef;
+
+  --color-outline: #727973;
+  --color-outline-variant: #c1c8c2;
+
+  --color-border-subtle: #e2e8e2;
+  --color-mint-accent: #d1e7d3;
+  --color-deep-charcoal: #1a1c1a;
+
+  --font-display: var(--font-sigma), "Hanken Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --spacing-grid-margin: 40px;
+  --spacing-gutter: 24px;
+  --spacing-section-gap: 120px;
+}
+
+@layer base {
+  body {
+    background: var(--color-background);
+    color: var(--color-on-surface);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: rgba(248, 250, 248, 0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .text-display-lg {
+    font-family: var(--font-display);
+    font-size: 64px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .text-headline-lg {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .text-headline-mobile {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .text-body-md {
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .text-metadata-sm {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: 0.05em;
+  }
+
+  .text-label-caps {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.0;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 16px 24px;
+    border: none;
+    cursor: pointer;
+    transition: all 300ms ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-primary-container);
+  }
+
+  .btn-outline {
+    background: var(--color-mint-accent);
+    color: var(--color-primary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid var(--color-primary);
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 300ms ease-in-out;
+  }
+
+  .btn-outline:hover {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    transform: scale(1.05);
+  }
+}

@@ -1,0 +1,18 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# Python / FastAPI
+__pycache__/
+*.pyc
+.venv/
+
+# Runtime data
+backend/uploads/
+backend/gallery.db
+
+# Misc
+.DS_Store
+DSC06456.JPG

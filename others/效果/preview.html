@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>three.js实现动态光斑背景效果</title>
+    <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+    <h1 class="heading">DYNAMIC<br/>LIGHT SPOTS</h1>
+
+    <div class="color-controls">
+        <button class="color-btn active" data-scheme="1">Orange · Navy</button>
+        <button class="color-btn" data-scheme="2">Coral · Turquoise</button>
+        <button class="color-btn" data-scheme="3">Orange · Navy · Turquoise</button>
+        <button class="color-btn" data-scheme="4">Coral · Teal · Beige</button>
+        <button class="color-btn" data-scheme="5">Orange · Dark Teal</button>
+    </div>
+
+    <button class="toggle-adjuster-btn" id="toggleAdjusterBtn">Customize Colors</button>
+
+    <div class="color-adjuster-panel" id="colorAdjusterPanel">
+        <div class="color-adjuster-header">
+            <span class="color-adjuster-title">Color Adjuster</span>
+            <button class="color-adjuster-close" id="closeAdjusterBtn">&times;</button>
+        </div>
+        <div class="color-picker-group">
+            <div class="color-picker-label"><span>Color 1</span></div>
+            <div class="color-picker-wrapper">
+                <input type="color" class="color-picker-input" id="colorPicker1" value="#F15A22"/>
+                <input type="text" class="color-value-display" id="colorValue1" value="#F15A22" readonly/>
+                <button class="copy-btn" data-copy="1">Copy</button>
+            </div>
+        </div>
+        <div class="color-picker-group">
+            <div class="color-picker-label"><span>Color 2</span></div>
+            <div class="color-picker-wrapper">
+                <input type="color" class="color-picker-input" id="colorPicker2" value="#0A0E27"/>
+                <input type="text" class="color-value-display" id="colorValue2" value="#0A0E27" readonly/>
+                <button class="copy-btn" data-copy="2">Copy</button>
+            </div>
+        </div>
+        <div class="color-picker-group">
+            <div class="color-picker-label"><span>Color 3</span></div>
+            <div class="color-picker-wrapper">
+                <input type="color" class="color-picker-input" id="colorPicker3" value="#40E0D0"/>
+                <input type="text" class="color-value-display" id="colorValue3" value="#40E0D0" readonly/>
+                <button class="copy-btn" data-copy="3">Copy</button>
+            </div>
+        </div>
+        <div class="color-picker-group">
+            <div class="color-picker-label"><span>Color 4</span></div>
+            <div class="color-picker-wrapper">
+                <input type="color" class="color-picker-input" id="colorPicker4" value="#F15A22"/>
+                <input type="text" class="color-value-display" id="colorValue4" value="#F15A22" readonly/>
+                <button class="copy-btn" data-copy="4">Copy</button>
+            </div>
+        </div>
+        <div class="color-picker-group">
+            <div class="color-picker-label"><span>Color 5</span></div>
+            <div class="color-picker-wrapper">
+                <input type="color" class="color-picker-input" id="colorPicker5" value="#0A0E27"/>
+                <input type="text" class="color-value-display" id="colorValue5" value="#0A0E27" readonly/>
+                <button class="copy-btn" data-copy="5">Copy</button>
+            </div>
+        </div>
+        <div class="color-picker-group">
+            <div class="color-picker-label"><span>Color 6</span></div>
+            <div class="color-picker-wrapper">
+                <input type="color" class="color-picker-input" id="colorPicker6" value="#40E0D0"/>
+                <input type="text" class="color-value-display" id="colorValue6" value="#40E0D0" readonly/>
+                <button class="copy-btn" data-copy="6">Copy</button>
+            </div>
+        </div>
+        <div class="color-adjuster-actions">
+            <button class="export-btn" id="exportAllBtn">Export All Colors</button>
+        </div>
+    </div>
+
+    <div class="footer"><a href="#">three.js Dynamic Light Spots</a></div>
+    <div class="custom-cursor" id="customCursor"></div>
+
+    <script src="three.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

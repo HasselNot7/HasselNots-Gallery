@@ -1,0 +1,159 @@
+import { fetchPhoto, getPhotoImageUrl, Photo } from "@/lib/api-server";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import PhotoMapWrapper from "@/components/PhotoMapWrapper";
+
+export default async function PhotoDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  let photo: Photo | null = null;
+
+  try {
+    photo = await fetchPhoto(parseInt(id));
+  } catch {
+    // photo not found or backend unavailable
+  }
+
+  if (!photo) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-headline-mobile text-on-surface-variant">Photo not found</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const exifFields = [
+    { label: "CAMERA", value: photo.camera_model },
+    { label: "LENS", value: photo.lens_model },
+    { label: "APERTURE", value: photo.aperture },
+    { label: "SHUTTER", value: photo.shutter_speed },
+    { label: "ISO", value: photo.iso },
+    { label: "FOCAL LENGTH", value: photo.focal_length },
+  ];
+  const hasExif = exifFields.some((f) => f.value);
+
+  const shootDate = photo.shoot_time
+    ? new Date(photo.shoot_time).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-7xl mx-auto border-x border-border-subtle">
+        <a
+          href="/gallery"
+          className="inline-flex items-center gap-2 text-label-caps text-on-surface-variant hover:text-primary transition-colors mb-8"
+        >
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          Back to Gallery
+        </a>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+          <div className="lg:col-span-8">
+            <div className="border border-border-subtle overflow-hidden">
+              <img
+                src={getPhotoImageUrl(photo.id)}
+                alt={photo.title}
+                className="w-full h-auto object-contain bg-surface-dim"
+                style={{ maxHeight: "80vh" }}
+              />
+            </div>
+          </div>
+
+          <div className="lg:col-span-4">
+            <div className="sticky top-[84px] md:top-[100px] flex flex-col gap-6">
+              <div className="border-b border-border-subtle pb-4">
+                <h1 className="text-headline-lg text-primary mb-1">{photo.title || "Untitled"}</h1>
+                {shootDate && <span className="text-metadata-sm text-outline">{shootDate}</span>}
+              </div>
+
+              {photo.description && (
+                <p className="text-body-md text-on-surface-variant">{photo.description}</p>
+              )}
+
+              {hasExif && (
+                <div className="bg-surface-container-low border border-border-subtle p-6 flex flex-col gap-4">
+                  <h2 className="text-label-caps text-secondary tracking-widest border-b border-border-subtle pb-2">
+                    EXIF &amp; TECHNICAL
+                  </h2>
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-metadata-sm text-on-surface">
+                    {exifFields.map(
+                      (f) =>
+                        f.value && (
+                          <div key={f.label} className="flex flex-col">
+                            <span className="text-outline text-[10px] mb-1">{f.label}</span>
+                            <span>{f.value}</span>
+                          </div>
+                        )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                {photo.camera_model && (
+                  <span className="px-3 py-1 bg-mint-accent/20 border border-mint-accent text-label-caps text-primary">
+                    {photo.camera_model}
+                  </span>
+                )}
+                {photo.latitude && photo.longitude && (
+                  <span className="px-3 py-1 bg-surface-container border border-border-subtle text-label-caps text-on-surface-variant flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">location_on</span>
+                    {photo.latitude.toFixed(4)}, {photo.longitude.toFixed(4)}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-metadata-sm">
+                <div className="text-outline text-[10px]">
+                  Dimensions<br />
+                  <span className="text-on-surface">{photo.image_width} × {photo.image_height}px</span>
+                </div>
+                {photo.altitude != null && (
+                  <div className="text-outline text-[10px]">
+                    Altitude<br />
+                    <span className="text-on-surface">{Number(photo.altitude).toFixed(1)}m</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {photo.latitude && photo.longitude && (
+          <div className="mt-16">
+            <div className="flex items-end justify-between mb-6">
+              <h2 className="text-headline-lg text-primary">Location</h2>
+              {photo.location_name && (
+                <span className="text-label-caps text-on-surface-variant flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px] text-primary">location_on</span>
+                  {photo.location_name}
+                </span>
+              )}
+            </div>
+            <div className="border border-border-subtle overflow-hidden rounded h-[320px] md:h-[400px] relative">
+              <PhotoMapWrapper
+                latitude={photo.latitude}
+                longitude={photo.longitude}
+                title={photo.title}
+                thumbnail={getPhotoImageUrl(photo.id, true)}
+                camera={photo.camera_model}
+                photoId={photo.id}
+              />
+            </div>
+          </div>
+        )}
+      </main>
+      <Footer />
+    </div>
+  );
+}
