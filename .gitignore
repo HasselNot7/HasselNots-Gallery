@@ -20,3 +20,4 @@ DSC06596.JPG
 gallery.db
 backend/.env
 .vscode/
+.env.local

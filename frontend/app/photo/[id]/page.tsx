@@ -7,7 +7,7 @@ import CommentSection from "@/components/CommentSection";
 import PhotoLightbox from "@/components/PhotoLightbox";
 import type { Metadata } from "next";
 
-const BASE = "http://SITE_DOMAIN_PLACEHOLDER";
+import { SITE_URL as BASE } from "@/lib/site";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;

@@ -168,7 +168,7 @@ gallery/
 # Nginx 配置见 /etc/nginx/sites-enabled/default
 ```
 
-公网地址：`http://SITE_DOMAIN_PLACEHOLDER`
+公网地址：由环境变量 `NEXT_PUBLIC_SITE_URL` 配置
 
 ### Nginx 反向代理架构
 

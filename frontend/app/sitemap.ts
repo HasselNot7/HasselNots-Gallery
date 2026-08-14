@@ -1,7 +1,7 @@
 import { fetchPhotos, fetchArticles } from "@/lib/api-server";
 import type { MetadataRoute } from "next";
 
-const BASE = "http://SITE_DOMAIN_PLACEHOLDER";
+import { SITE_URL as BASE } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [

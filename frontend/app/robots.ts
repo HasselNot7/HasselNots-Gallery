@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+import { SITE_URL } from "@/lib/site";
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
@@ -7,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/admin", "/login", "/api/"],
     },
-    sitemap: "http://SITE_DOMAIN_PLACEHOLDER/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
