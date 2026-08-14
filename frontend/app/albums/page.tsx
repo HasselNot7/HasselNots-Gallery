@@ -15,7 +15,7 @@ export default async function AlbumsPage() {
       <Navbar />
       <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-7xl mx-auto w-full">
         <div className="mb-10">
-          <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
+          <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 uppercase" style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', sans-serif" }}>
             Albums
           </h1>
           <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
@@ -48,7 +48,7 @@ export default async function AlbumsPage() {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
-                  <h2 className="text-headline-lg text-white" style={{ fontFamily: "var(--font-sigma)" }}>
+                  <h2 className="text-headline-lg text-white" style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', sans-serif" }}>
                     {album.title}
                   </h2>
                   {album.description && (
