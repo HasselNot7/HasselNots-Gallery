@@ -135,11 +135,6 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
                     {photo.camera_model}
                   </span>
                 )}
-                {photo.tags && photo.tags.split(",").filter(Boolean).map((t) => (
-                  <span key={t} className="inline-flex items-center px-3 py-1 bg-surface-container border border-border-subtle text-label-caps text-on-surface-variant rounded-md">
-                    {t.trim()}
-                  </span>
-                ))}
                 {photo.latitude && photo.longitude && (
                   <span className="px-3 py-1 bg-surface-container border border-border-subtle text-label-caps text-on-surface-variant flex items-center gap-1 rounded-md">
                     <span className="material-symbols-outlined text-[14px]">location_on</span>

@@ -35,7 +35,6 @@ class PhotoOut(BaseModel):
     image_width: int
     image_height: int
     views: int = 0
-    tags: str = ""
     album_id: Optional[int] = None
     is_published: bool
     created_at: datetime
@@ -58,7 +57,6 @@ class PhotoUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     location_name: Optional[str] = None
-    tags: Optional[str] = None
     album_id: Optional[int] = None
 
 

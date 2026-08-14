@@ -98,6 +98,18 @@ export default function Lightbox({
         )}
       </div>
 
+      {/* 查看详情入口 */}
+      <div className="flex justify-center pb-6">
+        <a
+          href={`/photo/${photo.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-2 text-label-caps px-6 py-3 bg-primary-fixed text-primary rounded-md hover:bg-white transition-colors"
+        >
+          <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+          View Details
+        </a>
+      </div>
+
       {/* 左右箭头 */}
       <button
         onClick={(e) => {

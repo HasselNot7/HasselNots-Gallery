@@ -172,13 +172,6 @@ export default function GallerySection({
   const [activeYear, setActiveYear] = useState<string>(initialYears[0] ?? "");
   const [loadingMore, setLoadingMore] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [activeTag, setActiveTag] = useState<string | null>(null);
-
-  const allTags = [
-    ...new Set(
-      photos.flatMap((p) => (p.tags ? p.tags.split(",").map((t) => t.trim()).filter(Boolean) : []))
-    ),
-  ].sort();
   const gridRef = useRef<HTMLDivElement>(null);
   const photosRef = useRef(photos);
   photosRef.current = photos;
@@ -252,34 +245,6 @@ export default function GallerySection({
         <span className="text-label-caps text-outline">SORTED BY SHOOT DATE</span>
       </div>
 
-      {allTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 mb-6">
-          <button
-            onClick={() => setActiveTag(null)}
-            className={`text-label-caps px-3 py-1.5 border rounded-md transition-all ${
-              activeTag === null
-                ? "border-primary bg-primary text-on-primary"
-                : "border-border-subtle text-on-surface-variant hover:border-primary"
-            }`}
-          >
-            All
-          </button>
-          {allTags.map((t) => (
-            <button
-              key={t}
-              onClick={() => setActiveTag(activeTag === t ? null : t)}
-              className={`text-label-caps px-3 py-1.5 border rounded-md transition-all ${
-                activeTag === t
-                  ? "border-primary bg-primary text-on-primary"
-                  : "border-border-subtle text-on-surface-variant hover:border-primary"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="flex flex-col md:flex-row md:gap-8 md:items-start">
         <div className="flex-shrink-0 md:sticky md:top-28 md:pt-2">
           <DraggableTimeline entries={years} active={activeYear} onChange={jumpToYear} />
@@ -297,9 +262,7 @@ export default function GallerySection({
                 ref={gridRef}
                 className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4 space-y-4"
               >
-                {photos
-                  .filter((p) => !activeTag || (p.tags && p.tags.split(",").map((t) => t.trim()).includes(activeTag)))
-                  .map((photo, idx) => {
+                {photos.map((photo, idx) => {
                   const year = yearOf(photo);
                   return (
                     <button

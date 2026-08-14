@@ -321,7 +321,6 @@ export default function AdminPage() {
       latitude: photo.latitude?.toString() || "",
       longitude: photo.longitude?.toString() || "",
       location_name: photo.location_name || "",
-      tags: photo.tags || "",
       album_id: photo.album_id ? String(photo.album_id) : "",
     });
   };
@@ -1908,7 +1907,6 @@ export default function AdminPage() {
                 { key: "latitude", label: "Latitude", type: "text" },
                 { key: "longitude", label: "Longitude", type: "text" },
                 { key: "location_name", label: "Location Name", type: "text" },
-                { key: "tags", label: "Tags (comma separated)", type: "text" },
               ].map((field) => (
                 <div key={field.key}>
                   <label className="text-label-caps text-outline block mb-1">{field.label}</label>

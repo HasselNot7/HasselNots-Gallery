@@ -46,7 +46,6 @@ export interface Photo {
   image_width: number;
   image_height: number;
   views: number;
-  tags: string;
   album_id: number | null;
   is_published: boolean;
   created_at: string;
