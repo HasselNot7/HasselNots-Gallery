@@ -58,25 +58,25 @@ export default function Lightbox({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[1000] bg-primary/80 backdrop-blur-xl flex flex-col"
+      className="fixed inset-0 z-[1000] bg-white/85 backdrop-blur-xl flex flex-col"
       onClick={onClose}
     >
       {/* 顶栏 */}
-      <div className="flex items-center justify-between px-4 md:px-8 py-4 text-primary-fixed">
+      <div className="flex items-center justify-between px-4 md:px-8 py-4 text-primary">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-metadata-sm text-primary-fixed/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="text-metadata-sm text-primary/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {index + 1} / {photos.length}
           </span>
-          <span className="text-body-md text-primary-fixed truncate">{photo.title}</span>
+          <span className="text-body-md text-primary truncate">{photo.title}</span>
           {dateStr && (
-            <span className="text-metadata-sm text-primary-fixed/60 hidden md:inline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <span className="text-metadata-sm text-primary/60 hidden md:inline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {dateStr}
             </span>
           )}
         </div>
         <button
           onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center text-primary-fixed hover:bg-primary-fixed/10 transition-colors rounded-md"
+          className="w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 transition-colors rounded-md"
           aria-label="Close"
         >
           <span className="material-symbols-outlined text-[24px]">close</span>
@@ -93,7 +93,7 @@ export default function Lightbox({
           onClick={(e) => e.stopPropagation()}
         />
         {photo.camera_model && (
-          <span className="absolute bottom-2 right-4 text-metadata-sm text-primary-fixed/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="absolute bottom-2 right-4 text-metadata-sm text-primary/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {photo.camera_model}
           </span>
         )}
@@ -104,7 +104,7 @@ export default function Lightbox({
         <a
           href={`/photo/${photo.id}`}
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-2 text-label-caps px-6 py-3 bg-primary-fixed text-primary rounded-md hover:bg-white transition-colors"
+          className="inline-flex items-center gap-2 text-label-caps px-6 py-3 bg-primary text-white rounded-md hover:bg-primary-container transition-colors"
         >
           <span className="material-symbols-outlined text-[16px]">open_in_new</span>
           View Details
@@ -117,7 +117,7 @@ export default function Lightbox({
           e.stopPropagation();
           prev();
         }}
-        className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-primary-fixed hover:bg-primary-fixed/10 transition-colors rounded-full"
+        className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-primary hover:bg-primary/10 transition-colors rounded-full"
         aria-label="Previous"
       >
         <span className="material-symbols-outlined text-[28px]">chevron_left</span>
@@ -127,7 +127,7 @@ export default function Lightbox({
           e.stopPropagation();
           next();
         }}
-        className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-primary-fixed hover:bg-primary-fixed/10 transition-colors rounded-full"
+        className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-primary hover:bg-primary/10 transition-colors rounded-full"
         aria-label="Next"
       >
         <span className="material-symbols-outlined text-[28px]">chevron_right</span>
