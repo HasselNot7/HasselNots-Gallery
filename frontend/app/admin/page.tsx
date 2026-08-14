@@ -108,8 +108,8 @@ export default function AdminPage() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [compressEnabled, setCompressEnabled] = useState(false);
-  const [targetSizeMb, setTargetSizeMb] = useState(1.0);
+  const [compressEnabled, setCompressEnabled] = useState(true);
+  const [targetSizeMb, setTargetSizeMb] = useState(3.0);
 
   // Settings state
   const [settings, setSettings] = useState({
