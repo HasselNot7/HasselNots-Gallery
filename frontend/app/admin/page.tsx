@@ -16,12 +16,6 @@ import Footer from "@/components/Footer";
 
 const API_BASE = "";
 
-const ICON_OPTIONS = [
-  "photo_camera", "camera", "camera_alt", "image", "collections",
-  "landscape", "nature", "travel_explore", "visibility", "filter_drama",
-  "architecture", "aperture", "lens", "filter_hdr", "party_mode",
-];
-
 function extractExifSegment(arrayBuffer: ArrayBuffer): string {
   // Extract the raw EXIF APP1 segment (starting with "Exif\0\0") without parsing.
   // This preserves GPS data byte-for-byte (piexifjs re-encoding corrupts it).
@@ -143,6 +137,16 @@ export default function AdminPage() {
 
   // Active tab
   const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos">("settings");
+
+  // Sort order for photo management
+  const [sortBy, setSortBy] = useState<"shoot" | "upload">("shoot");
+
+  // Batch selection + filters
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
+  const [batchConfirmDelete, setBatchConfirmDelete] = useState(false);
+  const [batchBusy, setBatchBusy] = useState(false);
 
   const TABS = [
     { id: "settings" as const, label: "Site Settings", icon: "settings" },
@@ -504,6 +508,87 @@ export default function AdminPage() {
     });
   };
 
+  const timeOf = (d: string | null) => (d ? new Date(d).getTime() : 0);
+
+  const sortedPhotos = [...photos].sort((a, b) => {
+    const ta = sortBy === "shoot" ? timeOf(a.shoot_time) : timeOf(a.created_at);
+    const tb = sortBy === "shoot" ? timeOf(b.shoot_time) : timeOf(b.created_at);
+    return tb - ta;
+  });
+
+  const filteredPhotos = sortedPhotos.filter((p) => {
+    if (statusFilter === "published" && !p.is_published) return false;
+    if (statusFilter === "draft" && p.is_published) return false;
+    if (searchQuery && !p.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
+  const allVisibleSelected = filteredPhotos.length > 0 && filteredPhotos.every((p) => selected.has(p.id));
+
+  const toggleSelect = (id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        filteredPhotos.forEach((p) => next.delete(p.id));
+      } else {
+        filteredPhotos.forEach((p) => next.add(p.id));
+      }
+      return next;
+    });
+  };
+
+  const handleBatchDelete = async () => {
+    if (selected.size === 0) return;
+    setBatchBusy(true);
+    try {
+      await fetch(`${API_BASE}/api/photos/batch-delete`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: [...selected] }),
+      });
+      setSelected(new Set());
+      setBatchConfirmDelete(false);
+      await loadPhotos();
+    } catch {
+      // ignore
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const handleBatchStatus = async (isPublished: boolean) => {
+    if (selected.size === 0) return;
+    setBatchBusy(true);
+    try {
+      await fetch(`${API_BASE}/api/photos/batch-status`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: [...selected], is_published: isPublished }),
+      });
+      setSelected(new Set());
+      await loadPhotos();
+    } catch {
+      // ignore
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -589,23 +674,6 @@ export default function AdminPage() {
                   onChange={handleIconUpload}
                   className="hidden"
                 />
-              </div>
-
-              <label className="text-label-caps text-outline block mb-2">Or pick a Material Symbol</label>
-              <div className="flex flex-wrap gap-2">
-                {ICON_OPTIONS.map((icon) => (
-                  <button
-                    key={icon}
-                    onClick={() => setSettings({ ...settings, hero_icon: icon })}
-                    className={`w-10 h-10 flex items-center justify-center border transition-all ${
-                      !settings.hero_icon_url && settings.hero_icon === icon
-                        ? "border-primary bg-primary-fixed text-primary"
-                        : "border-border-subtle text-on-surface-variant hover:border-primary"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[20px]">{icon}</span>
-                  </button>
-                ))}
               </div>
             </div>
 
@@ -805,7 +873,124 @@ export default function AdminPage() {
         {/* Photo Management Table */}
         {activeTab === "photos" && (
         <div>
-          <h2 className="text-headline-lg text-primary mb-6">Photo Management</h2>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <h2 className="text-headline-lg text-primary">Photo Management</h2>
+              <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                {photos.length} TOTAL · {photos.filter((p) => p.is_published).length} PUBLISHED · {photos.filter((p) => !p.is_published).length} DRAFT
+              </span>
+            </div>
+            {/* Sort toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-label-caps text-outline uppercase">Sort by</span>
+              <button
+                onClick={() => setSortBy("shoot")}
+                className={`text-label-caps px-3 py-1.5 border transition-all ${
+                  sortBy === "shoot"
+                    ? "border-primary bg-primary text-on-primary"
+                    : "border-border-subtle text-on-surface-variant hover:border-primary"
+                }`}
+              >
+                Shoot Date
+              </button>
+              <button
+                onClick={() => setSortBy("upload")}
+                className={`text-label-caps px-3 py-1.5 border transition-all ${
+                  sortBy === "upload"
+                    ? "border-primary bg-primary text-on-primary"
+                    : "border-border-subtle text-on-surface-variant hover:border-primary"
+                }`}
+              >
+                Upload Time
+              </button>
+            </div>
+          </div>
+
+          {/* Filter bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-outline">search</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by title..."
+                className="w-full border border-border-subtle bg-surface pl-10 pr-3 py-2 text-body-md focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              {(["all", "published", "draft"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`text-label-caps px-3 py-1.5 border transition-all ${
+                    statusFilter === s
+                      ? "border-primary bg-primary text-on-primary"
+                      : "border-border-subtle text-on-surface-variant hover:border-primary"
+                  }`}
+                >
+                  {s === "all" ? "All" : s === "published" ? "Published" : "Draft"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Batch action toolbar */}
+          <div className={`flex flex-wrap items-center gap-3 mb-4 p-3 border transition-all ${
+            selected.size > 0 ? "border-primary bg-mint-accent/15" : "border-transparent"
+          }`}>
+            <span className="text-label-caps text-primary uppercase">
+              {selected.size > 0 ? `${selected.size} Selected` : "No selection"}
+            </span>
+            {selected.size > 0 && (
+              <>
+                <button
+                  onClick={() => handleBatchStatus(true)}
+                  disabled={batchBusy}
+                  className="text-label-caps px-3 py-1.5 border border-primary text-primary hover:bg-primary hover:text-on-primary transition-all disabled:opacity-50"
+                >
+                  Publish
+                </button>
+                <button
+                  onClick={() => handleBatchStatus(false)}
+                  disabled={batchBusy}
+                  className="text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:border-primary hover:text-primary transition-all disabled:opacity-50"
+                >
+                  Hide
+                </button>
+                {batchConfirmDelete ? (
+                  <>
+                    <button
+                      onClick={handleBatchDelete}
+                      disabled={batchBusy}
+                      className="text-label-caps px-3 py-1.5 border border-error text-error bg-error/10 hover:bg-error hover:text-on-error transition-all disabled:opacity-50"
+                    >
+                      {batchBusy ? "Deleting..." : "Confirm Delete"}
+                    </button>
+                    <button
+                      onClick={() => setBatchConfirmDelete(false)}
+                      className="text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:text-primary"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setBatchConfirmDelete(true)}
+                    className="text-label-caps px-3 py-1.5 border border-error text-error hover:bg-error hover:text-on-error transition-all"
+                  >
+                    Delete Selected
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelected(new Set())}
+                  className="text-label-caps px-3 py-1.5 text-on-surface-variant hover:text-primary"
+                >
+                  Clear
+                </button>
+              </>
+            )}
+          </div>
 
           {loading ? (
             <div className="animate-pulse space-y-2">
@@ -818,18 +1003,36 @@ export default function AdminPage() {
               {/* Desktop table */}
               <div className="hidden md:flex flex-col border border-border-subtle">
                 <div className="grid grid-cols-12 gap-4 border-b border-border-subtle p-4 text-label-caps text-outline bg-surface-bright">
+                  <div className="col-span-1">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 accent-[#163828] cursor-pointer"
+                    />
+                  </div>
                   <div className="col-span-2">Preview</div>
                   <div className="col-span-3">Title</div>
-                  <div className="col-span-2">Date</div>
-                  <div className="col-span-2">Status</div>
-                  <div className="col-span-3 flex justify-end">Actions</div>
+                  <div className="col-span-3">Shoot Date</div>
+                  <div className="col-span-1">Status</div>
+                  <div className="col-span-2 flex justify-end">Actions</div>
                 </div>
 
-                {photos.map((photo) => (
+                {filteredPhotos.map((photo) => (
                   <div
                     key={photo.id}
-                    className="grid grid-cols-12 gap-4 border-b border-border-subtle p-4 items-center hover:bg-mint-accent/5 transition-colors"
+                    className={`grid grid-cols-12 gap-4 border-b border-border-subtle p-4 items-center transition-colors ${
+                      selected.has(photo.id) ? "bg-mint-accent/25" : "hover:bg-mint-accent/5"
+                    }`}
                   >
+                    <div className="col-span-1">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(photo.id)}
+                        onChange={() => toggleSelect(photo.id)}
+                        className="w-4 h-4 accent-[#163828] cursor-pointer"
+                      />
+                    </div>
                     <div className="col-span-2">
                       <a href={`/photo/${photo.id}`} className="w-16 h-16 bg-surface-container overflow-hidden border border-border-subtle block">
                         <img
@@ -842,10 +1045,15 @@ export default function AdminPage() {
                     <div className="col-span-3 text-body-md text-on-surface truncate">
                       {photo.title || "Untitled"}
                     </div>
-                    <div className="col-span-2 text-metadata-sm text-on-surface-variant">
+                    <div className="col-span-3 text-metadata-sm text-on-surface-variant">
                       {formatDate(photo.shoot_time) || "—"}
+                      <div className="mt-1">
+                        <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          Up {formatDate(photo.created_at) || "—"}
+                        </span>
+                      </div>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-1">
                       <button
                         onClick={() => handleTogglePublish(photo)}
                         className={`text-label-caps px-2 py-1 ${
@@ -854,10 +1062,10 @@ export default function AdminPage() {
                             : "bg-surface-variant text-on-surface-variant"
                         }`}
                       >
-                        {photo.is_published ? "PUBLISHED" : "DRAFT"}
+                        {photo.is_published ? "PUB" : "DRF"}
                       </button>
                     </div>
-                    <div className="col-span-3 flex justify-end gap-2">
+                    <div className="col-span-2 flex justify-end gap-2">
                       <button
                         onClick={() => startEdit(photo)}
                         className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors"
@@ -904,13 +1112,26 @@ export default function AdminPage() {
 
               {/* Mobile card list */}
               <div className="md:hidden flex flex-col gap-3">
-                {photos.map((photo) => (
+                {filteredPhotos.map((photo) => (
                   <div
                     key={photo.id}
-                    className="border border-border-subtle bg-surface-bright p-3 flex gap-3 items-center"
+                    onClick={() => toggleSelect(photo.id)}
+                    className={`border p-3 flex gap-3 items-center cursor-pointer transition-colors ${
+                      selected.has(photo.id)
+                        ? "border-primary bg-mint-accent/25"
+                        : "border-border-subtle bg-surface-bright"
+                    }`}
                   >
+                    <input
+                      type="checkbox"
+                      checked={selected.has(photo.id)}
+                      onChange={() => toggleSelect(photo.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 accent-[#163828] cursor-pointer flex-shrink-0"
+                    />
                     <a
                       href={`/photo/${photo.id}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="w-16 h-16 flex-shrink-0 bg-surface-container overflow-hidden border border-border-subtle block"
                     >
                       <img
@@ -927,6 +1148,9 @@ export default function AdminPage() {
                       <div className="text-metadata-sm text-on-surface-variant mt-0.5">
                         {formatDate(photo.shoot_time) || "—"}
                       </div>
+                      <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        Up {formatDate(photo.created_at) || "—"}
+                      </span>
                       <button
                         onClick={() => handleTogglePublish(photo)}
                         className={`text-label-caps px-2 py-0.5 mt-1.5 ${

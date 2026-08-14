@@ -115,22 +115,6 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
             <div className="absolute inset-0 rounded-full border border-mint-accent/50 animate-ping pointer-events-none" />
           </div>
         </div>
-
-        {/* Tick marks */}
-        <div className="absolute -right-5 top-1 bottom-1 w-4 pointer-events-none flex flex-col justify-between">
-          {Array.from({ length: 8 }, (_, i) => (
-            <div
-              key={i}
-              className={`h-px ${
-                i % 2 === 0
-                  ? "w-3 bg-primary/40"
-                  : i % 3 === 1
-                    ? "w-1.5 bg-primary/20 ml-1.5"
-                    : "w-2 bg-primary/25"
-              }`}
-            />
-          ))}
-        </div>
       </div>
 
       {/* Year list on the right (desktop only) */}

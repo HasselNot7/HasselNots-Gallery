@@ -15,7 +15,7 @@ from PIL.ExifTags import TAGS, GPSTAGS
 from PIL import ImageOps
 from database import get_db
 from models import Photo
-from schemas import PhotoOut, PhotoUpdate
+from schemas import PhotoOut, PhotoUpdate, BatchDelete, BatchStatus
 from auth import get_current_user, require_admin
 
 # Register HEIF/HEIC opener so PIL can decode iPhone photos
@@ -253,6 +253,36 @@ def list_geotagged(db: Session = Depends(get_db)):
     return [PhotoOut.model_validate(p) for p in photos]
 
 
+@router.post("/batch-delete")
+def batch_delete_photos(
+    payload: BatchDelete,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin),
+):
+    photos = db.query(Photo).filter(Photo.id.in_(payload.ids)).all()
+    for photo in photos:
+        for stored in (photo.file_path, photo.thumbnail_path):
+            path = _resolve_path(stored)
+            if path and os.path.exists(path):
+                os.remove(path)
+        db.delete(photo)
+    db.commit()
+    return {"ok": True, "deleted": len(photos)}
+
+
+@router.post("/batch-status")
+def batch_status_photos(
+    payload: BatchStatus,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin),
+):
+    photos = db.query(Photo).filter(Photo.id.in_(payload.ids)).all()
+    for photo in photos:
+        photo.is_published = payload.is_published
+    db.commit()
+    return {"ok": True, "updated": len(photos)}
+
+
 @router.get("/{photo_id}", response_model=PhotoOut)
 def get_photo(photo_id: int, db: Session = Depends(get_db)):
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
@@ -407,8 +437,9 @@ def upload_photo(
             piexif.insert(exif_bytes, file_path)
             img = Image.open(file_path)
             exif_data = _read_exif(img)
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger("photos").warning("EXIF injection failed: %s", e)
 
     w, h = img.size
     # Thumbnails always saved as JPEG (HEIC has no encoder; RGBA needs RGB)

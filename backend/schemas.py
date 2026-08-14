@@ -55,6 +55,15 @@ class PhotoUpdate(BaseModel):
     location_name: Optional[str] = None
 
 
+class BatchDelete(BaseModel):
+    ids: list[int]
+
+
+class BatchStatus(BaseModel):
+    ids: list[int]
+    is_published: bool
+
+
 class SettingsOut(BaseModel):
     hero_title: str = "Precision Capture.\nTimeless Frames."
     hero_description: str = "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe."

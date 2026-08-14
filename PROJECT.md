@@ -157,6 +157,8 @@ gallery/
 | GET | `/api/photos/{id}/image` | 照片原图 | 否 |
 | GET | `/api/photos/{id}/thumbnail` | 照片缩略图 | 否 |
 | POST | `/api/photos/upload` | 上传照片（自动提取 EXIF） | 是 |
+| POST | `/api/photos/batch-delete` | 批量删除照片（body: `{"ids":[1,2]}`） | 是 |
+| POST | `/api/photos/batch-status` | 批量发布/隐藏（body: `{"ids":[1,2],"is_published":true}`） | 是 |
 | PATCH | `/api/photos/{id}` | 更新照片标题/描述/发布状态 | 是 |
 | DELETE | `/api/photos/{id}` | 删除照片及文件 | 是 |
 
