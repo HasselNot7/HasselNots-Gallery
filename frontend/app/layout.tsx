@@ -27,7 +27,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" />
       </head>
       <body className={`min-h-full flex flex-col relative ${sigmaSerif.variable}`}>
-        <div className="fixed inset-0 border-x border-primary/10 pointer-events-none" style={{ zIndex: -1, maxWidth: 1920, margin: "0 auto" }} />
         <AnimatedBackground />
         {children}
       </body>

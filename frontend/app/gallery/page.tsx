@@ -18,7 +18,7 @@ export default async function GalleryPage() {
     <>
       <Navbar />
 
-      <section className="w-full bg-surface py-16 md:py-section-gap px-4 md:px-grid-margin border-t border-primary/20 relative z-30 shadow-[0_-10px_30px_rgba(22,56,40,0.05)]">
+      <section className="w-full bg-surface py-8 md:py-12 px-4 md:px-grid-margin border-t border-primary/20 relative z-30 shadow-[0_-10px_30px_rgba(22,56,40,0.05)]">
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `
             linear-gradient(to right, rgba(45,79,62,0.1) 1px, transparent 1px),
@@ -33,15 +33,6 @@ export default async function GalleryPage() {
         <div className="absolute top-3 left-3 w-6 h-6 z-20 pointer-events-none border-t-2 border-l-2 border-primary/30 hidden md:block" />
         {/* Top-right corner bracket */}
         <div className="absolute top-3 right-3 w-6 h-6 z-20 pointer-events-none border-t-2 border-r-2 border-primary/30 hidden md:block" />
-
-        {/* Top-middle: measurement line */}
-        <div className="absolute top-4 left-1/3 right-1/3 z-20 pointer-events-none hidden lg:flex items-center gap-2">
-          <span className="material-symbols-outlined text-[12px] text-primary/40">west</span>
-          <div className="flex-1 h-px bg-primary/30 border-t border-dashed border-primary/20 relative">
-            <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[8px] text-primary/50 font-mono whitespace-nowrap">GAL-007 // 4.8M</span>
-          </div>
-          <span className="material-symbols-outlined text-[12px] text-primary/40">east</span>
-        </div>
 
         {/* Left middle: vertical ruler ticks */}
         <div className="absolute left-3 top-1/3 z-20 pointer-events-none hidden md:flex flex-col items-start gap-1.5">

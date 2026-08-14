@@ -44,7 +44,7 @@ export default async function MapPage() {
 
       <main className="flex-1 flex flex-col">
         {/* Header Section with grid overlay */}
-        <section className="relative px-4 md:px-grid-margin pt-10 md:pt-12 pb-6 border-x border-primary/15 max-w-7xl mx-auto w-full bg-primary-fixed/5">
+        <section className="relative px-4 md:px-grid-margin pt-5 md:pt-6 pb-3 border-b border-primary/15 w-full bg-primary-fixed/5">
           <div className="absolute inset-0 pointer-events-none" style={{
             backgroundImage: `
               linear-gradient(to right, rgba(45,79,62,0.1) 1px, transparent 1px),
@@ -54,56 +54,21 @@ export default async function MapPage() {
             opacity: 0.2,
           }} />
 
-          {/* Scattered decorations in header */}
-          <div className="absolute top-2 left-2 w-6 h-6 z-20 pointer-events-none border-t border-l border-primary/40" />
-          <div className="absolute top-2 right-2 w-6 h-6 z-20 pointer-events-none border-t border-r border-primary/40" />
-
-          {/* Small ruler segment at top right of header */}
-          <div className="absolute top-1 right-16 z-20 pointer-events-none hidden md:flex items-end gap-1.5">
-            {Array.from({ length: 7 }, (_, i) => (
-              <div key={i} className={`w-px ${i % 3 === 0 ? "h-3.5 bg-primary/40" : "h-2 bg-primary/25"}`} />
-            ))}
-          </div>
-
-          {/* Vertical dotted line on right side of header */}
-          <div className="absolute right-8 top-10 bottom-4 z-20 w-px pointer-events-none border-l border-dashed border-primary/25" />
-
-          {/* Crosshair dot on left of header */}
-          <div className="absolute left-8 bottom-4 z-20 pointer-events-none hidden md:flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full border border-primary/40" />
-            <span className="w-8 h-px bg-primary/25" />
-          </div>
-
           <div className="relative z-10">
-            {/* Top tech labels */}
-            <div className="flex justify-between items-start mb-6 text-primary-container text-metadata-sm uppercase tracking-widest" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              <div className="flex items-center gap-2 border-b border-primary-container/30 pb-2 px-4 bg-surface/40 backdrop-blur-sm rounded-t-sm">
-                <span className="w-2 h-2 rounded-full bg-primary-container" />
-                <span>Geo Data</span>
-              </div>
-              <div className="flex items-center gap-2 border-b border-primary-container/30 pb-2 px-4 bg-surface/40 backdrop-blur-sm rounded-t-sm">
-                <span>{Object.keys(locations).length} Nodes</span>
-                <span className="w-2 h-2 rounded-full bg-primary" />
-              </div>
-            </div>
-
-            <h1 className="text-headline-lg md:text-display-lg text-primary mb-3 md:mb-4" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>Photography Footprints</h1>
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-              <div className="flex gap-3 sm:gap-4 text-metadata-sm text-on-surface-variant">
-                <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[16px]">location_on</span>
-                  {Object.keys(locations).length} Locations
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[16px]">photo_camera</span>
-                  {markers.length} Photos
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-metadata-sm text-primary/70">
-                <span className="border border-primary/10 px-2 py-1 bg-primary-fixed/20 rounded-sm">MAP.SYS.02</span>
-                <div className="h-px bg-primary/20 w-12 border-t border-dashed border-primary/30" />
-                <span className="border border-primary/10 px-2 py-1 bg-primary-fixed/20 rounded-sm">LIVE</span>
-              </div>
+            <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 md:mb-3 uppercase" style={{ fontFamily: "var(--font-sigma)" }}>Photography Footprints</h1>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-metadata-sm text-on-surface-variant">
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-primary">hub</span>
+                {Object.keys(locations).length} Nodes
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-primary">location_on</span>
+                {Object.keys(locations).length} Locations
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-primary">photo_camera</span>
+                {markers.length} Photos
+              </span>
             </div>
           </div>
         </section>
@@ -169,9 +134,6 @@ export default async function MapPage() {
                 </div>
                 <span className="material-symbols-outlined text-[12px] text-primary/60">east</span>
               </div>
-
-              {/* Bottom middle: vertical dotted line */}
-              <div className="absolute bottom-4 left-1/3 top-1/3 z-20 w-px pointer-events-none border-l border-dashed border-primary/20 hidden md:block" />
 
               {/* Coordinate readout (top left) */}
               <div className="absolute top-3 right-10 z-20 pointer-events-none hidden lg:block text-right text-[9px] text-primary/60 font-mono leading-4">
