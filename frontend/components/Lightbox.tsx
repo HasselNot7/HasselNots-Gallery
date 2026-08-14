@@ -58,7 +58,7 @@ export default function Lightbox({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[1000] bg-white/85 backdrop-blur-xl flex flex-col"
+      className="fixed inset-0 z-[1000] bg-white/40 backdrop-blur-2xl flex flex-col"
       onClick={onClose}
     >
       {/* 顶栏 */}

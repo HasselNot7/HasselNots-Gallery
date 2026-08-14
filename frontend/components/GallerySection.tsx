@@ -172,6 +172,18 @@ export default function GallerySection({
   const [activeYear, setActiveYear] = useState<string>(initialYears[0] ?? "");
   const [loadingMore, setLoadingMore] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [colCount, setColCount] = useState(3); // 首帧与 SSR 一致，挂载后按窗口宽度调整
+
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth;
+      const n = w >= 1536 ? 5 : w >= 1280 ? 4 : w >= 1024 ? 3 : w >= 640 ? 2 : 1;
+      setColCount(n);
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
   const gridRef = useRef<HTMLDivElement>(null);
   const photosRef = useRef(photos);
   photosRef.current = photos;
@@ -264,17 +276,6 @@ export default function GallerySection({
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
               >
                 {(() => {
-                  const breakpoints = [
-                    { at: 0, n: 1 },
-                    { at: 640, n: 2 },
-                    { at: 1024, n: 3 },
-                    { at: 1280, n: 4 },
-                    { at: 1536, n: 5 },
-                  ];
-                  const colCount =
-                    typeof window === "undefined"
-                      ? 3
-                      : [...breakpoints].reverse().find((b) => window.innerWidth >= b.at)?.n || 1;
                   const columns: typeof photos[][] = Array.from({ length: colCount }, () => []);
                   photos.forEach((p, i) => columns[i % colCount].push(p));
                   return columns.map((col, c) => (
