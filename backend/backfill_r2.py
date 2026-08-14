@@ -30,6 +30,14 @@ ok = 0
 failed = 0
 for p in photos:
     if storage.is_remote(p.file_path):
+        # Already on R2; only clean up leftover local files when requested
+        if DELETE_LOCAL:
+            for stored in (p.file_path, p.thumbnail_path):
+                if not stored:
+                    continue
+                local = os.path.join(UPLOAD_DIR, os.path.basename(stored))
+                if os.path.exists(local):
+                    os.remove(local)
         print(f"  #{p.id}: already remote, skip")
         ok += 1
         continue

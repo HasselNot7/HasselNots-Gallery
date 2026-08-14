@@ -73,11 +73,12 @@ gallery/
 | 样式 | Tailwind CSS v4（@theme 配置） |
 | 图标 | Material Symbols Outlined（Google Fonts CDN） |
 | 地图 | Leaflet + react-leaflet |
-| 字体 | Hanken Grotesk / Inter / JetBrains Mono |
+| 字体 | Hanken Grotesk / Inter / JetBrains Mono / Noto Serif SC / Sigma Serif |
 | 后端框架 | FastAPI (Python 3.13) |
 | 数据库 | SQLite + SQLAlchemy ORM |
 | 认证 | JWT (python-jose) + PBKDF2 密码哈希 |
 | 图片处理 | Pillow（缩略图生成 + EXIF 读取） |
+| 对象存储 | Cloudflare R2（S3 兼容，boto3；未配置时回退本地存储） |
 
 ## 设计系统（基于 Stitch Gallery 项目）
 
