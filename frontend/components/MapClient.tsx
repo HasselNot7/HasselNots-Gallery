@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { attachLayerSwitcher } from "@/lib/mapLayers";
 
 interface MapMarker {
@@ -12,7 +12,72 @@ interface MapMarker {
   camera: string;
 }
 
+interface GeoResult {
+  name: string;
+  latitude: number;
+  longitude: number;
+  country?: string;
+  admin1?: string;
+}
+
 export default function MapClient({ markers, center }: { markers: MapMarker[]; center: [number, number] }) {
+  const mapRef = useRef<any>(null);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<GeoResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearch = (q: string) => {
+    setQuery(q);
+    setShowResults(true);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!q.trim()) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=6&language=zh`
+        );
+        const data = await res.json();
+        setResults(data.results || []);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+  };
+
+  const jumpTo = (r: GeoResult) => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.flyTo([r.latitude, r.longitude], 10, { duration: 1.2 });
+    setResults([]);
+    setShowResults(false);
+    setQuery(r.name);
+
+    // 临时搜索标记（薄荷色），与其他摄影标记区分
+    const L = (window as any).L;
+    if (map._searchMarker) map.removeLayer(map._searchMarker);
+    const icon = L.divIcon({
+      className: "custom-marker",
+      html: `<div style="width:20px;height:20px;background:#2d4f3e;border-radius:50%;border:3px solid #d1e7d3;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+    const label = [r.name, r.admin1, r.country].filter(Boolean).join(", ");
+    map._searchMarker = L.marker([r.latitude, r.longitude], { icon }).addTo(map);
+    map._searchMarker.bindPopup(
+      `<div style="font-family:Inter,sans-serif;font-size:13px;color:#163828;padding:2px 4px;"><strong>${r.name}</strong><br/><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#727973;">${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</span><br/><span style="font-size:11px;color:#727973;">${label}</span></div>`
+    ).openPopup();
+  };
+
   useEffect(() => {
     let map: any;
     import("leaflet").then(({ default: L }) => {
@@ -20,6 +85,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
       if (!mapContainer || (mapContainer as any)._leaflet_id) return;
 
       map = L.map("leaflet-map").setView(center, markers.length === 1 ? 12 : 5);
+      mapRef.current = map;
       attachLayerSwitcher(map, L, 0);
 
       const bounds: [number, number][] = [];
@@ -88,8 +154,69 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
 
     return () => {
       if (map) map.remove();
+      if (mapRef.current === map) mapRef.current = null;
     };
   }, [markers, center]);
 
-  return <div id="leaflet-map" className="w-full h-full" />;
+  return (
+    <div className="relative w-full h-full">
+      <div id="leaflet-map" className="w-full h-full" />
+      {/* 地名搜索框 */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[600] w-64 max-w-[80%]">
+        <div className="relative">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-outline pointer-events-none">search</span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => handleSearch(e.target.value)}
+            onFocus={() => setShowResults(true)}
+            onBlur={() => setTimeout(() => setShowResults(false), 200)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && results.length > 0) jumpTo(results[0]);
+            }}
+            placeholder="Search places..."
+            className="w-full bg-surface/95 backdrop-blur border border-border-subtle pl-10 pr-3 py-2 text-body-md text-on-surface focus:outline-none focus:border-primary shadow-md rounded-md"
+          />
+          {query && (
+            <button
+              onClick={() => {
+                setQuery("");
+                setResults([]);
+                setShowResults(false);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-outline hover:text-primary rounded-md"
+            >
+              <span className="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          )}
+        </div>
+        {showResults && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-surface/95 backdrop-blur border border-border-subtle shadow-lg overflow-hidden rounded-md z-[700]">
+            {searching ? (
+              <div className="px-4 py-3 text-metadata-sm text-outline">Searching...</div>
+            ) : results.length === 0 ? (
+              query.trim() && (
+                <div className="px-4 py-3 text-metadata-sm text-outline">No places found</div>
+              )
+            ) : (
+              results.map((r, i) => (
+                <button
+                  key={i}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => jumpTo(r)}
+                  className="w-full text-left px-4 py-2.5 hover:bg-mint-accent/30 transition-colors border-b border-border-subtle last:border-0"
+                >
+                  <div className="text-body-md text-on-surface leading-tight">{r.name}</div>
+                  <div className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    {[r.admin1, r.country].filter(Boolean).join(", ")}
+                    <span className="ml-2">{r.latitude.toFixed(3)}, {r.longitude.toFixed(3)}</span>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
