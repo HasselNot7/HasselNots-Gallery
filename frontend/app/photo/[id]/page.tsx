@@ -106,13 +106,9 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
                 </div>
               </div>
 
-              {photo.description && (
-                <p className="text-body-md text-on-surface-variant">{photo.description}</p>
-              )}
-
               {hasExif && (
                 <div className="bg-surface-container-low border border-border-subtle p-6 flex flex-col gap-4 rounded-md">
-                  <h2 className="text-label-caps text-secondary tracking-widest border-b border-border-subtle pb-2">
+                  <h2 className="text-body-md font-bold text-primary tracking-widest pb-4 border-b border-border-subtle mb-6">
                     EXIF &amp; TECHNICAL
                   </h2>
                   <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-metadata-sm text-on-surface">
@@ -129,9 +125,13 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
                 </div>
               )}
 
+              {photo.description && (
+                <p className="text-body-md text-on-surface-variant">{photo.description}</p>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 {photo.camera_model && (
-                  <span className="inline-flex items-center px-3 py-1 bg-mint-accent/20 border border-mint-accent text-label-caps text-primary rounded-md">
+                  <span className="inline-flex items-center px-3 py-1 bg-primary text-white text-label-caps rounded-md">
                     {photo.camera_model}
                   </span>
                 )}

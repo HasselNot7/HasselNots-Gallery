@@ -157,7 +157,7 @@ export async function fetchSettings(): Promise<SiteSettings> {
       hero_description: "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe.",
       hero_icon: "photo_camera",
       hero_icon_url: "",
-      bg_color1: "#e8442f",
+      bg_color1: "#f8583a",
       bg_color2: "#141414",
       bg_color3: "#f5c9c0",
       bg_color4: "#0a0e27",

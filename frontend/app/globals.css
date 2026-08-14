@@ -15,7 +15,7 @@
   --color-on-primary-fixed-variant: #2e2e2e;
   --color-inverse-primary: #cfcfcf;
 
-  --color-secondary: #e8442f;
+  --color-secondary: #f8583a;
   --color-secondary-container: #ffe4db;
   --color-secondary-fixed: #ffd9d1;
   --color-secondary-fixed-dim: #ffb4a3;
@@ -56,11 +56,11 @@
   --color-outline-variant: #c9c9c9;
 
   --color-border-subtle: #e5e5e5;
-  --color-mint-accent: #e8442f;
+  --color-mint-accent: #f8583a;
   --color-deep-charcoal: #141414;
 
-  --font-display: var(--font-sigma), "Hanken Grotesk", "Noto Serif SC", system-ui, sans-serif;
-  --font-body: "Inter", "Noto Serif SC", system-ui, sans-serif;
+  --font-display: var(--font-sigma), "Noto Serif SC", sans-serif;
+  --font-body: "JetBrains Mono", "Noto Serif SC", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
   --spacing-grid-margin: 40px;
@@ -141,8 +141,8 @@
   }
 
   .btn-primary {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
+    background: var(--color-mint-accent);
+    color: #ffffff;
     font-family: var(--font-mono);
     font-size: 10px;
     font-weight: 700;
@@ -156,18 +156,18 @@
   }
 
   .btn-primary:hover {
-    background: var(--color-primary-container);
+    background: #d84a2e;
   }
 
   .btn-outline {
     background: var(--color-mint-accent);
-    color: var(--color-primary);
+    color: #ffffff;
     font-family: var(--font-mono);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    border: 1px solid var(--color-primary);
+    border: 1px solid var(--color-mint-accent);
     border-radius: 8px;
     padding: 8px 16px;
     cursor: pointer;
@@ -175,8 +175,8 @@
   }
 
   .btn-outline:hover {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
+    background: #d84a2e;
+    border-color: #d84a2e;
     transform: scale(1.05);
   }
 }

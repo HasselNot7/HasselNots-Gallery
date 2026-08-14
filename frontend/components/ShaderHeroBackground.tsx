@@ -23,7 +23,7 @@ function hexToVec3(hex: string): [number, number, number] {
 }
 
 const DEFAULT_COLORS: ShaderColors = {
-  color1: "#e8442f",
+  color1: "#f8583a",
   color2: "#141414",
   color3: "#f5c9c0",
   color4: "#262626",

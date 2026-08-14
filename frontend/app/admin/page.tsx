@@ -75,7 +75,7 @@ function buildExifJson(dict: any): Record<string, unknown> {
 
 const BG_PRESETS = [  {
     name: "Monochrome · Ember",
-    colors: { bg_color1: "#e8442f", bg_color2: "#141414", bg_color3: "#f5c9c0", bg_color4: "#262626", bg_color5: "#ff9c8a", bg_color6: "#1c1c1c", bg_base: "#141414" },
+    colors: { bg_color1: "#f8583a", bg_color2: "#141414", bg_color3: "#f5c9c0", bg_color4: "#262626", bg_color5: "#ff9c8a", bg_color6: "#1c1c1c", bg_base: "#141414" },
   },
   {
     name: "Orange · Navy",
@@ -117,7 +117,7 @@ export default function AdminPage() {
     hero_description: "",
     hero_icon: "photo_camera",
     hero_icon_url: "",
-    bg_color1: "#e8442f",
+    bg_color1: "#f8583a",
     bg_color2: "#141414",
     bg_color3: "#f5c9c0",
     bg_color4: "#0a0e27",

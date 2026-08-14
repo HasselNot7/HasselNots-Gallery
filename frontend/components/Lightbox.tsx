@@ -93,7 +93,7 @@ export default function Lightbox({
           onClick={(e) => e.stopPropagation()}
         />
         {photo.camera_model && (
-          <span className="absolute bottom-2 right-4 text-metadata-sm text-primary/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="absolute bottom-2 right-4 text-metadata-sm text-white/90 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-md" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {photo.camera_model}
           </span>
         )}

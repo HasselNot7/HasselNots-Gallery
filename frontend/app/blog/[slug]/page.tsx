@@ -105,7 +105,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <ViewCounter kind="article" slug={article.slug} currentViews={article.views} />
         </div>
 
-        <CommentSection articleId={article.slug} title={`Comments (${article.title})`} />
+        <CommentSection articleId={String(article.id)} title={`Comments (${article.title})`} />
       </main>
       <Footer />
     </div>

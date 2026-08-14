@@ -34,7 +34,9 @@ export default function CommentSection({
     const qs = photoId ? `photo_id=${photoId}` : `article_id=${articleId}`;
     fetch(`/api/comments?${qs}`)
       .then((r) => r.json())
-      .then(setComments)
+      .then((d) => {
+        if (Array.isArray(d)) setComments(d);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [photoId, articleId]);
@@ -87,7 +89,7 @@ export default function CommentSection({
 
   return (
     <div className="mt-12 border-t border-border-subtle pt-8">
-      <h2 className="text-headline-lg text-primary mb-6">{title}</h2>
+      <h2 className="text-headline-lg text-primary mb-6" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>{title}</h2>
 
       {loading ? (
         <p className="text-metadata-sm text-outline">Loading comments...</p>
