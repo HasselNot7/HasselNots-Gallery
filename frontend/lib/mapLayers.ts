@@ -40,6 +40,9 @@ export const TILE_LAYERS: TileLayerDef[] = [
       attribution: "&copy; 高德地图",
       maxZoom: 19,
     },
+    overlayUrls: [
+      `https://${GAODE_SAT_SUB[Math.floor(Math.random() * GAODE_SAT_SUB.length)]}.is.autonavi.com/appmaptile?style=7&x={x}&y={y}&z={z}`,
+    ],
   },
   {
     name: "Gaode",
