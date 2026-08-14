@@ -33,7 +33,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border-subtle w-full glass-panel">
+    <nav className="sticky top-0 z-50 isolate border-b border-border-subtle w-full glass-panel">
       {/* 顶栏 */}
       <div className="flex items-center justify-between h-[64px] md:h-[72px] pl-0 pr-4 md:pr-grid-margin">
         <div className="w-28 md:w-36 flex items-center self-stretch">
@@ -77,7 +77,7 @@ export default function Navbar() {
         {/* 移动端汉堡按钮 */}
         <button
           onClick={() => setMenuOpen((v) => !v)}
-          className="md:hidden w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/5 transition-colors rounded-md"
+          className="md:hidden relative z-[60] w-10 h-10 flex items-center justify-center text-primary active:bg-primary/10 pointer-fine:hover:bg-primary/5 transition-colors rounded-md"
           aria-label="Toggle menu"
         >
           <span className="material-symbols-outlined text-[24px]">
@@ -88,7 +88,7 @@ export default function Navbar() {
 
       {/* 移动端折叠菜单 */}
       {menuOpen && (
-        <div className="md:hidden border-t border-border-subtle bg-background/95 backdrop-blur-xl">
+        <div className="md:hidden border-t border-border-subtle bg-background">
           <div className="flex flex-col px-4 py-2">
             {links.map((link) => (
               <Link
