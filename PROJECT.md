@@ -224,8 +224,8 @@ cd backend
 | 字段 | 值 |
 |---|---|
 | 用户名 | `hasselnot` |
-| 密码 | `ADMIN_PASSWORD_PLACEHOLDER` |
-| 登录入口 | `http://SITE_DOMAIN_PLACEHOLDER/login` |
+| 密码 | 见 `backend/init_db.py`（首次初始化时设置） |
+| 登录入口 | `http://<服务器地址>/login` |
 
 ## API 端点
 
@@ -264,6 +264,6 @@ curl -X POST http://127.0.0.1:8001/api/photos/upload \
 
 ### 认证流程
 
-1. `POST /api/auth/login` 传入 `{"username":"hasselnot","password":"ADMIN_PASSWORD_PLACEHOLDER"}`
+1. `POST /api/auth/login` 传入 `{"username":"hasselnot","password":"<管理员密码>"}`
 2. 获取 `access_token`
 3. 后续请求在 Header 中携带 `Authorization: Bearer <token>`
