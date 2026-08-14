@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { getPhotoImageUrl } from "@/lib/api-server";
 
 interface LightboxPhoto {
@@ -55,7 +56,7 @@ export default function Lightbox({
       })
     : "";
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[1000] bg-primary/90 backdrop-blur-md flex flex-col"
       onClick={onClose}
@@ -131,6 +132,7 @@ export default function Lightbox({
       >
         <span className="material-symbols-outlined text-[28px]">chevron_right</span>
       </button>
-    </div>
+    </div>,
+    document.body
   );
 }
