@@ -129,10 +129,12 @@ export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
     (d, i) => `<button data-i="${i}" class="${i === active ? "active" : ""}">${d.name}</button>`
   ).join("")}</div>`;
 
-  const buttons = container.querySelectorAll("button");
+  const buttons = Array.from(
+    container.querySelectorAll("button") as NodeListOf<HTMLButtonElement>
+  );
   buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      const i = parseInt((btn as HTMLElement).dataset.i || "0", 10);
+      const i = parseInt(btn.dataset.i || "0", 10);
       if (i === active) return;
       groups[active].forEach((l: any) => map.removeLayer(l));
       groups[i].forEach((l: any) => l.addTo(map));

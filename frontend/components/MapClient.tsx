@@ -11,7 +11,7 @@ interface MapMarker {
   title: string;
   thumbnail: string;
   camera: string;
-  shoot_time: string;
+  shoot_time?: string;
 }
 
 interface GeoResult {

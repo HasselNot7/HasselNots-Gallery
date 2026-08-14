@@ -1,5 +1,5 @@
 export interface YearMarker {
-  shoot_time: string;
+  shoot_time?: string;
 }
 
 const YEAR_COLORS = [
@@ -20,7 +20,7 @@ export function yearColor(year: number): string {
   return YEAR_COLORS[idx];
 }
 
-export function yearOf(shootTime: string): number | null {
+export function yearOf(shootTime: string | undefined | null): number | null {
   if (!shootTime) return null;
   const y = new Date(shootTime).getFullYear();
   return isNaN(y) ? null : y;
