@@ -34,7 +34,7 @@ export default async function AlbumsPage() {
               <a
                 key={album.id}
                 href={`/album/${album.slug}`}
-                className="group relative overflow-hidden border border-border-subtle bg-surface aspect-[4/3] block hover:border-primary/40 transition-colors duration-300 rounded-lg"
+                className="group relative overflow-hidden border border-border-subtle bg-surface aspect-[4/3] block hover:border-primary/40 transition-all duration-500 rounded-lg shadow-[0_6px_14px_rgba(0,0,0,0.30),0_22px_52px_rgba(0,0,0,0.38)] hover:-translate-y-2 hover:shadow-[0_14px_32px_rgba(0,0,0,0.44),0_44px_88px_rgba(0,0,0,0.50)]"
               >
                 {album.cover_photo_id ? (
                   <img

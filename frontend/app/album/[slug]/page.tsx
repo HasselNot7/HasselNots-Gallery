@@ -56,33 +56,51 @@ export default async function AlbumPage({ params }: { params: Promise<{ slug: st
             <p className="text-headline-mobile text-on-surface-variant">No photos in this album</p>
           </div>
         ) : (
-          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-            {photos.map((photo) => (
-              <a
-                key={photo.id}
-                href={`/photo/${photo.id}`}
-                className="group relative overflow-hidden rounded-lg border border-border-subtle bg-surface block break-inside-avoid"
-              >
-                <div
-                  className="relative w-full overflow-hidden bg-surface-dim"
-                  style={{
-                    aspectRatio: photo.image_width && photo.image_height
-                      ? `${photo.image_width} / ${photo.image_height}`
-                      : "4 / 3",
-                  }}
-                >
-                  <img
-                    src={getPhotoImageUrl(photo.id, true)}
-                    alt={photo.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                    loading="lazy"
-                  />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {(() => {
+              const breakpoints = [
+                { at: 0, n: 1 },
+                { at: 640, n: 2 },
+                { at: 1024, n: 3 },
+                { at: 1280, n: 4 },
+              ];
+              const colCount =
+                typeof window === "undefined"
+                  ? 3
+                  : [...breakpoints].reverse().find((b) => window.innerWidth >= b.at)?.n || 1;
+              const columns: typeof photos[][] = Array.from({ length: colCount }, () => []);
+              photos.forEach((p, i) => columns[i % colCount].push(p));
+              return columns.map((col, c) => (
+                <div key={c} className="flex flex-col gap-6 min-w-0">
+                  {col.map((photo) => (
+                    <a
+                      key={photo.id}
+                      href={`/photo/${photo.id}`}
+                      className="group relative overflow-hidden rounded-lg border border-border-subtle bg-surface block w-full shadow-[0_6px_14px_rgba(0,0,0,0.30),0_22px_52px_rgba(0,0,0,0.38)] transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_14px_32px_rgba(0,0,0,0.44),0_44px_88px_rgba(0,0,0,0.50)]"
+                    >
+                      <div
+                        className="relative w-full overflow-hidden bg-surface-dim"
+                        style={{
+                          aspectRatio: photo.image_width && photo.image_height
+                            ? `${photo.image_width} / ${photo.image_height}`
+                            : "4 / 3",
+                        }}
+                      >
+                        <img
+                          src={getPhotoImageUrl(photo.id, true)}
+                          alt={photo.title}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-primary/90 to-transparent px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        <span className="text-body-md text-white font-medium truncate block">{photo.title || "Untitled"}</span>
+                      </div>
+                    </a>
+                  ))}
                 </div>
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-primary/90 to-transparent px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <span className="text-body-md text-white font-medium truncate block">{photo.title || "Untitled"}</span>
-                </div>
-              </a>
-            ))}
+              ));
+            })()}
           </div>
         )}
       </main>
