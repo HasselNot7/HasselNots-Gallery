@@ -287,7 +287,7 @@ export default function GallerySection({
                             key={photo.id}
                             data-year={year}
                             onClick={() => setLightboxIndex(idx)}
-                            className="group relative overflow-hidden rounded-lg border border-border-subtle bg-surface block w-full shadow-[0_2px_6px_rgba(0,0,0,0.10),0_12px_28px_rgba(0,0,0,0.14)] transition-all duration-500 ease-out hover:-translate-y-1.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.20),0_28px_56px_rgba(0,0,0,0.28)] scroll-mt-40 text-left cursor-pointer"
+                            className="group relative overflow-hidden rounded-lg border border-border-subtle bg-surface block w-full shadow-[0_6px_14px_rgba(0,0,0,0.30),0_22px_52px_rgba(0,0,0,0.38)] transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_14px_32px_rgba(0,0,0,0.44),0_44px_88px_rgba(0,0,0,0.50)] scroll-mt-40 text-left cursor-pointer"
                           >
                             <div
                               className="relative w-full overflow-hidden rounded-lg bg-surface-dim"
