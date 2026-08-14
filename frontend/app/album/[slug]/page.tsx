@@ -39,7 +39,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ slug: st
         </a>
 
         <div className="mb-10">
-          <h1 className="text-headline-lg md:text-display-lg text-primary mb-3 uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
+          <h1 className="text-headline-lg md:text-display-lg text-primary mb-3 uppercase" style={{ fontFamily: "var(--font-display)" }}>
             {album.title}
           </h1>
           {album.description && (

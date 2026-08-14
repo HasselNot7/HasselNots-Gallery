@@ -59,7 +59,7 @@ export default async function MapPage() {
           }} />
 
           <div className="relative z-10">
-            <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 md:mb-3 uppercase" style={{ fontFamily: "var(--font-sigma)" }}>Photography Footprints</h1>
+            <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 md:mb-3 uppercase" style={{ fontFamily: "var(--font-display)" }}>Photography Footprints</h1>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-metadata-sm text-on-surface-variant">
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-primary">hub</span>
