@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated, getToken } from "@/lib/api";
+import { attachLayerSwitcher } from "@/lib/mapLayers";
 
 export default function LocationPicker({
   initial,
@@ -26,11 +27,7 @@ export default function LocationPicker({
       const el = containerRef.current;
       const start: [number, number] = initial ?? [35.8617, 104.1954]; // China default
       map = L.map(el).setView(start, initial ? 12 : 5);
-
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(map);
+      attachLayerSwitcher(map, L, 1);
 
       const icon = L.divIcon({
         className: "custom-marker",

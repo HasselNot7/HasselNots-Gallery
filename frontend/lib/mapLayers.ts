@@ -1,0 +1,125 @@
+export interface TileLayerDef {
+  name: string;
+  url: string;
+  options: Record<string, unknown>;
+}
+
+const GAODE_SUB = ["webrd01", "webrd02", "webrd03", "webrd04"];
+
+export const TILE_LAYERS: TileLayerDef[] = [
+  {
+    name: "Streets",
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    options: {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    },
+  },
+  {
+    name: "Light",
+    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    options: {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> / <a href="https://carto.com/">CARTO</a>',
+      maxZoom: 19,
+    },
+  },
+  {
+    name: "Satellite",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    options: {
+      attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
+      maxZoom: 19,
+    },
+  },
+  {
+    name: "Gaode",
+    url: `https://${GAODE_SUB[Math.floor(Math.random() * GAODE_SUB.length)]}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}`,
+    options: {
+      attribution: "&copy; 高德地图",
+      maxZoom: 19,
+    },
+  },
+  {
+    name: "Dark",
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    options: {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> / <a href="https://carto.com/">CARTO</a>',
+      maxZoom: 19,
+    },
+  },
+];
+
+const LAYER_STYLE = `
+  .map-layer-switcher {
+    background: rgba(248, 250, 248, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid #e2e8e2;
+    border-radius: 8px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 4px 12px rgba(22, 56, 40, 0.12);
+  }
+  .map-layer-switcher button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: #727973;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 200ms;
+    white-space: nowrap;
+    text-align: left;
+  }
+  .map-layer-switcher button:hover { color: #163828; background: rgba(209, 231, 211, 0.4); }
+  .map-layer-switcher button.active { color: #163828; background: #d1e7d3; font-weight: 700; }
+`;
+
+/**
+ * Attach a base-layer switcher control (top-right) to a Leaflet map.
+ * Returns the active layer so callers can keep a reference.
+ */
+export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
+  const layers = TILE_LAYERS.map((def, i) => {
+    const url = def.url.includes("{s}")
+      ? def.url.replace("{s}", "abc")
+      : def.url;
+    return L.tileLayer(url, def.options);
+  });
+
+  let active = initialIndex;
+  layers[active].addTo(map);
+
+  const styleEl = document.createElement("style");
+  styleEl.textContent = LAYER_STYLE;
+  document.head.appendChild(styleEl);
+
+  const container = L.DomUtil.create("div", "leaflet-control");
+  container.innerHTML = `<div class="map-layer-switcher">${TILE_LAYERS.map(
+    (d, i) => `<button data-i="${i}" class="${i === active ? "active" : ""}">${d.name}</button>`
+  ).join("")}</div>`;
+
+  const buttons = container.querySelectorAll("button");
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const i = parseInt((btn as HTMLElement).dataset.i || "0", 10);
+      if (i === active) return;
+      map.removeLayer(layers[active]);
+      layers[i].addTo(map);
+      buttons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      active = i;
+    });
+  });
+
+  const control = new L.Control({ position: "topright" });
+  control.onAdd = () => container;
+  map.addControl(control);
+
+  return layers;
+}

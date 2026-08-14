@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { attachLayerSwitcher } from "@/lib/mapLayers";
 
 interface MapMarker {
   id: number;
@@ -19,25 +20,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
       if (!mapContainer || (mapContainer as any)._leaflet_id) return;
 
       map = L.map("leaflet-map").setView(center, markers.length === 1 ? 12 : 5);
-
-      const gaodeSub = ["webrd01", "webrd02", "webrd03", "webrd04"][Math.floor(Math.random() * 4)];
-      const tileLayers = [
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-        }),
-        L.tileLayer(`https://${gaodeSub}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}`, {
-          attribution: '&copy; 高德地图',
-          maxZoom: 19,
-        }),
-      ];
-      tileLayers[0].addTo(map);
-      tileLayers[0].once("tileerror", () => {
-        if (map.hasLayer(tileLayers[0])) {
-          map.removeLayer(tileLayers[0]);
-          tileLayers[1].addTo(map);
-        }
-      });
+      attachLayerSwitcher(map, L, 0);
 
       const bounds: [number, number][] = [];
 
