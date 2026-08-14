@@ -533,7 +533,25 @@ def upload_photo(
         photo.longitude = None
     # Reverse geocode if we now have coordinates but no location name
     if photo.latitude is not None and photo.longitude is not None and not photo.location_name:
-        photo.location_name = _reverse_geocode(photo.latitude, photo.longitude)
+        # 优先复用附近（约 1km）已有照片的地名，保证同地点命名一致
+        # 纬度 0.01 度 ≈ 1.1km，经度按纬度缩放
+        deg_lat = 0.01
+        deg_lng = deg_lat / max(abs(math.cos(math.radians(photo.latitude))), 0.1)
+        nearby = (
+            db.query(Photo)
+            .filter(
+                Photo.latitude.isnot(None),
+                Photo.longitude.isnot(None),
+                Photo.location_name != "",
+                Photo.latitude.between(photo.latitude - deg_lat, photo.latitude + deg_lat),
+                Photo.longitude.between(photo.longitude - deg_lng, photo.longitude + deg_lng),
+            )
+            .first()
+        )
+        if nearby:
+            photo.location_name = nearby.location_name
+        else:
+            photo.location_name = _reverse_geocode(photo.latitude, photo.longitude)
     # Snapshot the EXIF-derived coordinates so the admin can reset manual edits later
     photo.original_latitude = photo.latitude
     photo.original_longitude = photo.longitude
