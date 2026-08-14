@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface ShaderColors {
   color1: string;
@@ -35,6 +35,7 @@ const DEFAULT_COLORS: ShaderColors = {
 export default function ShaderHeroBackground({ colors }: { colors?: Partial<ShaderColors> }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const materialRef = useRef<any>(null);
+  const [failed, setFailed] = useState(false);
   const colorsRef = useRef<ShaderColors>({ ...DEFAULT_COLORS, ...colors });
   colorsRef.current = { ...DEFAULT_COLORS, ...colors };
 
@@ -217,18 +218,19 @@ export default function ShaderHeroBackground({ colors }: { colors?: Partial<Shad
       }
     `;
 
-    import("three").then((THREE) => {
-      if (disposed || !container) return;
+    import("three")
+      .then((THREE) => {
+        if (disposed || !container) return;
 
-      const THREE_LIB = (THREE as any).default ?? THREE;
+        const THREE_LIB = (THREE as any).default ?? THREE;
 
-      const width = container.clientWidth || 1;
-      const height = container.clientHeight || 1;
+        const width = container.clientWidth || 1;
+        const height = container.clientHeight || 1;
 
-      renderer = new THREE_LIB.WebGLRenderer({ antialias: true, alpha: false });
-      renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.domElement.style.position = "absolute";
+        renderer = new THREE_LIB.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.domElement.style.position = "absolute";
       renderer.domElement.style.inset = "0";
       renderer.domElement.style.width = "100%";
       renderer.domElement.style.height = "100%";
@@ -369,7 +371,11 @@ export default function ShaderHeroBackground({ colors }: { colors?: Partial<Shad
         material.uniforms.uResolution.value.set(w, h);
       });
       resizeObserver.observe(container);
-    });
+      })
+      .catch(() => {
+        // WebGL 不可用（部分移动端浏览器/低端设备）时回退为静态渐变
+        if (!disposed) setFailed(true);
+      });
 
     return () => {
       disposed = true;
@@ -399,5 +405,16 @@ export default function ShaderHeroBackground({ colors }: { colors?: Partial<Shad
     mat.uniforms.uBase.value.set(...hexToVec3(colorsRef.current.base));
   }, [colors]);
 
-  return <div ref={containerRef} className="absolute inset-0 overflow-hidden" aria-hidden="true" />;
+  return (
+    <div ref={containerRef} className="absolute inset-0 overflow-hidden" aria-hidden="true">
+      {failed && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 30% 30%, ${colorsRef.current.color1}, transparent 60%), radial-gradient(circle at 70% 70%, ${colorsRef.current.color3}, transparent 60%), ${colorsRef.current.base}`,
+          }}
+        />
+      )}
+    </div>
+  );
 }

@@ -258,11 +258,31 @@ export default function GallerySection({
       </div>
 
       <div className="flex flex-col md:flex-row md:gap-8 md:items-start">
-        <div className="flex-shrink-0 md:sticky md:top-28 md:pt-2">
+        {/* 桌面端：左侧竖向时间线 */}
+        <div className="hidden md:block flex-shrink-0 md:sticky md:top-28 md:pt-2">
           <DraggableTimeline entries={years} active={activeYear} onChange={jumpToYear} />
         </div>
 
         <div className="flex-1 min-w-0">
+          {/* 移动端：横向年份快捷条 */}
+          {years.length > 0 && (
+            <div className="md:hidden flex items-center gap-2 overflow-x-auto pb-4 -mx-4 px-4 mb-2">
+              {years.map((y) => (
+                <button
+                  key={y}
+                  onClick={() => jumpToYear(y)}
+                  className={`flex-shrink-0 text-label-caps px-4 py-2 border rounded-md transition-all ${
+                    activeYear === y
+                      ? "border-primary bg-primary text-white"
+                      : "border-border-subtle text-on-surface-variant"
+                  }`}
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          )}
           {photos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 text-on-surface-variant">
               <span className="material-symbols-outlined text-6xl mb-4">photo_library</span>
