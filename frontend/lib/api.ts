@@ -41,6 +41,8 @@ export interface Photo {
   longitude: number | null;
   altitude: number | null;
   location_name: string;
+  original_latitude: number | null;
+  original_longitude: number | null;
   image_width: number;
   image_height: number;
   is_published: boolean;

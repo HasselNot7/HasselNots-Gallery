@@ -30,6 +30,8 @@ class PhotoOut(BaseModel):
     longitude: Optional[float] = None
     altitude: Optional[float] = None
     location_name: Optional[str] = ""
+    original_latitude: Optional[float] = None
+    original_longitude: Optional[float] = None
     image_width: int
     image_height: int
     is_published: bool
@@ -62,6 +64,11 @@ class BatchDelete(BaseModel):
 class BatchStatus(BaseModel):
     ids: list[int]
     is_published: bool
+
+
+class PhotoLocationUpdate(BaseModel):
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class SettingsOut(BaseModel):

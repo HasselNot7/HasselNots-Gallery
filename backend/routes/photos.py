@@ -15,7 +15,7 @@ from PIL.ExifTags import TAGS, GPSTAGS
 from PIL import ImageOps
 from database import get_db
 from models import Photo
-from schemas import PhotoOut, PhotoUpdate, BatchDelete, BatchStatus
+from schemas import PhotoOut, PhotoUpdate, BatchDelete, BatchStatus, PhotoLocationUpdate
 from auth import get_current_user, require_admin
 
 # Register HEIF/HEIC opener so PIL can decode iPhone photos
@@ -493,7 +493,53 @@ def upload_photo(
     # Reverse geocode if we now have coordinates but no location name
     if photo.latitude is not None and photo.longitude is not None and not photo.location_name:
         photo.location_name = _reverse_geocode(photo.latitude, photo.longitude)
+    # Snapshot the EXIF-derived coordinates so the admin can reset manual edits later
+    photo.original_latitude = photo.latitude
+    photo.original_longitude = photo.longitude
     db.add(photo)
+    db.commit()
+    db.refresh(photo)
+    return PhotoOut.model_validate(photo)
+
+
+@router.post("/{photo_id}/location", response_model=PhotoOut)
+def set_photo_location(
+    photo_id: int,
+    payload: PhotoLocationUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin),
+):
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    photo.latitude = payload.latitude
+    photo.longitude = payload.longitude
+    if photo.latitude is not None and photo.longitude is not None:
+        photo.location_name = _reverse_geocode(photo.latitude, photo.longitude)
+    else:
+        photo.location_name = ""
+    photo.updated_at = datetime.datetime.utcnow()
+    db.commit()
+    db.refresh(photo)
+    return PhotoOut.model_validate(photo)
+
+
+@router.post("/{photo_id}/location/reset", response_model=PhotoOut)
+def reset_photo_location(
+    photo_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin),
+):
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    photo.latitude = photo.original_latitude
+    photo.longitude = photo.original_longitude
+    if photo.latitude is not None and photo.longitude is not None:
+        photo.location_name = _reverse_geocode(photo.latitude, photo.longitude)
+    else:
+        photo.location_name = ""
+    photo.updated_at = datetime.datetime.utcnow()
     db.commit()
     db.refresh(photo)
     return PhotoOut.model_validate(photo)

@@ -1,7 +1,7 @@
 import { fetchPhoto, getPhotoImageUrl, Photo } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import PhotoMapWrapper from "@/components/PhotoMapWrapper";
+import PhotoLocationPanel from "@/components/PhotoLocationPanel";
 
 export default async function PhotoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -129,29 +129,17 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
 
-        {photo.latitude && photo.longitude && (
-          <div className="mt-16">
-            <div className="flex items-end justify-between mb-6">
-              <h2 className="text-headline-lg text-primary">Location</h2>
-              {photo.location_name && (
-                <span className="text-label-caps text-on-surface-variant flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px] text-primary">location_on</span>
-                  {photo.location_name}
-                </span>
-              )}
-            </div>
-            <div className="border border-border-subtle overflow-hidden rounded h-[320px] md:h-[400px] relative">
-              <PhotoMapWrapper
-                latitude={photo.latitude}
-                longitude={photo.longitude}
-                title={photo.title}
-                thumbnail={getPhotoImageUrl(photo.id, true)}
-                camera={photo.camera_model}
-                photoId={photo.id}
-              />
-            </div>
-          </div>
-        )}
+        <PhotoLocationPanel
+          photoId={photo.id}
+          latitude={photo.latitude}
+          longitude={photo.longitude}
+          originalLatitude={photo.original_latitude}
+          originalLongitude={photo.original_longitude}
+          locationName={photo.location_name}
+          title={photo.title}
+          thumbnail={getPhotoImageUrl(photo.id, true)}
+          camera={photo.camera_model}
+        />
       </main>
       <Footer />
     </div>

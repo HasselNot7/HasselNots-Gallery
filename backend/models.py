@@ -35,6 +35,8 @@ class Photo(Base):
     longitude = Column(Float, default=None)
     altitude = Column(Float, default=None)
     location_name = Column(String, default="")
+    original_latitude = Column(Float, default=None)
+    original_longitude = Column(Float, default=None)
 
     image_width = Column(Integer, default=0)
     image_height = Column(Integer, default=0)
