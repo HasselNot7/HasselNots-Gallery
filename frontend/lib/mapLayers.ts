@@ -6,6 +6,12 @@ export interface TileLayerDef {
 }
 
 const GAODE_SUB = ["webrd01", "webrd02", "webrd03", "webrd04"];
+const GAODE_SAT_SUB = ["webst01", "webst02", "webst03", "webst04"];
+const esriSat = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const esriRef = (layer: string) =>
+  `https://server.arcgisonline.com/ArcGIS/rest/services/Reference/${layer}/MapServer/tile/{z}/{y}/{x}`;
+const gaodeSat = (sub: string[]) =>
+  `https://${sub[Math.floor(Math.random() * sub.length)]}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}`;
 
 export const TILE_LAYERS: TileLayerDef[] = [
   {
@@ -26,22 +32,22 @@ export const TILE_LAYERS: TileLayerDef[] = [
   },
   {
     name: "Satellite",
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    url: gaodeSat(GAODE_SAT_SUB),
     options: {
-      attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
+      attribution: "&copy; 高德地图",
       maxZoom: 19,
     },
   },
   {
     name: "Hybrid",
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    url: gaodeSat(GAODE_SAT_SUB),
     options: {
-      attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
+      attribution: "&copy; 高德地图",
       maxZoom: 19,
     },
     overlayUrls: [
-      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
-      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+      esriRef("World_Transportation"),
+      esriRef("World_Boundaries_and_Places"),
     ],
   },
   {
