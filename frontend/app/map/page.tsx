@@ -88,9 +88,6 @@ export default async function MapPage() {
             </div>
 
             <h1 className="text-headline-lg md:text-display-lg text-primary mb-3 md:mb-4" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>Photography Footprints</h1>
-            <p className="text-body-md text-on-surface-variant max-w-xl mb-5 md:mb-6 border-l border-primary/20 pl-4 py-2 bg-primary-fixed/10 text-sm md:text-base" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
-              A global map of every geotagged photograph in the collection.
-            </p>
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <div className="flex gap-3 sm:gap-4 text-metadata-sm text-on-surface-variant">
                 <span className="flex items-center gap-1">

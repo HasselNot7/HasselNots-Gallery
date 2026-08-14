@@ -6,6 +6,7 @@ export interface TileLayerDef {
 }
 
 const GAODE_SUB = ["webrd01", "webrd02", "webrd03", "webrd04"];
+const GAODE_SAT_SUB = ["webst01", "webst02", "webst03", "webst04"];
 
 export const TILE_LAYERS: TileLayerDef[] = [
   {
@@ -34,14 +35,11 @@ export const TILE_LAYERS: TileLayerDef[] = [
   },
   {
     name: "Hybrid",
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    url: `https://${GAODE_SAT_SUB[Math.floor(Math.random() * GAODE_SAT_SUB.length)]}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}`,
     options: {
-      attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
+      attribution: "&copy; 高德地图",
       maxZoom: 19,
     },
-    overlayUrls: [
-      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-    ],
   },
   {
     name: "Gaode",
