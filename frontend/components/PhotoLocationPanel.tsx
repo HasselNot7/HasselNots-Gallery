@@ -171,7 +171,7 @@ export default function PhotoLocationPanel({
               onPick={(c) => setCoords(c)}
             />
           </div>
-          <div className="absolute top-3 right-3 flex gap-2 z-[500]">
+          <div className="absolute bottom-3 left-3 flex gap-2 z-[500]">
             <button
               onClick={() => setEditing(false)}
               disabled={busy}

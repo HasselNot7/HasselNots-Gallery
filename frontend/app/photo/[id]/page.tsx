@@ -81,7 +81,7 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
               )}
 
               {hasExif && (
-                <div className="bg-surface-container-low border border-border-subtle p-6 flex flex-col gap-4">
+                <div className="bg-surface-container-low border border-border-subtle p-6 flex flex-col gap-4 rounded-md">
                   <h2 className="text-label-caps text-secondary tracking-widest border-b border-border-subtle pb-2">
                     EXIF &amp; TECHNICAL
                   </h2>
@@ -101,12 +101,12 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
 
               <div className="flex flex-wrap gap-2">
                 {photo.camera_model && (
-                  <span className="px-3 py-1 bg-mint-accent/20 border border-mint-accent text-label-caps text-primary">
+                  <span className="inline-flex items-center px-3 py-1 bg-mint-accent/20 border border-mint-accent text-label-caps text-primary rounded-md">
                     {photo.camera_model}
                   </span>
                 )}
                 {photo.latitude && photo.longitude && (
-                  <span className="px-3 py-1 bg-surface-container border border-border-subtle text-label-caps text-on-surface-variant flex items-center gap-1">
+                  <span className="px-3 py-1 bg-surface-container border border-border-subtle text-label-caps text-on-surface-variant flex items-center gap-1 rounded-md">
                     <span className="material-symbols-outlined text-[14px]">location_on</span>
                     {photo.latitude.toFixed(4)}, {photo.longitude.toFixed(4)}
                   </span>

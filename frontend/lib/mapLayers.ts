@@ -2,6 +2,7 @@ export interface TileLayerDef {
   name: string;
   url: string;
   options: Record<string, unknown>;
+  overlayUrls?: string[];
 }
 
 const GAODE_SUB = ["webrd01", "webrd02", "webrd03", "webrd04"];
@@ -30,6 +31,17 @@ export const TILE_LAYERS: TileLayerDef[] = [
       attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
       maxZoom: 19,
     },
+  },
+  {
+    name: "Hybrid",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    options: {
+      attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
+      maxZoom: 19,
+    },
+    overlayUrls: [
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+    ],
   },
   {
     name: "Gaode",
@@ -85,15 +97,21 @@ const LAYER_STYLE = `
  * Returns the active layer so callers can keep a reference.
  */
 export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
-  const layers = TILE_LAYERS.map((def, i) => {
+  const groups = TILE_LAYERS.map((def) => {
     const url = def.url.includes("{s}")
       ? def.url.replace("{s}", "abc")
       : def.url;
-    return L.tileLayer(url, def.options);
+    const layers = [L.tileLayer(url, def.options)];
+    (def.overlayUrls || []).forEach((u) => {
+      layers.push(
+        L.tileLayer(u, { maxZoom: 19, attribution: "", zIndex: 50 })
+      );
+    });
+    return layers;
   });
 
   let active = initialIndex;
-  layers[active].addTo(map);
+  groups[active].forEach((l: any) => l.addTo(map));
 
   const styleEl = document.createElement("style");
   styleEl.textContent = LAYER_STYLE;
@@ -109,8 +127,8 @@ export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
     btn.addEventListener("click", () => {
       const i = parseInt((btn as HTMLElement).dataset.i || "0", 10);
       if (i === active) return;
-      map.removeLayer(layers[active]);
-      layers[i].addTo(map);
+      groups[active].forEach((l: any) => map.removeLayer(l));
+      groups[i].forEach((l: any) => l.addTo(map));
       buttons.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       active = i;
@@ -121,5 +139,5 @@ export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
   control.onAdd = () => container;
   map.addControl(control);
 
-  return layers;
+  return groups;
 }
