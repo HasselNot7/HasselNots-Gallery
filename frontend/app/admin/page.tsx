@@ -448,6 +448,7 @@ export default function AdminPage() {
   const handleUpload = async () => {
     if (files.length === 0) return;
     setUploading(true);
+    const duplicates: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       setUploadProgress(
@@ -472,11 +473,17 @@ export default function AdminPage() {
       formData.append("exif_json", exifJson);
 
       try {
-        await fetch(`${API_BASE}/api/photos/upload`, {
+        const res = await fetch(`${API_BASE}/api/photos/upload`, {
           method: "POST",
           headers: { Authorization: `Bearer ${getToken()}` },
           body: formData,
         });
+        if (res.status === 409) {
+          const d = await res.json().catch(() => ({}));
+          duplicates.push(d.detail || "Duplicate");
+        } else if (!res.ok) {
+          console.error("Upload failed:", res.status);
+        }
       } catch (err) {
         console.error("Upload failed:", err);
       }
@@ -486,6 +493,9 @@ export default function AdminPage() {
     setPreviews([]);
     setUploadProgress("");
     setUploading(false);
+    if (duplicates.length > 0) {
+      setUploadProgress(`Skipped ${duplicates.length} duplicate image${duplicates.length > 1 ? "s" : ""}: ${duplicates[0]}`);
+    }
     await loadPhotos();
   };
 

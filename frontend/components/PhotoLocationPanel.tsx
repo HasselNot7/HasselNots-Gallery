@@ -188,7 +188,7 @@ export default function PhotoLocationPanel({
             </button>
           </div>
           {!coords && (
-            <div className="absolute inset-x-0 top-3 mx-auto w-max px-3 py-1.5 bg-surface/95 backdrop-blur border border-primary/20 text-label-caps text-on-surface-variant z-[500]">
+            <div className="absolute inset-x-0 top-16 mx-auto w-max px-3 py-1.5 bg-surface/95 backdrop-blur border border-primary/20 text-label-caps text-on-surface-variant z-[500]">
               Click on the map to place the marker
             </div>
           )}

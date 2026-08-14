@@ -426,10 +426,20 @@ def upload_photo(
     if ext not in (".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".tiff", ".tif"):
         raise HTTPException(status_code=400, detail="Unsupported file format")
 
+    # 重复检测：以收到的文件内容哈希为准（客户端压缩过的文件哈希稳定）
+    import hashlib
+    contents = file.file.read()
+    file_hash = hashlib.sha256(contents).hexdigest()
+    dup = db.query(Photo).filter(Photo.file_hash == file_hash).first()
+    if dup:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Duplicate image: already uploaded as #{dup.id} ({dup.title or 'Untitled'})",
+        )
+
     unique_name = f"{uuid.uuid4().hex}{ext}"
     file_path = os.path.join(UPLOAD_DIR, unique_name)
 
-    contents = file.file.read()
     with open(file_path, "wb") as f:
         f.write(contents)
 
@@ -490,6 +500,7 @@ def upload_photo(
         description=description,
         file_path=unique_name,
         thumbnail_path=f"thumb_{os.path.splitext(unique_name)[0]}.jpg",
+        file_hash=file_hash,
         shoot_time=shoot_time,
         camera_model=str(exif_data.get("Model", "")),
         lens_model=str(exif_data.get("LensModel", "")).replace("\x00", "").strip(),

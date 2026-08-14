@@ -22,6 +22,7 @@ class Photo(Base):
     description = Column(String, default="")
     file_path = Column(String, nullable=False)
     thumbnail_path = Column(String, default="")
+    file_hash = Column(String, default="")
 
     shoot_time = Column(DateTime, default=None)
     camera_model = Column(String, default="")
