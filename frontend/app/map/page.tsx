@@ -2,6 +2,7 @@ import { fetchGeotaggedPhotos, getPhotoImageUrl, Photo } from "@/lib/api-server"
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MapClient from "@/components/MapClient";
+import { yearColor, yearsForLegend } from "@/lib/mapYears";
 
 export default async function MapPage() {
   let photos: Photo[] = [];
@@ -20,11 +21,14 @@ export default async function MapPage() {
       title: p.title || "Untitled",
       thumbnail: getPhotoImageUrl(p.id, true),
       camera: p.camera_model,
+      shoot_time: p.shoot_time || "",
       location: p.location_name || "Unknown Location",
     }));
 
   const defaultCenter: [number, number] =
     markers.length > 0 ? [markers[0].latitude, markers[0].longitude] : [35.6762, 139.6503];
+
+  const legendYears = yearsForLegend(markers);
 
   const locations = markers.reduce<
     Record<string, { photos: typeof markers; count: number; lat: number; lng: number; name: string }>
@@ -150,6 +154,26 @@ export default async function MapPage() {
               </div>
 
               <MapClient markers={markers} center={defaultCenter} />
+
+              {/* 年份图例 */}
+              {legendYears.length > 0 && (
+                <div className="absolute bottom-3 left-3 z-[600] bg-surface/90 backdrop-blur border border-border-subtle rounded-md px-3 py-2 shadow-md">
+                  <div className="text-[9px] text-outline uppercase tracking-widest mb-1.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    By Year
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    {legendYears.map((y) => (
+                      <span key={y} className="flex items-center gap-1.5 text-metadata-sm text-on-surface-variant">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full border border-white/60"
+                          style={{ background: yearColor(y) }}
+                        />
+                        {y}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <aside className="w-full h-[300px] lg:h-[calc(100vh-200px)] lg:w-80 glass-panel overflow-y-auto relative">
               {/* Vertical tick marks on the left edge of aside */}

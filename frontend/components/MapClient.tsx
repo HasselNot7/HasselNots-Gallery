@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { attachLayerSwitcher } from "@/lib/mapLayers";
+import { yearColor, yearOf } from "@/lib/mapYears";
 
 interface MapMarker {
   id: number;
@@ -10,6 +11,7 @@ interface MapMarker {
   title: string;
   thumbnail: string;
   camera: string;
+  shoot_time: string;
 }
 
 interface GeoResult {
@@ -104,12 +106,21 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
         bounds.push([lat, lng]);
 
         const count = group.length;
+        // 取组内最新拍摄年份作为标记颜色
+        let year: number | null = null;
+        group.forEach((m) => {
+          const y = yearOf(m.shoot_time);
+          if (y !== null && (year === null || y > year)) year = y;
+        });
+        const color = year !== null ? yearColor(year) : "#163828";
+        const ring = "#f8faf8";
+
         const icon = L.divIcon({
           className: "custom-marker",
           html:
             count > 1
-              ? `<div style="width:22px;height:22px;background:#163828;color:#fff;border-radius:50%;border:2px solid #f8faf8;box-shadow:0 2px 4px rgba(0,0,0,0.25);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;">${count}</div>`
-              : `<div style="width:12px;height:12px;background:#163828;border-radius:50%;border:2px solid #f8faf8;box-shadow:0 2px 4px rgba(0,0,0,0.2);cursor:pointer;"></div>`,
+              ? `<div style="width:22px;height:22px;background:${color};color:#fff;border-radius:50%;border:2px solid ${ring};box-shadow:0 2px 4px rgba(0,0,0,0.25);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;">${count}</div>`
+              : `<div style="width:12px;height:12px;background:${color};border-radius:50%;border:2px solid ${ring};box-shadow:0 2px 4px rgba(0,0,0,0.2);cursor:pointer;"></div>`,
           iconSize: count > 1 ? [22, 22] : [12, 12],
           iconAnchor: count > 1 ? [11, 11] : [6, 6],
         });
