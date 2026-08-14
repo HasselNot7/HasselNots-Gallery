@@ -2,63 +2,62 @@
 @import "leaflet/dist/leaflet.css";
 
 @theme inline {
-  --color-background: #f8faf8;
-  --color-foreground: #191c1b;
+  --color-background: #ffffff;
+  --color-foreground: #1a1a1a;
 
-  --color-primary: #163828;
-  --color-primary-container: #2d4f3e;
-  --color-primary-fixed: #c5ebd4;
-  --color-primary-fixed-dim: #a9cfb9;
+  --color-primary: #141414;
+  --color-primary-container: #2b2b2b;
+  --color-primary-fixed: #f0f0f0;
+  --color-primary-fixed-dim: #cfcfcf;
   --color-on-primary: #ffffff;
-  --color-on-primary-container: #9ac0aa;
-  --color-on-primary-fixed: #002113;
-  --color-on-primary-fixed-variant: #2c4e3d;
-  --color-inverse-primary: #a9cfb9;
+  --color-on-primary-container: #c9c9c9;
+  --color-on-primary-fixed: #141414;
+  --color-on-primary-fixed-variant: #2e2e2e;
+  --color-inverse-primary: #cfcfcf;
 
-  --color-secondary: #316944;
-  --color-secondary-container: #b1eebe;
-  --color-secondary-fixed: #b4f1c1;
-  --color-secondary-fixed-dim: #98d4a6;
+  --color-secondary: #e8442f;
+  --color-secondary-container: #ffe4db;
+  --color-secondary-fixed: #ffd9d1;
+  --color-secondary-fixed-dim: #ffb4a3;
   --color-on-secondary: #ffffff;
-  --color-on-secondary-container: #366e47;
-  --color-on-secondary-fixed: #00210d;
-  --color-on-secondary-fixed-variant: #16512e;
+  --color-on-secondary-container: #a3321f;
+  --color-on-secondary-fixed: #4a1004;
+  --color-on-secondary-fixed-variant: #b3321f;
 
-  --color-tertiary: #003b0b;
-  --color-tertiary-container: #005514;
-  --color-tertiary-fixed: #94f990;
-  --color-tertiary-fixed-dim: #78dc77;
+  --color-tertiary: #d3542e;
+  --color-tertiary-container: #ffe4db;
+  --color-tertiary-fixed: #ffd9d1;
   --color-on-tertiary: #ffffff;
-  --color-on-tertiary-container: #69cd6a;
-  --color-on-tertiary-fixed: #002204;
-  --color-on-tertiary-fixed-variant: #005313;
+  --color-on-tertiary-container: #a3321f;
+  --color-on-tertiary-fixed: #4a1004;
+  --color-on-tertiary-fixed-variant: #b3321f;
 
   --color-error: #ba1a1a;
   --color-error-container: #ffdad6;
   --color-on-error: #ffffff;
   --color-on-error-container: #93000a;
 
-  --color-surface: #f8faf8;
-  --color-surface-dim: #d8dad9;
-  --color-surface-bright: #f8faf8;
-  --color-surface-variant: #e1e3e1;
-  --color-surface-container: #eceeec;
-  --color-surface-container-low: #f2f4f2;
+  --color-surface: #ffffff;
+  --color-surface-dim: #e8e8e8;
+  --color-surface-bright: #ffffff;
+  --color-surface-variant: #e2e2e2;
+  --color-surface-container: #f2f2f2;
+  --color-surface-container-low: #f7f7f7;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-high: #e6e9e7;
-  --color-surface-container-highest: #e1e3e1;
-  --color-surface-tint: #436653;
-  --color-on-surface: #191c1b;
-  --color-on-surface-variant: #414844;
-  --color-inverse-surface: #2e3130;
-  --color-inverse-on-surface: #eff1ef;
+  --color-surface-container-high: #ececec;
+  --color-surface-container-highest: #e5e5e5;
+  --color-surface-tint: #8f8f8f;
+  --color-on-surface: #1a1a1a;
+  --color-on-surface-variant: #555555;
+  --color-inverse-surface: #2a2a2a;
+  --color-inverse-on-surface: #f2f2f2;
 
-  --color-outline: #727973;
-  --color-outline-variant: #c1c8c2;
+  --color-outline: #8f8f8f;
+  --color-outline-variant: #c9c9c9;
 
-  --color-border-subtle: #e2e8e2;
-  --color-mint-accent: #d1e7d3;
-  --color-deep-charcoal: #1a1c1a;
+  --color-border-subtle: #e5e5e5;
+  --color-mint-accent: #e8442f;
+  --color-deep-charcoal: #141414;
 
   --font-display: var(--font-sigma), "Hanken Grotesk", "Noto Serif SC", system-ui, sans-serif;
   --font-body: "Inter", "Noto Serif SC", system-ui, sans-serif;

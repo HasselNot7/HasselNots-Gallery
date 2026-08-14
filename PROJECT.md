@@ -123,16 +123,16 @@ gallery/
 
 ## 设计系统（基于 Stitch Gallery 项目）
 
-### 配色 — Sage Portfolio
+### 配色 — Monochrome · Ember
 
 | 分组 | Token | Hex |
 |---|---|---|
-| 主色 | primary | `#163828` |
-| 主色容器 | primary-container | `#2d4f3e` |
-| 背景 | background | `#f8faf8` |
-| 文字 | on-surface | `#191c1b` |
-| 薄荷强调 | mint-accent | `#d1e7d3` |
-| 边框 | border-subtle | `#e2e8e2` |
+| 主色（黑） | primary | `#141414` |
+| 主色容器 | primary-container | `#2b2b2b` |
+| 背景 | background | `#ffffff` |
+| 文字 | on-surface | `#1a1a1a` |
+| 橙红点缀 | mint-accent / secondary | `#e8442f` |
+| 边框 | border-subtle | `#e5e5e5` |
 
 ### 字体
 

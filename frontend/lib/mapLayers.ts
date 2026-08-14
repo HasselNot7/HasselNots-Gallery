@@ -95,8 +95,8 @@ const LAYER_STYLE = `
     white-space: nowrap;
     text-align: left;
   }
-  .map-layer-switcher button:hover { color: #163828; background: rgba(209, 231, 211, 0.4); }
-  .map-layer-switcher button.active { color: #163828; background: #d1e7d3; font-weight: 700; }
+  .map-layer-switcher button:hover { color: #141414; background: rgba(232, 68, 47, 0.12); }
+  .map-layer-switcher button.active { color: #141414; background: #e8442f; font-weight: 700; }
 `;
 
 /**

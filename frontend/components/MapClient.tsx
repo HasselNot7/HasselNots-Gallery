@@ -69,14 +69,14 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
     if (map._searchMarker) map.removeLayer(map._searchMarker);
     const icon = L.divIcon({
       className: "custom-marker",
-      html: `<div style="width:20px;height:20px;background:#2d4f3e;border-radius:50%;border:3px solid #d1e7d3;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
+      html: `<div style="width:20px;height:20px;background:#2b2b2b;border-radius:50%;border:3px solid #e8442f;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
       iconSize: [20, 20],
       iconAnchor: [10, 10],
     });
     const label = [r.name, r.admin1, r.country].filter(Boolean).join(", ");
     map._searchMarker = L.marker([r.latitude, r.longitude], { icon }).addTo(map);
     map._searchMarker.bindPopup(
-      `<div style="font-family:Inter,sans-serif;font-size:13px;color:#163828;padding:2px 4px;"><strong>${r.name}</strong><br/><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#727973;">${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</span><br/><span style="font-size:11px;color:#727973;">${label}</span></div>`
+      `<div style="font-family:Inter,sans-serif;font-size:13px;color:#141414;padding:2px 4px;"><strong>${r.name}</strong><br/><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#727973;">${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</span><br/><span style="font-size:11px;color:#727973;">${label}</span></div>`
     ).openPopup();
   };
 
@@ -112,7 +112,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
           const y = yearOf(m.shoot_time);
           if (y !== null && (year === null || y > year)) year = y;
         });
-        const color = year !== null ? yearColor(year) : "#163828";
+        const color = year !== null ? yearColor(year) : "#141414";
         const ring = "#f8faf8";
 
         const icon = L.divIcon({
@@ -135,7 +135,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
                 <img src="${m.thumbnail}" alt="${m.title}" style="width:100%;height:100%;object-fit:cover;" />
               </a>
               <div style="min-width:0;">
-                <a href="/photo/${m.id}" style="font-size:13px;font-weight:500;color:#163828;text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.title}</a>
+                <a href="/photo/${m.id}" style="font-size:13px;font-weight:500;color:#141414;text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.title}</a>
                 ${m.camera ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#727973;margin-top:2px;">${m.camera}</div>` : ""}
               </div>
             </div>`
@@ -145,7 +145,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
         marker.bindPopup(
           `<div style="font-family:Inter,sans-serif;max-width:240px;">
             <div style="display:flex;align-items:center;gap:6px;padding:8px 0 4px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#727973;letter-spacing:0.05em;text-transform:uppercase;">
-              <span style="width:6px;height:6px;border-radius:50%;background:#163828;display:inline-block;"></span>
+              <span style="width:6px;height:6px;border-radius:50%;background:#141414;display:inline-block;"></span>
               ${count} photo${count > 1 ? "s" : ""} at this location
             </div>
             <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#727973;padding-bottom:4px;">${lat.toFixed(4)}, ${lng.toFixed(4)}</div>

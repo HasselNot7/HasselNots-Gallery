@@ -82,7 +82,7 @@ export default function LocationPicker({
 
       const icon = L.divIcon({
         className: "custom-marker",
-        html: `<div style="width:22px;height:22px;background:#163828;border-radius:50%;border:3px solid #d1e7d3;box-shadow:0 2px 8px rgba(0,0,0,0.35);cursor:grab;"></div>`,
+        html: `<div style="width:22px;height:22px;background:#141414;border-radius:50%;border:3px solid #e8442f;box-shadow:0 2px 8px rgba(0,0,0,0.35);cursor:grab;"></div>`,
         iconSize: [22, 22],
         iconAnchor: [11, 11],
       });

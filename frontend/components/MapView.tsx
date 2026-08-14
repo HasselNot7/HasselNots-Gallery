@@ -36,7 +36,7 @@ export default function MapView({ markers, center, onMarkerClick }: MapViewProps
     const bounds: [number, number][] = [];
     const markerIcon = L.divIcon({
       className: "custom-marker",
-      html: `<div style="width:12px;height:12px;background:#163828;border-radius:50%;border:2px solid #f8faf8;box-shadow:0 2px 4px rgba(0,0,0,0.2);cursor:pointer;"></div>`,
+      html: `<div style="width:12px;height:12px;background:#141414;border-radius:50%;border:2px solid #f8faf8;box-shadow:0 2px 4px rgba(0,0,0,0.2);cursor:pointer;"></div>`,
       iconSize: [12, 12],
       iconAnchor: [6, 6],
     });
@@ -50,12 +50,12 @@ export default function MapView({ markers, center, onMarkerClick }: MapViewProps
           <div style="width:100%;height:140px;overflow:hidden;margin-bottom:8px;border:1px solid #e2e8e2;">
             <img src="${m.thumbnail}" alt="${m.title}" style="width:100%;height:100%;object-fit:cover;" />
           </div>
-          <div style="font-size:14px;font-weight:500;color:#163828;margin-bottom:4px;">${m.title}</div>
+          <div style="font-size:14px;font-weight:500;color:#141414;margin-bottom:4px;">${m.title}</div>
           ${m.camera ? `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#727973;">${m.camera}</div>` : ""}
           <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#727973;margin-top:2px;">
             ${m.latitude.toFixed(4)}, ${m.longitude.toFixed(4)}
           </div>
-          <a href="/photo/${m.id}" style="display:inline-block;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#2d4f3e;text-decoration:underline;">View Details →</a>
+          <a href="/photo/${m.id}" style="display:inline-block;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#2b2b2b;text-decoration:underline;">View Details →</a>
         </div>
       `;
 

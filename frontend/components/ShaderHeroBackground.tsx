@@ -23,13 +23,13 @@ function hexToVec3(hex: string): [number, number, number] {
 }
 
 const DEFAULT_COLORS: ShaderColors = {
-  color1: "#316944",
-  color2: "#163828",
-  color3: "#85C093",
-  color4: "#0a0e27",
-  color5: "#98d4a6",
-  color6: "#1e4c32",
-  base: "#163828",
+  color1: "#e8442f",
+  color2: "#141414",
+  color3: "#f5c9c0",
+  color4: "#262626",
+  color5: "#ff9c8a",
+  color6: "#1c1c1c",
+  base: "#141414",
 };
 
 export default function ShaderHeroBackground({ colors }: { colors?: Partial<ShaderColors> }) {

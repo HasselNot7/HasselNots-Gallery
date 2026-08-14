@@ -157,13 +157,13 @@ export async function fetchSettings(): Promise<SiteSettings> {
       hero_description: "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe.",
       hero_icon: "photo_camera",
       hero_icon_url: "",
-      bg_color1: "#316944",
-      bg_color2: "#163828",
-      bg_color3: "#85C093",
+      bg_color1: "#e8442f",
+      bg_color2: "#141414",
+      bg_color3: "#f5c9c0",
       bg_color4: "#0a0e27",
-      bg_color5: "#98d4a6",
-      bg_color6: "#1e4c32",
-      bg_base: "#163828",
+      bg_color5: "#ff9c8a",
+      bg_color6: "#1c1c1c",
+      bg_base: "#141414",
     };
   }
 }

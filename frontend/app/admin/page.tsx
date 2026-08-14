@@ -74,8 +74,8 @@ function buildExifJson(dict: any): Record<string, unknown> {
 }
 
 const BG_PRESETS = [  {
-    name: "Sage Green",
-    colors: { bg_color1: "#316944", bg_color2: "#163828", bg_color3: "#85C093", bg_color4: "#0a0e27", bg_color5: "#98d4a6", bg_color6: "#1e4c32", bg_base: "#163828" },
+    name: "Monochrome · Ember",
+    colors: { bg_color1: "#e8442f", bg_color2: "#141414", bg_color3: "#f5c9c0", bg_color4: "#262626", bg_color5: "#ff9c8a", bg_color6: "#1c1c1c", bg_base: "#141414" },
   },
   {
     name: "Orange · Navy",
@@ -117,13 +117,13 @@ export default function AdminPage() {
     hero_description: "",
     hero_icon: "photo_camera",
     hero_icon_url: "",
-    bg_color1: "#316944",
-    bg_color2: "#163828",
-    bg_color3: "#85C093",
+    bg_color1: "#e8442f",
+    bg_color2: "#141414",
+    bg_color3: "#f5c9c0",
     bg_color4: "#0a0e27",
-    bg_color5: "#98d4a6",
-    bg_color6: "#1e4c32",
-    bg_base: "#163828",
+    bg_color5: "#ff9c8a",
+    bg_color6: "#1c1c1c",
+    bg_base: "#141414",
   });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -1018,7 +1018,7 @@ export default function AdminPage() {
                 id="compress-toggle"
                 checked={compressEnabled}
                 onChange={(e) => setCompressEnabled(e.target.checked)}
-                className="w-4 h-4 accent-[#163828]"
+                className="w-4 h-4 accent-[#141414]"
               />
               <label htmlFor="compress-toggle" className="text-body-md text-on-surface cursor-pointer">
                 Compress images on upload
@@ -1219,7 +1219,7 @@ export default function AdminPage() {
                       type="checkbox"
                       checked={allVisibleSelected}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 accent-[#163828] cursor-pointer"
+                      className="w-4 h-4 accent-[#141414] cursor-pointer"
                     />
                   </div>
                   <div className="col-span-2">Preview</div>
@@ -1241,7 +1241,7 @@ export default function AdminPage() {
                         type="checkbox"
                         checked={selected.has(photo.id)}
                         onChange={() => toggleSelect(photo.id)}
-                        className="w-4 h-4 accent-[#163828] cursor-pointer"
+                        className="w-4 h-4 accent-[#141414] cursor-pointer"
                       />
                     </div>
                     <div className="col-span-2">
@@ -1338,7 +1338,7 @@ export default function AdminPage() {
                       checked={selected.has(photo.id)}
                       onChange={() => toggleSelect(photo.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 accent-[#163828] cursor-pointer flex-shrink-0"
+                      className="w-4 h-4 accent-[#141414] cursor-pointer flex-shrink-0"
                     />
                     <a
                       href={`/photo/${photo.id}`}

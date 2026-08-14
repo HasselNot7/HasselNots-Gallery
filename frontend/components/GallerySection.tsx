@@ -91,8 +91,8 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
                   top: `${y}%`,
                   width: isActive ? 18 : 9,
                   height: isActive ? 18 : 9,
-                  background: isActive ? "#163828" : "#f8faf8",
-                  border: isActive ? "2px solid #c5ebd4" : "1px solid rgba(45,79,62,0.35)",
+                  background: isActive ? "#141414" : "#f8faf8",
+                  border: isActive ? "2px solid #f0f0f0" : "1px solid rgba(0,0,0,0.35)",
                   boxShadow: isActive
                     ? "0 0 0 4px rgba(209,231,211,0.65), 0 2px 8px rgba(22,56,40,0.3)"
                     : "0 1px 3px rgba(22,56,40,0.15)",

@@ -3,7 +3,7 @@ export interface YearMarker {
 }
 
 const YEAR_COLORS = [
-  "#163828", // 深绿
+  "#141414", // 深绿
   "#b23b2e", // 砖红
   "#2f6b8a", // 藏青
   "#8a5a2f", // 赭黄
