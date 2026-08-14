@@ -52,7 +52,7 @@ export default async function AlbumsPage() {
                     {album.title}
                   </h2>
                   {album.description && (
-                    <p className="text-metadata-sm text-mint-accent mt-1 line-clamp-2">{album.description}</p>
+                    <p className="text-body-md text-mint-accent mt-1 line-clamp-2">{album.description}</p>
                   )}
                   <span className="text-metadata-sm text-white/70 mt-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                     {album.photo_count} PHOTOS
