@@ -21,3 +21,6 @@ gallery.db
 backend/.env
 .vscode/
 .env.local
+.docs/requirements.md
+.others/
+.design-screens/
