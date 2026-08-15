@@ -32,8 +32,8 @@ export default function HeroSection({
         <aside className="w-10 md:w-24 shrink-0 bg-primary-container text-primary-fixed flex flex-col justify-between items-center py-4 md:py-grid-margin border-r border-primary/30 z-20 shadow-[20px_0_40px_rgba(22,56,40,0.15)] relative">
           <div className="absolute inset-0 pointer-events-none" style={{
             backgroundImage: `
-              linear-gradient(to right, rgba(45,79,62,0.1) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(45,79,62,0.1) 1px, transparent 1px)
+              linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(20,20,20,0.05) 1px, transparent 1px)
             `,
             backgroundSize: "40px 40px",
             opacity: 0.2,
@@ -172,8 +172,8 @@ export default function HeroSection({
         <aside className="hidden xl:flex w-16 shrink-0 bg-surface/80 border-l border-primary/20 flex-col items-center justify-between py-grid-margin relative">
           <div className="absolute inset-0 pointer-events-none" style={{
             backgroundImage: `
-              linear-gradient(to right, rgba(45,79,62,0.1) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(45,79,62,0.1) 1px, transparent 1px)
+              linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(20,20,20,0.05) 1px, transparent 1px)
             `,
             backgroundSize: "40px 40px",
             opacity: 0.3,

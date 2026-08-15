@@ -76,7 +76,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
           {/* Progress fill above the active thumb */}
           <div
             className="absolute top-0 left-1/2 -translate-x-1/2 w-full rounded-full bg-gradient-to-b from-mint-accent via-mint-accent/50 to-white pointer-events-none"
-            style={{ height: `${activePos}%`, boxShadow: "0 0 6px rgba(45,79,62,0.25)" }}
+            style={{ height: `${activePos}%`, boxShadow: "0 0 6px rgba(20,20,20,0.25)" }}
           />
 
           {/* Node dots */}

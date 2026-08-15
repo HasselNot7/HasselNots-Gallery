@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import AnimatedBackground from "@/components/AnimatedBackground";
+import PageBackground from "@/components/PageBackground";
 import VisitTracker from "@/components/VisitTracker";
 import { fetchSettings } from "@/lib/api-server";
 
@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" />
       </head>
       <body className={`min-h-full flex flex-col relative ${sigmaSerif.variable}`}>
-        <AnimatedBackground />
+        <PageBackground />
         <VisitTracker />
         {children}
       </body>

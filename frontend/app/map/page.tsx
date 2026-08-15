@@ -51,8 +51,8 @@ export default async function MapPage() {
         <section className="relative px-4 md:px-grid-margin pt-5 md:pt-6 pb-3 border-b border-primary/15 w-full bg-primary-fixed/5">
           <div className="absolute inset-0 pointer-events-none" style={{
             backgroundImage: `
-              linear-gradient(to right, rgba(45,79,62,0.1) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(45,79,62,0.1) 1px, transparent 1px)
+              linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(20,20,20,0.05) 1px, transparent 1px)
             `,
             backgroundSize: "40px 40px",
             opacity: 0.2,
@@ -84,8 +84,8 @@ export default async function MapPage() {
               {/* Grid overlay on map */}
               <div className="absolute inset-0 z-[5] pointer-events-none" style={{
                 backgroundImage: `
-                  linear-gradient(to right, rgba(45,79,62,0.08) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(45,79,62,0.08) 1px, transparent 1px)
+                  linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(20,20,20,0.05) 1px, transparent 1px)
                 `,
                 backgroundSize: "40px 40px",
                 opacity: 0.4,

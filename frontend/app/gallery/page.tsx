@@ -21,8 +21,8 @@ export default async function GalleryPage() {
       <section className="w-full bg-surface py-8 md:py-12 px-4 md:px-grid-margin border-t border-primary/20 relative z-30 shadow-[0_-10px_30px_rgba(22,56,40,0.05)]">
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(45,79,62,0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(45,79,62,0.1) 1px, transparent 1px)
+            linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(20,20,20,0.05) 1px, transparent 1px)
           `,
           backgroundSize: "40px 40px",
           opacity: 0.15,
