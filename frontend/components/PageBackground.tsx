@@ -7,16 +7,16 @@ export default function PageBackground() {
   if (pathname === "/") return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none" aria-hidden="true" style={{ zIndex: -1 }}>
+    <div className="fixed inset-0 pointer-events-none" aria-hidden="true" style={{ zIndex: 0 }}>
       {/* 基础暖白 + 顶部橙红光晕 + 左侧冷调 + 底部渐变 */}
       <div
         className="absolute inset-0"
         style={{
           background: `
-            radial-gradient(60% 45% at 88% -5%, rgba(248, 88, 58, 0.08), transparent 65%),
-            radial-gradient(55% 55% at 0% 40%, rgba(20, 20, 20, 0.045), transparent 70%),
-            radial-gradient(40% 30% at 50% 110%, rgba(248, 88, 58, 0.05), transparent 70%),
-            linear-gradient(to bottom, #fbfbfb, #ffffff 40%, #fafafa)
+            radial-gradient(80% 60% at 90% -15%, rgba(248, 88, 58, 0.40), rgba(248, 88, 58, 0.10) 45%, transparent 70%),
+            radial-gradient(70% 70% at -10% 50%, rgba(20, 20, 20, 0.12), transparent 70%),
+            radial-gradient(60% 45% at 50% 115%, rgba(20, 20, 20, 0.16), transparent 70%),
+            linear-gradient(160deg, #f7f7f4, #faf9f6 40%, #f1f0ec)
           `,
         }}
       />
@@ -25,12 +25,12 @@ export default function PageBackground() {
         className="absolute inset-0"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(20, 20, 20, 0.045) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(20, 20, 20, 0.045) 1px, transparent 1px)
+            linear-gradient(to right, rgba(20, 20, 20, 0.10) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(20, 20, 20, 0.10) 1px, transparent 1px)
           `,
-          backgroundSize: "52px 52px",
-          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.25) 50%, transparent)",
-          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.25) 50%, transparent)",
+          backgroundSize: "56px 56px",
+          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.4) 55%, rgba(0,0,0,0.2))",
+          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.4) 55%, rgba(0,0,0,0.2))",
         }}
       />
       {/* 噪点质感 */}
@@ -38,7 +38,7 @@ export default function PageBackground() {
         className="absolute inset-0"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")`,
-          opacity: 0.035,
+          opacity: 0.07,
         }}
       />
     </div>

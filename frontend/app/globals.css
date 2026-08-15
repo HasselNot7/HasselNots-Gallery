@@ -70,7 +70,6 @@
 
 @layer base {
   body {
-    background: var(--color-background);
     color: var(--color-on-surface);
     font-family: var(--font-body);
     font-size: 16px;

@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`min-h-full flex flex-col relative ${sigmaSerif.variable}`}>
         <PageBackground />
         <VisitTracker />
-        {children}
+        <div className="relative z-10 flex flex-col flex-1">{children}</div>
       </body>
     </html>
   );
