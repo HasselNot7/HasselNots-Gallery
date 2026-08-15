@@ -2,12 +2,20 @@
 
 基于 Next.js 16 + FastAPI 的个人摄影作品网站与博客。黑白配色 + 橙红点缀，支持照片画廊、足迹地图、博客、评论、访问统计与 Cloudflare R2 存储。
 
+## 截图
+
+| | |
+|---|---|
+| ![首页](docs/screenshots/home.png) | ![画廊](docs/screenshots/gallery.png) |
+| ![足迹地图](docs/screenshots/map.png) | ![相册](docs/screenshots/albums.png) |
+| ![博客](docs/screenshots/blog.png) | ![管理后台](docs/screenshots/admin.png) |
+
 ## 功能
 
 - **首页**：动态光斑 WebGL 背景 + 品牌 Hero
 - **画廊**：瀑布流 + 年份时间线跳转 + 灯箱大图浏览（键盘导航）+ 无限滚动
 - **相册**：按主题/旅行地分组，独立专辑页
-- **足迹地图**：全屏 Leaflet 地图，标记按年份配色，地名搜索，6 种底图切换
+- **足迹地图**：全屏 Leaflet 地图，标记按年份配色，地名搜索，8 种底图切换（anitabi 风格缩略图选择器）
 - **照片详情**：EXIF 面板、浏览量、评论、位置编辑（管理员可在地图上拖拽设置/复原拍摄地点）
 - **博客**：Markdown 写作（后台管理），列表 + 详情页，标签、浏览量、评论
 - **管理后台**：站点设置、批量上传（浏览器端压缩 + EXIF/GPS 保留）、照片/相册/文章管理、访问分析（PV/UV、热门内容）
