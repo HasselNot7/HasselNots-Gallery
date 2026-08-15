@@ -38,10 +38,10 @@ export default function HeroSection({
             backgroundSize: "40px 40px",
             opacity: 0.2,
           }} />
-          <div className="relative z-10 text-metadata-sm tracking-widest uppercase transform rotate-180 border-l border-primary-fixed/30 pl-2 whitespace-nowrap hidden sm:block" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', monospace" }}>
+          <div className="relative z-10 text-metadata-sm tracking-widest uppercase transform rotate-180 border-l border-primary-fixed/30 pl-2 whitespace-nowrap hidden sm:block" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             Collection
           </div>
-          <div className="relative z-10 text-metadata-sm tracking-widest transform rotate-180 opacity-70 hidden sm:block" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', monospace" }}>
+          <div className="relative z-10 text-metadata-sm tracking-widest transform rotate-180 opacity-70 hidden sm:block" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {new Date().toLocaleDateString("en-GB")}
           </div>
           <div className="relative z-10 text-lg md:text-3xl tracking-tighter transform rotate-180 whitespace-nowrap" style={{ writingMode: "vertical-rl", fontFamily: "'Hanken Grotesk', sans-serif" }}>

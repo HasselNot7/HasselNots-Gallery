@@ -59,7 +59,7 @@ export default async function MapPage() {
           }} />
 
           <div className="relative z-10">
-            <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 md:mb-3 uppercase" style={{ fontFamily: "var(--font-sigma)" }}>Photography Footprints</h1>
+            <h1 className="text-2xl md:text-display-lg text-primary mb-2 md:mb-3 uppercase" style={{ fontFamily: "var(--font-sigma)" }}>Photography Footprints</h1>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-metadata-sm text-on-surface-variant">
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-primary">hub</span>
@@ -158,7 +158,7 @@ export default async function MapPage() {
               {/* 年份图例 */}
               {legendYears.length > 0 && (
                 <div className="absolute bottom-3 left-3 z-[600] bg-surface/90 backdrop-blur border border-border-subtle rounded-md px-3 py-2 shadow-md">
-                  <div className="text-[9px] text-outline uppercase tracking-widest mb-1.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div className="text-[9px] text-outline uppercase tracking-widest mb-1.5" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                     By Year
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1">
@@ -201,7 +201,7 @@ export default async function MapPage() {
                             {loc.name}
                           </span>
                         </div>
-                        <div className="text-metadata-sm font-medium text-primary mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <div className="text-metadata-sm font-medium text-primary mb-2" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                           {loc.count} Photo{loc.count > 1 ? "s" : ""}
                         </div>
                         <div className="flex gap-1 overflow-x-auto pb-1">

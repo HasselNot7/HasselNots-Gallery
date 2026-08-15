@@ -18,7 +18,7 @@ export default async function AlbumsPage() {
           <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 uppercase" style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', sans-serif" }}>
             Albums
           </h1>
-          <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {albums.length} COLLECTION{albums.length === 1 ? "" : "S"}
           </span>
         </div>
@@ -54,7 +54,7 @@ export default async function AlbumsPage() {
                   {album.description && (
                     <p className="text-body-md text-mint-accent mt-1 line-clamp-2">{album.description}</p>
                   )}
-                  <span className="text-metadata-sm text-white/70 mt-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <span className="text-metadata-sm text-white/70 mt-2" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                     {album.photo_count} PHOTOS
                   </span>
                 </div>

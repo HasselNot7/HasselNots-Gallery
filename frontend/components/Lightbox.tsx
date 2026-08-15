@@ -64,12 +64,12 @@ export default function Lightbox({
       {/* 顶栏 */}
       <div className="flex items-center justify-between px-4 md:px-8 py-4 text-primary">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-metadata-sm text-primary/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="text-metadata-sm text-primary/60" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {index + 1} / {photos.length}
           </span>
           <span className="text-body-md text-primary truncate">{photo.title}</span>
           {dateStr && (
-            <span className="text-metadata-sm text-primary/60 hidden md:inline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <span className="text-metadata-sm text-primary/60 hidden md:inline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
               {dateStr}
             </span>
           )}
@@ -93,7 +93,7 @@ export default function Lightbox({
           onClick={(e) => e.stopPropagation()}
         />
         {photo.camera_model && (
-          <span className="absolute bottom-2 right-4 text-metadata-sm text-white/90 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-md" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="absolute bottom-2 right-4 text-metadata-sm text-white/90 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-md" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {photo.camera_model}
           </span>
         )}

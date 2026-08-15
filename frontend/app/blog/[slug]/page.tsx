@@ -71,7 +71,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <h1 className="text-headline-lg md:text-display-lg text-primary mb-4" style={{ fontFamily: "var(--font-sigma)" }}>
             {article.title}
           </h1>
-          <div className="flex flex-wrap items-center gap-4 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <div className="flex flex-wrap items-center gap-4 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             <span>{formatDate(article.created_at)}</span>
             <span className="flex items-center gap-1">
               <span className="material-symbols-outlined text-[14px]">visibility</span>
@@ -100,7 +100,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           dangerouslySetInnerHTML={{ __html: article.content_html }}
         />
 
-        <div className="mt-12 pt-6 border-t border-border-subtle flex items-center justify-between text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+        <div className="mt-12 pt-6 border-t border-border-subtle flex items-center justify-between text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
           <span>{article.slug}</span>
           <ViewCounter kind="article" slug={article.slug} currentViews={article.views} />
         </div>

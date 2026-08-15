@@ -47,13 +47,13 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
       <div className="w-12 md:w-16 text-right flex-shrink-0 flex flex-col items-end gap-1.5">
         <span
           className="text-label-caps text-primary leading-none"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
         >
           {active || "—"}
         </span>
         <span
           className="text-[8px] text-outline uppercase tracking-widest leading-none"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
         >
           Year
         </span>
@@ -119,7 +119,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
       </div>
 
       {/* Year list on the right (desktop only) */}
-      <div className="hidden md:flex flex-col justify-between h-56 md:h-72 text-[10px] py-1.5 pl-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+      <div className="hidden md:flex flex-col justify-between h-56 md:h-72 text-[10px] py-1.5 pl-1" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
         {entriesList.map((entry, i) => (
           <span
             key={entry}
@@ -276,7 +276,7 @@ export default function GallerySection({
                       ? "border-primary bg-primary text-white"
                       : "border-border-subtle text-on-surface-variant"
                   }`}
-                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                  style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
                 >
                   {y}
                 </button>

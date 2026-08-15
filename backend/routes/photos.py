@@ -63,13 +63,34 @@ def _remove_media(stored_paths):
 
 
 def _reverse_geocode(lat: float, lng: float) -> str:
-    """Return 'City, Country' from coordinates. Nominatim primary, BigDataCloud fallback."""
+    """Return 'City, Country' from coordinates.
+
+    BigDataCloud first (works without VPN in China), Nominatim as fallback.
+    """
+    # Primary: BigDataCloud (no API key required)
+    try:
+        url = "https://api.bigdatacloud.net/data/reverse-geocode-client?" + urllib.parse.urlencode(
+            {"latitude": lat, "longitude": lng, "localityLanguage": "en"}
+        )
+        req = urllib.request.Request(url, headers={"User-Agent": "GalleryApp/1.0"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read().decode())
+        city = data.get("city") or data.get("locality") or data.get("principalSubdivision") or ""
+        country = data.get("countryName", "")
+        if city and country:
+            return f"{city}, {country}"
+        if city:
+            return city
+    except Exception:
+        pass
+
+    # Fallback: Nominatim
     try:
         url = "https://nominatim.openstreetmap.org/reverse?" + urllib.parse.urlencode(
             {"lat": lat, "lon": lng, "format": "json", "zoom": 10, "accept-language": "en"}
         )
         req = urllib.request.Request(url, headers={"User-Agent": "GalleryApp/1.0"})
-        with urllib.request.urlopen(req, timeout=6) as resp:
+        with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read().decode())
         addr = data.get("address", {})
         city = (
@@ -89,21 +110,7 @@ def _reverse_geocode(lat: float, lng: float) -> str:
     except Exception:
         pass
 
-    # Fallback: BigDataCloud (no API key required)
-    try:
-        url = "https://api.bigdatacloud.net/data/reverse-geocode-client?" + urllib.parse.urlencode(
-            {"latitude": lat, "longitude": lng, "localityLanguage": "en"}
-        )
-        req = urllib.request.Request(url, headers={"User-Agent": "GalleryApp/1.0"})
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read().decode())
-        city = data.get("city") or data.get("locality") or data.get("principalSubdivision") or ""
-        country = data.get("countryName", "")
-        if city and country:
-            return f"{city}, {country}"
-        return city or ""
-    except Exception:
-        return ""
+    return ""
 
 
 def _format_shutter(value) -> str:

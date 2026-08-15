@@ -50,7 +50,7 @@ export default function PhotoLightbox({
               onClick={(e) => e.stopPropagation()}
             />
           </div>
-          <div className="pb-4 text-center text-metadata-sm text-primary-fixed/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <div className="pb-4 text-center text-metadata-sm text-primary-fixed/60" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {alt} — press ESC to close
           </div>
         </div>

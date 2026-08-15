@@ -27,7 +27,7 @@ export default async function BlogPage() {
           <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
             Blog
           </h1>
-          <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {articles.length} POST{articles.length === 1 ? "" : "S"}
           </span>
         </div>
@@ -45,7 +45,7 @@ export default async function BlogPage() {
                 href={`/blog/${a.slug}`}
                 className="group border border-border-subtle p-6 md:p-8 bg-surface hover:border-primary/40 transition-colors duration-300"
               >
-                <div className="flex items-center justify-between mb-3 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <div className="flex items-center justify-between mb-3 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                   <span>{formatDate(a.created_at)}</span>
                   <span className="flex items-center gap-1">
                     <span className="material-symbols-outlined text-[14px]">visibility</span>

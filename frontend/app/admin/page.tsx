@@ -160,10 +160,42 @@ export default function AdminPage() {
   const [albumSaving, setAlbumSaving] = useState(false);
 
   // Active tab
-  const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos" | "blog" | "albums" | "analytics">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos" | "blog" | "albums" | "analytics" | "services">("settings");
 
   // Analytics
   const [analytics, setAnalytics] = useState<any>(null);
+
+  // Services health
+  const [services, setServices] = useState<any>(null);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [fullCheckDone, setFullCheckDone] = useState(false);
+
+  const SERVICE_DEFS = [
+    { name: "SQLite Database", url: "本地 database.gallery.db" },
+    { name: "Cloudflare R2 (S3 API)", url: "r2.cloudflarestorage.com" },
+    { name: "R2 Public (r2.dev)", url: "r2.dev 公开子域" },
+    { name: "Bing Map Tiles", url: "dynamic.t0.tiles.ditu.live.com" },
+    { name: "Bing Satellite Tiles", url: "ecn.t0.tiles.virtualearth.net" },
+    { name: "OSM Tiles", url: "https://tile.openstreetmap.org" },
+    { name: "CARTO Light Tiles", url: "https://basemaps.cartocdn.com" },
+    { name: "CARTO Dark Tiles", url: "https://basemaps.cartocdn.com" },
+    { name: "Esri Satellite Tiles", url: "server.arcgisonline.com" },
+    { name: "Esri Roads Overlay", url: "server.arcgisonline.com" },
+    { name: "Esri Labels Overlay", url: "server.arcgisonline.com" },
+    { name: "Gaode Street Tiles", url: "webrd01.is.autonavi.com" },
+    { name: "Gaode Satellite Tiles", url: "webst01.is.autonavi.com" },
+    { name: "Gaode Label Overlay", url: "webst01.is.autonavi.com" },
+    { name: "Nominatim Reverse Geocode", url: "nominatim.openstreetmap.org" },
+    { name: "BigDataCloud Geocode", url: "api.bigdatacloud.net" },
+    { name: "Open-Meteo Geocoding", url: "geocoding-api.open-meteo.com" },
+    { name: "Photon Geocoding", url: "photon.komoot.io" },
+    { name: "Google Fonts CDN", url: "fonts.googleapis.com" },
+    { name: "Material Symbols CDN", url: "fonts.googleapis.com" },
+  ];
+
+  const displayServices = services
+    ? services.services
+    : SERVICE_DEFS.map((d) => ({ ...d, ok: null, latency_ms: null, detail: "" }));
 
   // Sort order for photo management
   const [sortBy, setSortBy] = useState<"shoot" | "upload">("shoot");
@@ -182,6 +214,7 @@ export default function AdminPage() {
     { id: "albums" as const, label: "Albums", icon: "photo_album" },
     { id: "blog" as const, label: "Blog", icon: "article" },
     { id: "analytics" as const, label: "Analytics", icon: "monitoring" },
+    { id: "services" as const, label: "Services", icon: "monitor_heart" },
   ];
 
   useEffect(() => {
@@ -219,6 +252,59 @@ export default function AdminPage() {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.ok) setAnalytics(await res.json());
+    } catch {
+      // ignore
+    }
+  };
+
+  const loadServices = async () => {
+    setServicesLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/services/check`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        setServices(await res.json());
+        setFullCheckDone(true);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setServicesLoading(false);
+    }
+  };
+
+  const checkSingleService = async (name: string) => {
+    setServices((prev: any) => {
+      const base = prev
+        ? prev.services
+        : SERVICE_DEFS.map((d) => ({ ...d, ok: null, latency_ms: null, detail: "" }));
+      const services = base.map((s: any) =>
+        s.name === name ? { ...s, checking: true } : s
+      );
+      return prev
+        ? { ...prev, services }
+        : { services, ok_count: 0, total: services.length, checked_at: "" };
+    });
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/services/check/${encodeURIComponent(name)}`,
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      if (res.ok) {
+        const one = await res.json();
+        setServices((prev: any) => {
+          if (!prev) return prev;
+          const services = prev.services.map((s: any) =>
+            s.name === name ? { ...one, checking: false } : s
+          );
+          return {
+            ...prev,
+            services,
+            ok_count: services.filter((s: any) => s.ok).length,
+          };
+        });
+      }
     } catch {
       // ignore
     }
@@ -1089,7 +1175,7 @@ export default function AdminPage() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <h2 className="text-headline-lg text-primary">Photo Management</h2>
-              <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                 {photos.length} TOTAL · {photos.filter((p) => p.is_published).length} PUBLISHED · {photos.filter((p) => !p.is_published).length} DRAFT
               </span>
             </div>
@@ -1261,7 +1347,7 @@ export default function AdminPage() {
                     <div className="col-span-3 text-metadata-sm text-on-surface-variant">
                       {formatDate(photo.shoot_time) || "—"}
                       <div className="mt-1">
-                        <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                           Up {formatDate(photo.created_at) || "—"}
                         </span>
                       </div>
@@ -1361,7 +1447,7 @@ export default function AdminPage() {
                       <div className="text-metadata-sm text-on-surface-variant mt-0.5">
                         {formatDate(photo.shoot_time) || "—"}
                       </div>
-                      <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider mt-1" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                         Up {formatDate(photo.created_at) || "—"}
                       </span>
                       <button
@@ -1458,11 +1544,11 @@ export default function AdminPage() {
                 >
                   <div className="col-span-4 min-w-0">
                     <div className="text-body-md text-on-surface truncate font-medium">{article.title || "Untitled"}</div>
-                    <div className="text-metadata-sm text-outline mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    <div className="text-metadata-sm text-outline mt-0.5" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                       {new Date(article.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })} · {article.views} views
                     </div>
                   </div>
-                  <div className="col-span-3 text-metadata-sm text-on-surface-variant truncate" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div className="col-span-3 text-metadata-sm text-on-surface-variant truncate" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                     /blog/{article.slug}
                   </div>
                   <div className="col-span-2">
@@ -1536,14 +1622,14 @@ export default function AdminPage() {
                         <span className="material-symbols-outlined text-5xl text-outline">photo_album</span>
                       </div>
                     )}
-                    <span className="absolute bottom-2 right-2 text-metadata-sm text-white bg-primary/70 px-2 py-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span className="absolute bottom-2 right-2 text-metadata-sm text-white bg-primary/70 px-2 py-0.5" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                       {album.photo_count}
                     </span>
                   </a>
                   <div className="p-4 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-body-md text-on-surface truncate font-medium">{album.title}</div>
-                      <div className="text-metadata-sm text-outline truncate" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <div className="text-metadata-sm text-outline truncate" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                         /album/{album.slug}
                       </div>
                     </div>
@@ -1619,7 +1705,7 @@ export default function AdminPage() {
                           className="w-full bg-primary/70 hover:bg-primary transition-all rounded-t-md"
                           style={{ height: `${Math.max((d.pv / max) * 100, 3)}%` }}
                         />
-                        <span className="text-[9px] text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <span className="text-[9px] text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                           {d.date.slice(5)}
                         </span>
                       </div>
@@ -1636,7 +1722,7 @@ export default function AdminPage() {
                     {analytics.top_pages.length === 0 && <p className="text-metadata-sm text-outline">No data yet</p>}
                     {analytics.top_pages.map((p: any) => (
                       <div key={p.path} className="flex items-center justify-between text-metadata-sm">
-                        <span className="text-on-surface truncate" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{p.path}</span>
+                        <span className="text-on-surface truncate" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>{p.path}</span>
                         <span className="text-primary">{p.count}</span>
                       </div>
                     ))}
@@ -1671,6 +1757,87 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+        </div>
+        )}
+        {/* Services Health */}
+        {activeTab === "services" && (
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-headline-lg text-primary">Services Health</h2>
+            <button
+              onClick={loadServices}
+              disabled={servicesLoading}
+              className="text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:border-primary hover:text-primary transition-all disabled:opacity-50"
+            >
+              {servicesLoading ? "Checking..." : "Re-check"}
+            </button>
+          </div>
+
+          {!services ? (
+            <p className="text-metadata-sm text-outline mb-6" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+              {servicesLoading ? "Checking all services..." : "Click Re-check to run the full health check."}
+            </p>
+          ) : (
+            fullCheckDone && (
+            <div className={`mb-6 p-4 border flex items-center gap-3 ${services.ok_count === services.total ? "border-primary/40 bg-mint-accent/10" : "border-error/40 bg-error/5"}`}>
+              <span className={`w-3 h-3 rounded-full ${services.ok_count === services.total ? "bg-primary" : "bg-error"}`} />
+              <span className="text-body-md text-on-surface">
+                {services.ok_count} / {services.total} services available
+              </span>
+              <span className="text-metadata-sm text-outline ml-auto" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+                checked at {services.checked_at}
+              </span>
+            </div>
+            )
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {displayServices.map((s: any) => (
+              <div
+                key={s.name}
+                className={`border p-4 flex flex-col gap-1.5 ${
+                  s.ok === null
+                    ? "border-border-subtle bg-surface"
+                    : s.ok
+                      ? "border-border-subtle bg-surface-bright"
+                      : "border-error/50 bg-error/5"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                      s.ok === null ? "bg-outline" : s.ok ? "bg-primary" : "bg-error"
+                    }`}
+                  />
+                  <span className="text-body-md text-on-surface font-medium truncate">{s.name}</span>
+                  <button
+                    onClick={() => checkSingleService(s.name)}
+                    disabled={s.checking || servicesLoading}
+                    className="ml-auto flex-shrink-0 text-label-caps px-2 py-1 border border-border-subtle text-on-surface-variant hover:border-primary hover:text-primary transition-all disabled:opacity-50"
+                    title="Re-check this service"
+                  >
+                    {s.checking ? "..." : "Check"}
+                  </button>
+                </div>
+                <div className="text-metadata-sm text-outline truncate" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }} title={s.url}>
+                  {s.url}
+                </div>
+                <div className="flex items-center justify-between text-metadata-sm">
+                  <span
+                    className={s.ok === null ? "text-outline" : s.ok ? "text-primary" : "text-error"}
+                    style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
+                  >
+                    {s.ok === null ? "NOT CHECKED" : s.ok ? "OK" : "DOWN"} · {s.latency_ms}ms
+                  </span>
+                </div>
+                {s.ok === false && s.detail && (
+                  <div className="text-metadata-sm text-error break-all" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+                    {s.detail}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
         )}
       </main>

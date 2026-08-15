@@ -46,7 +46,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ slug: st
           {album.description && (
             <p className="text-body-md text-on-surface-variant max-w-2xl mb-3">{album.description}</p>
           )}
-          <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {photos.length} PHOTOS
           </span>
         </div>

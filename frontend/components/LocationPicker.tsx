@@ -3,14 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { isAuthenticated, getToken } from "@/lib/api";
 import { attachLayerSwitcher } from "@/lib/mapLayers";
-
-interface GeoResult {
-  name: string;
-  latitude: number;
-  longitude: number;
-  country?: string;
-  admin1?: string;
-}
+import { searchPlaces, GeoResult } from "@/lib/geocode";
 
 export default function LocationPicker({
   initial,
@@ -42,11 +35,7 @@ export default function LocationPicker({
     setSearching(true);
     searchTimer.current = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=6&language=zh`
-        );
-        const data = await res.json();
-        setResults(data.results || []);
+        setResults(await searchPlaces(q.trim()));
       } catch {
         setResults([]);
       } finally {
@@ -78,7 +67,7 @@ export default function LocationPicker({
       const start: [number, number] = initial ?? [35.8617, 104.1954]; // China default
       map = L.map(el).setView(start, initial ? 12 : 5);
       mapRef.current = map;
-      attachLayerSwitcher(map, L, 1);
+      attachLayerSwitcher(map, L, 5);
 
       const icon = L.divIcon({
         className: "custom-marker",
@@ -159,7 +148,7 @@ export default function LocationPicker({
                   className="w-full text-left px-4 py-2.5 hover:bg-mint-accent/30 transition-colors border-b border-border-subtle last:border-0"
                 >
                   <div className="text-body-md text-on-surface leading-tight">{r.name}</div>
-                  <div className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                     {[r.admin1, r.country].filter(Boolean).join(", ")}
                   </div>
                 </button>
@@ -170,7 +159,7 @@ export default function LocationPicker({
       </div>
 
       {picked && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-surface/95 backdrop-blur border border-primary/20 px-3 py-1.5 text-metadata-sm text-primary shadow-md" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-surface/95 backdrop-blur border border-primary/20 px-3 py-1.5 text-metadata-sm text-primary shadow-md" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
           <span className="material-symbols-outlined text-[14px] align-middle mr-1">location_on</span>
           {picked[0].toFixed(5)}, {picked[1].toFixed(5)}
         </div>

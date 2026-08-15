@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { attachLayerSwitcher } from "@/lib/mapLayers";
 import { yearColor, yearOf } from "@/lib/mapYears";
+import { searchPlaces, GeoResult } from "@/lib/geocode";
 
 interface MapMarker {
   id: number;
@@ -12,14 +13,6 @@ interface MapMarker {
   thumbnail: string;
   camera: string;
   shoot_time?: string;
-}
-
-interface GeoResult {
-  name: string;
-  latitude: number;
-  longitude: number;
-  country?: string;
-  admin1?: string;
 }
 
 export default function MapClient({ markers, center }: { markers: MapMarker[]; center: [number, number] }) {
@@ -43,11 +36,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
     setSearching(true);
     searchTimer.current = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=6&language=zh`
-        );
-        const data = await res.json();
-        setResults(data.results || []);
+        setResults(await searchPlaces(q.trim()));
       } catch {
         setResults([]);
       } finally {
@@ -88,7 +77,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
 
       map = L.map("leaflet-map").setView(center, markers.length === 1 ? 12 : 5);
       mapRef.current = map;
-      attachLayerSwitcher(map, L, 0);
+      attachLayerSwitcher(map, L, 5);
 
       const bounds: [number, number][] = [];
 
@@ -218,7 +207,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
                   className="w-full text-left px-4 py-2.5 hover:bg-mint-accent/30 transition-colors border-b border-border-subtle last:border-0"
                 >
                   <div className="text-body-md text-on-surface leading-tight">{r.name}</div>
-                  <div className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                     {[r.admin1, r.country].filter(Boolean).join(", ")}
                     <span className="ml-2">{r.latitude.toFixed(3)}, {r.longitude.toFixed(3)}</span>
                   </div>

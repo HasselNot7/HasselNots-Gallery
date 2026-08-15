@@ -102,7 +102,7 @@ export default function CommentSection({
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-label-caps text-primary font-bold">{c.author}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                     {new Date(c.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                   </span>
                   {authed && (

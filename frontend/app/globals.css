@@ -61,7 +61,7 @@
 
   --font-display: var(--font-sigma), "Noto Serif SC", sans-serif;
   --font-body: "JetBrains Mono", "Noto Serif SC", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-mono: "JetBrains Mono", "Noto Serif SC", monospace;
 
   --spacing-grid-margin: 40px;
   --spacing-gutter: 24px;
