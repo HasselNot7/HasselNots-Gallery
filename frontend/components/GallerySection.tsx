@@ -130,7 +130,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
             }`}
             style={{
               border: i === activeIdx ? "1px solid rgba(20,20,20,0.25)" : "1px solid transparent",
-              background: i === activeIdx ? "rgba(248,88,58,0.06)" : "transparent",
+              background: i === activeIdx ? "rgba(20,20,20,0.06)" : "transparent",
             }}
             onClick={() => onChange(entry)}
           >
