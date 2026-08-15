@@ -53,7 +53,7 @@ def upload_r2(env: dict, archive: Path):
     account = env.get("R2_ACCOUNT_ID", "")
     ak = env.get("R2_ACCESS_KEY_ID", "")
     sk = env.get("R2_SECRET_ACCESS_KEY", "")
-    bucket = env.get("R2_BUCKET", "gallery")
+    bucket = env.get("R2_BACKUP_BUCKET", "gallery-backup")
     if not (account and ak and sk):
         print("R2 未配置（缺少密钥），跳过异地备份")
         return False
@@ -66,12 +66,12 @@ def upload_r2(env: dict, archive: Path):
         aws_secret_access_key=sk,
         region_name="auto",
     )
-    key = f"backups/{archive.name}"
+    key = archive.name
     client.upload_file(str(archive), bucket, key)
-    print(f"R2 上传成功: {bucket}/{key}")
+    print(f"R2 上传成功: {bucket}/{key}（私有桶，无公开访问）")
 
     cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=KEEP_R2_DAYS)
-    for obj in client.list_objects_v2(Bucket=bucket, Prefix="backups/").get("Contents", []):
+    for obj in client.list_objects_v2(Bucket=bucket).get("Contents", []):
         if obj["LastModified"] < cutoff:
             client.delete_object(Bucket=bucket, Key=obj["Key"])
             print(f"R2 清理旧备份: {obj['Key']}")
