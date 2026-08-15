@@ -24,7 +24,7 @@ export default function LoginPage() {
           }}
         />
         <div className="relative z-10 w-full max-w-md mx-4">
-          <div className="glass-panel p-10 shadow-[0_20px_40px_rgba(45,79,62,0.05)]">
+          <div className="glass-panel p-10 shadow-[0_20px_40px_rgba(20,20,20,0.06)]">
             <div className="flex flex-col items-center mb-8">
               <span className="material-symbols-outlined text-4xl text-primary mb-4">lock</span>
               <h1 className="text-headline-lg text-primary mb-2">Admin Access</h1>

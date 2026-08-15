@@ -76,7 +76,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
           {/* Progress fill above the active thumb */}
           <div
             className="absolute top-0 left-1/2 -translate-x-1/2 w-full rounded-full bg-gradient-to-b from-secondary via-secondary/70 to-secondary/20 pointer-events-none"
-            style={{ height: `${activePos}%`, boxShadow: "0 0 8px rgba(248,88,58,0.35)" }}
+            style={{ height: `${activePos}%`, boxShadow: "0 0 8px rgba(20,20,20,0.25)" }}
           />
 
           {/* Node dots */}
@@ -94,7 +94,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
                   background: isActive ? "#f8583a" : "#ffffff",
                   border: isActive ? "2px solid #f8583a" : "1px solid rgba(20,20,20,0.35)",
                   boxShadow: isActive
-                    ? "0 0 0 4px rgba(248,88,58,0.18), 0 2px 6px rgba(20,20,20,0.2)"
+                    ? "0 0 0 4px rgba(20,20,20,0.12), 0 2px 6px rgba(20,20,20,0.2)"
                     : "0 1px 3px rgba(20,20,20,0.12)",
                 }}
               />
@@ -106,7 +106,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
             className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-primary border-2 border-primary-fixed pointer-events-none transition-[top] duration-100"
             style={{
               top: `${activePos}%`,
-              boxShadow: "0 0 0 3px rgba(248,88,58,0.18), 0 4px 12px rgba(20,20,20,0.3)",
+              boxShadow: "0 0 0 3px rgba(20,20,20,0.12), 0 4px 12px rgba(20,20,20,0.3)",
             }}
           >
             <div className="absolute inset-0 flex items-center justify-center">
@@ -129,7 +129,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
                 : "text-outline hover:text-primary"
             }`}
             style={{
-              border: i === activeIdx ? "1px solid rgba(248,88,58,0.35)" : "1px solid transparent",
+              border: i === activeIdx ? "1px solid rgba(20,20,20,0.25)" : "1px solid transparent",
               background: i === activeIdx ? "rgba(248,88,58,0.06)" : "transparent",
             }}
             onClick={() => onChange(entry)}

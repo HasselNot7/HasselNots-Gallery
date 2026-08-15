@@ -145,6 +145,15 @@ export interface SiteSettings {
   bg_color5: string;
   bg_color6: string;
   bg_base: string;
+  water_ink1: string;
+  water_ink2: string;
+  water_ink_top: string;
+  water_strength: string;
+  hero_gradient_size: string;
+  hero_gradient_count: string;
+  hero_speed: string;
+  hero_color1_weight: string;
+  hero_color2_weight: string;
 }
 
 export async function fetchSettings(): Promise<SiteSettings> {
@@ -159,13 +168,22 @@ export async function fetchSettings(): Promise<SiteSettings> {
       site_tagline: "Precision photography portfolio. Every frame tells a story.",
       hero_icon: "photo_camera",
       hero_icon_url: "",
-      bg_color1: "#f8583a",
+      bg_color1: "#141414",
       bg_color2: "#141414",
       bg_color3: "#f5c9c0",
       bg_color4: "#0a0e27",
       bg_color5: "#ff9c8a",
       bg_color6: "#1c1c1c",
       bg_base: "#141414",
+      water_ink1: "#171717",
+      water_ink2: "#0a0a0a",
+      water_ink_top: "0.15",
+      water_strength: "1.0",
+      hero_gradient_size: "0.85",
+      hero_gradient_count: "12.0",
+      hero_speed: "1.1",
+      hero_color1_weight: "1.0",
+      hero_color2_weight: "1.3",
     };
   }
 }

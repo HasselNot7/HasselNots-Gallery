@@ -88,7 +88,7 @@ export default function Navbar() {
 
       {/* 移动端折叠菜单 */}
       {menuOpen && (
-        <div className="md:hidden border-t border-border-subtle bg-background">
+        <div className="md:hidden border-t border-border-subtle bg-white/30 backdrop-blur-xl">
           <div className="flex flex-col px-4 py-2">
             {links.map((link) => (
               <Link

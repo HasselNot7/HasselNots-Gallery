@@ -27,6 +27,11 @@ export default async function HomePage() {
           color5: settings?.bg_color5,
           color6: settings?.bg_color6,
           base: settings?.bg_base,
+          gradientSize: settings?.hero_gradient_size ? parseFloat(settings.hero_gradient_size) : undefined,
+          gradientCount: settings?.hero_gradient_count ? parseFloat(settings.hero_gradient_count) : undefined,
+          speed: settings?.hero_speed ? parseFloat(settings.hero_speed) : undefined,
+          color1Weight: settings?.hero_color1_weight ? parseFloat(settings.hero_color1_weight) : undefined,
+          color2Weight: settings?.hero_color2_weight ? parseFloat(settings.hero_color2_weight) : undefined,
         }}
       />
       <Footer />
