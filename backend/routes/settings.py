@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 DEFAULTS = {
     "hero_title": "Precision Capture.\nTimeless Frames.",
     "hero_description": "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe.",
+    "site_tagline": "Precision photography portfolio. Every frame tells a story.",
     "hero_icon": "photo_camera",
     "hero_icon_url": "",
     "bg_color1": "#316944",

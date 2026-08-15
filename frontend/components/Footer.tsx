@@ -1,11 +1,14 @@
-export default function Footer() {
+import { fetchSettings } from "@/lib/api-server";
+
+export default async function Footer() {
+  const settings = await fetchSettings();
   return (
     <footer className="bg-background border-t border-border-subtle w-full">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter px-4 md:px-grid-margin py-12 md:py-section-gap max-w-7xl mx-auto">
         <div className="md:col-span-2 flex flex-col gap-4">
           <span className="text-label-caps font-bold text-primary uppercase" style={{ fontFamily: "var(--font-sigma)" }}>HASSELNOT&apos;S GALLERY</span>
           <p className="text-body-md text-on-surface-variant max-w-sm uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
-            Precision photography portfolio. Every frame tells a story.
+            {settings?.site_tagline}
           </p>
           <span className="text-metadata-sm text-outline uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
             &copy; {new Date().getFullYear()} HASSELNOT&apos;S GALLERY. All rights reserved.

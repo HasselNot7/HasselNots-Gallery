@@ -115,6 +115,7 @@ export default function AdminPage() {
   const [settings, setSettings] = useState({
     hero_title: "",
     hero_description: "",
+    site_tagline: "",
     hero_icon: "photo_camera",
     hero_icon_url: "",
     bg_color1: "#f8583a",
@@ -326,7 +327,7 @@ export default function AdminPage() {
       const res = await fetch(`${API_BASE}/api/settings`);
       if (res.ok) {
         const data = await res.json();
-        setSettings({ hero_title: "", hero_description: "", hero_icon: "photo_camera", hero_icon_url: "", ...data });
+        setSettings({ hero_title: "", hero_description: "", site_tagline: "", hero_icon: "photo_camera", hero_icon_url: "", ...data });
       }
     } catch {
       // ignore
@@ -996,6 +997,18 @@ export default function AdminPage() {
                 onChange={(e) => setSettings({ ...settings, hero_description: e.target.value })}
                 rows={3}
                 className="w-full border border-border-subtle p-3 text-body-md bg-surface focus:outline-none focus:border-primary resize-none"
+              />
+            </div>
+
+            {/* Site Tagline (footer & SEO) */}
+            <div>
+              <label className="text-label-caps text-outline block mb-2">Site Tagline (footer & SEO description)</label>
+              <textarea
+                value={settings.site_tagline}
+                onChange={(e) => setSettings({ ...settings, site_tagline: e.target.value })}
+                rows={2}
+                className="w-full border border-border-subtle p-3 text-body-md bg-surface focus:outline-none focus:border-primary resize-none"
+                placeholder="Precision photography portfolio. Every frame tells a story."
               />
             </div>
 

@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import VisitTracker from "@/components/VisitTracker";
+import { fetchSettings } from "@/lib/api-server";
 
 const sigmaSerif = localFont({
   src: "./fonts/SigmaSerif-Text.ttf",
@@ -10,13 +11,16 @@ const sigmaSerif = localFont({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "HasselNot's Gallery — Photography Portfolio",
-    template: "%s — HasselNot's Gallery",
-  },
-  description: "Precision photography portfolio. Every frame tells a story.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchSettings();
+  return {
+    title: {
+      default: "HasselNot's Gallery — Photography Portfolio",
+      template: "%s — HasselNot's Gallery",
+    },
+    description: settings?.site_tagline || "Precision photography portfolio. Every frame tells a story.",
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

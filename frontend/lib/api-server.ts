@@ -135,6 +135,7 @@ export async function fetchAlbumPhotos(albumId: number): Promise<Photo[]> {
 export interface SiteSettings {
   hero_title: string;
   hero_description: string;
+  site_tagline: string;
   hero_icon: string;
   hero_icon_url: string;
   bg_color1: string;
@@ -155,6 +156,7 @@ export async function fetchSettings(): Promise<SiteSettings> {
     return {
       hero_title: "Precision Capture.\nTimeless Frames.",
       hero_description: "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe.",
+      site_tagline: "Precision photography portfolio. Every frame tells a story.",
       hero_icon: "photo_camera",
       hero_icon_url: "",
       bg_color1: "#f8583a",
