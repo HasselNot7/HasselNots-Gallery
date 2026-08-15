@@ -73,29 +73,50 @@ function buildExifJson(dict: any): Record<string, unknown> {
   return out;
 }
 
-const BG_PRESETS = [  {
+const BG_PRESETS = [
+  {
     name: "Monochrome · Ember",
-    colors: { bg_color1: "#f8583a", bg_color2: "#141414", bg_color3: "#f5c9c0", bg_color4: "#262626", bg_color5: "#ff9c8a", bg_color6: "#1c1c1c", bg_base: "#141414" },
+    colors: { bg_color1: "#141414", bg_color2: "#141414", bg_color3: "#2b2b2b", bg_color4: "#262626", bg_color5: "#3a3a3a", bg_color6: "#1c1c1c", bg_base: "#141414" },
+  },
+  {
+    name: "Charcoal · Paper",
+    colors: { bg_color1: "#f5f5f5", bg_color2: "#e8e8e8", bg_color3: "#d4d4d4", bg_color4: "#ffffff", bg_color5: "#c9c9c9", bg_color6: "#efefef", bg_base: "#f2f2f2" },
+  },
+  {
+    name: "Ink Wash",
+    colors: { bg_color1: "#1a1a1a", bg_color2: "#0d0d0d", bg_color3: "#2e2e2e", bg_color4: "#4a4a4a", bg_color5: "#1f1f1f", bg_color6: "#333333", bg_base: "#111111" },
+  },
+  {
+    name: "Graphite",
+    colors: { bg_color1: "#262626", bg_color2: "#171717", bg_color3: "#3f3f3f", bg_color4: "#2b2b2b", bg_color5: "#4d4d4d", bg_color6: "#1a1a1a", bg_base: "#202020" },
+  },
+  {
+    name: "Porcelain",
+    colors: { bg_color1: "#fafafa", bg_color2: "#f0f0f0", bg_color3: "#e0e0e0", bg_color4: "#d9d9d9", bg_color5: "#ececec", bg_color6: "#f7f7f7", bg_base: "#f5f5f5" },
+  },
+  {
+    name: "Carbon",
+    colors: { bg_color1: "#0d0d0d", bg_color2: "#1f1f1f", bg_color3: "#262626", bg_color4: "#000000", bg_color5: "#2b2b2b", bg_color6: "#141414", bg_base: "#0a0a0a" },
   },
   {
     name: "Orange · Navy",
-    colors: { bg_color1: "#F15A22", bg_color2: "#0a0e27", bg_color3: "#F15A22", bg_color4: "#0a0e27", bg_color5: "#F15A22", bg_color6: "#0a0e27", bg_base: "#0a0e27" },
+    colors: { bg_color1: "#F15A22", bg_color2: "#0a0e27", bg_color3: "#F15A22", bg_color4: "#0a0e27", bg_color5: "#F15A22", bg_color6: "#0a0e27", bg_base: "#0a0e27", hero_gradient_size: "0.45", hero_gradient_count: "12.0", hero_speed: "1.5", hero_color1_weight: "0.5", hero_color2_weight: "1.8" },
   },
   {
     name: "Coral · Turquoise",
-    colors: { bg_color1: "#FF6C50", bg_color2: "#40E0D0", bg_color3: "#FF6C50", bg_color4: "#40E0D0", bg_color5: "#FF6C50", bg_color6: "#40E0D0", bg_base: "#0a0e27" },
+    colors: { bg_color1: "#FF6C50", bg_color2: "#40E0D0", bg_color3: "#FF6C50", bg_color4: "#40E0D0", bg_color5: "#FF6C50", bg_color6: "#40E0D0", bg_base: "#0a0e27", hero_gradient_size: "1.0", hero_gradient_count: "6.0", hero_speed: "1.2", hero_color1_weight: "1.0", hero_color2_weight: "1.0" },
   },
   {
     name: "Orange · Navy · Turquoise",
-    colors: { bg_color1: "#F15A22", bg_color2: "#0a0e27", bg_color3: "#40E0D0", bg_color4: "#F15A22", bg_color5: "#0a0e27", bg_color6: "#40E0D0", bg_base: "#0a0e27" },
+    colors: { bg_color1: "#F15A22", bg_color2: "#0a0e27", bg_color3: "#40E0D0", bg_color4: "#F15A22", bg_color5: "#0a0e27", bg_color6: "#40E0D0", bg_base: "#0a0e27", hero_gradient_size: "0.45", hero_gradient_count: "12.0", hero_speed: "1.5", hero_color1_weight: "0.5", hero_color2_weight: "1.8" },
   },
   {
     name: "Coral · Teal · Beige",
-    colors: { bg_color1: "#F26633", bg_color2: "#2D6B6D", bg_color3: "#D1AF9C", bg_color4: "#F26633", bg_color5: "#2D6B6D", bg_color6: "#D1AF9C", bg_base: "#2D6B6D" },
+    colors: { bg_color1: "#F26633", bg_color2: "#2D6B6D", bg_color3: "#D1AF9C", bg_color4: "#F26633", bg_color5: "#2D6B6D", bg_color6: "#D1AF9C", bg_base: "#2D6B6D", hero_gradient_size: "1.0", hero_gradient_count: "6.0", hero_speed: "1.2", hero_color1_weight: "1.0", hero_color2_weight: "1.0" },
   },
   {
     name: "Orange · Dark Teal",
-    colors: { bg_color1: "#F15A22", bg_color2: "#004238", bg_color3: "#F15A22", bg_color4: "#000000", bg_color5: "#F15A22", bg_color6: "#000000", bg_base: "#004238" },
+    colors: { bg_color1: "#F15A22", bg_color2: "#004238", bg_color3: "#F15A22", bg_color4: "#000000", bg_color5: "#F15A22", bg_color6: "#000000", bg_base: "#004238", hero_gradient_size: "0.45", hero_gradient_count: "12.0", hero_speed: "1.5", hero_color1_weight: "0.5", hero_color2_weight: "1.8" },
   },
 ];
 
@@ -116,15 +137,24 @@ export default function AdminPage() {
     hero_title: "",
     hero_description: "",
     site_tagline: "",
+    water_ink1: "#171717",
+    water_ink2: "#0a0a0a",
+    water_ink_top: "0.15",
+    water_strength: "1.0",
     hero_icon: "photo_camera",
     hero_icon_url: "",
-    bg_color1: "#f8583a",
+    bg_color1: "#141414",
     bg_color2: "#141414",
     bg_color3: "#f5c9c0",
     bg_color4: "#0a0e27",
     bg_color5: "#ff9c8a",
     bg_color6: "#1c1c1c",
     bg_base: "#141414",
+    hero_gradient_size: "0.85",
+    hero_gradient_count: "12.0",
+    hero_speed: "1.1",
+    hero_color1_weight: "1.0",
+    hero_color2_weight: "1.3",
   });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -327,7 +357,7 @@ export default function AdminPage() {
       const res = await fetch(`${API_BASE}/api/settings`);
       if (res.ok) {
         const data = await res.json();
-        setSettings({ hero_title: "", hero_description: "", site_tagline: "", hero_icon: "photo_camera", hero_icon_url: "", ...data });
+        setSettings({ hero_title: "", hero_description: "", site_tagline: "", water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0", hero_gradient_size: "0.85", hero_gradient_count: "12.0", hero_speed: "1.1", hero_color1_weight: "1.0", hero_color2_weight: "1.3", hero_icon: "photo_camera", hero_icon_url: "", ...data });
       }
     } catch {
       // ignore
@@ -1012,6 +1042,83 @@ export default function AdminPage() {
               />
             </div>
 
+            {/* Water Ripple Background */}
+            <div className="border-t border-border-subtle pt-5">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-label-caps text-outline">Water Ripple Background (page background)</label>
+                <button
+                  type="button"
+                  onClick={() => setSettings({ ...settings, water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0" })}
+                  className="text-label-caps px-3 py-1.5 bg-surface-variant text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-all rounded-md"
+                >
+                  Reset
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-metadata-sm text-outline block mb-1.5">Ink Color 1</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={settings.water_ink1}
+                      onChange={(e) => setSettings({ ...settings, water_ink1: e.target.value })}
+                      className="w-10 h-9 border border-border-subtle rounded-md bg-surface cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={settings.water_ink1}
+                      onChange={(e) => setSettings({ ...settings, water_ink1: e.target.value })}
+                      className="flex-1 border border-border-subtle p-2 text-metadata-sm bg-surface focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-metadata-sm text-outline block mb-1.5">Ink Color 2</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={settings.water_ink2}
+                      onChange={(e) => setSettings({ ...settings, water_ink2: e.target.value })}
+                      className="w-10 h-9 border border-border-subtle rounded-md bg-surface cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={settings.water_ink2}
+                      onChange={(e) => setSettings({ ...settings, water_ink2: e.target.value })}
+                      className="flex-1 border border-border-subtle p-2 text-metadata-sm bg-surface focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-metadata-sm text-outline block mb-1.5">Ink Coverage (-0.5 ~ 0.5, larger = more ink)</label>
+                  <input
+                    type="range"
+                    min="-0.5"
+                    max="0.5"
+                    step="0.01"
+                    value={settings.water_ink_top}
+                    onChange={(e) => setSettings({ ...settings, water_ink_top: e.target.value })}
+                    className="w-full accent-primary"
+                  />
+                  <span className="text-metadata-sm text-on-surface-variant">{settings.water_ink_top}</span>
+                </div>
+                <div>
+                  <label className="text-metadata-sm text-outline block mb-1.5">Ripple Strength (0.2 ~ 2.0)</label>
+                  <input
+                    type="range"
+                    min="0.2"
+                    max="2.0"
+                    step="0.05"
+                    value={settings.water_strength}
+                    onChange={(e) => setSettings({ ...settings, water_strength: e.target.value })}
+                    className="w-full accent-primary"
+                  />
+                  <span className="text-metadata-sm text-on-surface-variant">{settings.water_strength}</span>
+                </div>
+              </div>
+              <p className="text-metadata-sm text-outline mt-3">Changes apply after saving. Reopen / refresh a page to preview.</p>
+            </div>
+
             {/* Hero Background Colors */}
             <div className="border-t border-border-subtle pt-5">
               <label className="text-label-caps text-outline block mb-3">Hero Background (Light Spots Shader)</label>
@@ -1062,6 +1169,75 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Animation parameters (from others/three.js动态光斑效果) */}
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-metadata-sm text-outline block mb-1.5">Gradient Size (0.2 ~ 1.5)</label>
+                  <input
+                    type="range"
+                    min="0.2"
+                    max="1.5"
+                    step="0.05"
+                    value={settings.hero_gradient_size}
+                    onChange={(e) => setSettings({ ...settings, hero_gradient_size: e.target.value })}
+                    className="w-full accent-primary"
+                  />
+                  <span className="text-metadata-sm text-on-surface-variant">{settings.hero_gradient_size}</span>
+                </div>
+                <div>
+                  <label className="text-metadata-sm text-outline block mb-1.5">Gradient Count (2 ~ 14)</label>
+                  <input
+                    type="range"
+                    min="2"
+                    max="14"
+                    step="1"
+                    value={settings.hero_gradient_count}
+                    onChange={(e) => setSettings({ ...settings, hero_gradient_count: e.target.value })}
+                    className="w-full accent-primary"
+                  />
+                  <span className="text-metadata-sm text-on-surface-variant">{settings.hero_gradient_count}</span>
+                </div>
+                <div>
+                  <label className="text-metadata-sm text-outline block mb-1.5">Speed (0.3 ~ 3.0)</label>
+                  <input
+                    type="range"
+                    min="0.3"
+                    max="3.0"
+                    step="0.1"
+                    value={settings.hero_speed}
+                    onChange={(e) => setSettings({ ...settings, hero_speed: e.target.value })}
+                    className="w-full accent-primary"
+                  />
+                  <span className="text-metadata-sm text-on-surface-variant">{settings.hero_speed}</span>
+                </div>
+                <div>
+                  <label className="text-metadata-sm text-outline block mb-1.5">Color 1 Weight (0.1 ~ 3.0)</label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="3.0"
+                    step="0.1"
+                    value={settings.hero_color1_weight}
+                    onChange={(e) => setSettings({ ...settings, hero_color1_weight: e.target.value })}
+                    className="w-full accent-primary"
+                  />
+                  <span className="text-metadata-sm text-on-surface-variant">{settings.hero_color1_weight}</span>
+                </div>
+                <div>
+                  <label className="text-metadata-sm text-outline block mb-1.5">Color 2 Weight (0.1 ~ 3.0)</label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="3.0"
+                    step="0.1"
+                    value={settings.hero_color2_weight}
+                    onChange={(e) => setSettings({ ...settings, hero_color2_weight: e.target.value })}
+                    className="w-full accent-primary"
+                  />
+                  <span className="text-metadata-sm text-on-surface-variant">{settings.hero_color2_weight}</span>
+                </div>
               </div>
             </div>
 

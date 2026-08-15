@@ -165,13 +165,22 @@ class SettingsOut(BaseModel):
     site_tagline: str = "Precision photography portfolio. Every frame tells a story."
     hero_icon: str = "photo_camera"
     hero_icon_url: str = ""
-    bg_color1: str = "#316944"
-    bg_color2: str = "#163828"
-    bg_color3: str = "#85C093"
-    bg_color4: str = "#0a0e27"
-    bg_color5: str = "#98d4a6"
-    bg_color6: str = "#1e4c32"
-    bg_base: str = "#163828"
+    bg_color1: str = "#141414"
+    bg_color2: str = "#2b2b2b"
+    bg_color3: str = "#3a3a3a"
+    bg_color4: str = "#262626"
+    bg_color5: str = "#4d4d4d"
+    bg_color6: str = "#1c1c1c"
+    bg_base: str = "#141414"
+    water_ink1: str = "#171717"
+    water_ink2: str = "#0a0a0a"
+    water_ink_top: str = "0.15"
+    water_strength: str = "1.0"
+    hero_gradient_size: str = "0.85"
+    hero_gradient_count: str = "12.0"
+    hero_speed: str = "1.1"
+    hero_color1_weight: str = "1.0"
+    hero_color2_weight: str = "1.3"
 
 
 class SettingsUpdate(BaseModel):
@@ -187,3 +196,12 @@ class SettingsUpdate(BaseModel):
     bg_color5: Optional[str] = None
     bg_color6: Optional[str] = None
     bg_base: Optional[str] = None
+    water_ink1: Optional[str] = None
+    water_ink2: Optional[str] = None
+    water_ink_top: Optional[str] = None
+    water_strength: Optional[str] = None
+    hero_gradient_size: Optional[str] = None
+    hero_gradient_count: Optional[str] = None
+    hero_speed: Optional[str] = None
+    hero_color1_weight: Optional[str] = None
+    hero_color2_weight: Optional[str] = None

@@ -58,7 +58,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
     if (map._searchMarker) map.removeLayer(map._searchMarker);
     const icon = L.divIcon({
       className: "custom-marker",
-      html: `<div style="width:20px;height:20px;background:#2b2b2b;border-radius:50%;border:3px solid #f8583a;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
+      html: `<div style="width:20px;height:20px;background:#2b2b2b;border-radius:50%;border:3px solid #141414;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
       iconSize: [20, 20],
       iconAnchor: [10, 10],
     });

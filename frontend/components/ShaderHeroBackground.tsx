@@ -10,6 +10,11 @@ export interface ShaderColors {
   color5: string;
   color6: string;
   base: string;
+  gradientSize?: number;
+  gradientCount?: number;
+  speed?: number;
+  color1Weight?: number;
+  color2Weight?: number;
 }
 
 function hexToVec3(hex: string): [number, number, number] {
@@ -23,13 +28,18 @@ function hexToVec3(hex: string): [number, number, number] {
 }
 
 const DEFAULT_COLORS: ShaderColors = {
-  color1: "#f8583a",
+  color1: "#141414",
   color2: "#141414",
   color3: "#f5c9c0",
   color4: "#262626",
   color5: "#ff9c8a",
   color6: "#1c1c1c",
   base: "#141414",
+  gradientSize: 0.85,
+  gradientCount: 12.0,
+  speed: 1.1,
+  color1Weight: 1.0,
+  color2Weight: 1.3,
 };
 
 export default function ShaderHeroBackground({ colors }: { colors?: Partial<ShaderColors> }) {
@@ -300,15 +310,15 @@ export default function ShaderHeroBackground({ colors }: { colors?: Partial<Shad
           uColor4: { value: new THREE_LIB.Vector3(...hexToVec3(colorsRef.current.color4)) },
           uColor5: { value: new THREE_LIB.Vector3(...hexToVec3(colorsRef.current.color5)) },
           uColor6: { value: new THREE_LIB.Vector3(...hexToVec3(colorsRef.current.color6)) },
-          uSpeed: { value: 1.1 },
+          uSpeed: { value: colorsRef.current.speed ?? 1.1 },
           uIntensity: { value: 1.3 },
           uTouchTexture: { value: texture },
           uGrainIntensity: { value: 0.05 },
           uBase: { value: new THREE_LIB.Vector3(...hexToVec3(colorsRef.current.base)) },
-          uGradientSize: { value: 0.85 },
-          uGradientCount: { value: 12.0 },
-          uColor1Weight: { value: 1.0 },
-          uColor2Weight: { value: 1.3 },
+          uGradientSize: { value: colorsRef.current.gradientSize ?? 0.85 },
+          uGradientCount: { value: colorsRef.current.gradientCount ?? 12.0 },
+          uColor1Weight: { value: colorsRef.current.color1Weight ?? 1.0 },
+          uColor2Weight: { value: colorsRef.current.color2Weight ?? 1.3 },
         },
         vertexShader: `
           varying vec2 vUv;
@@ -403,6 +413,11 @@ export default function ShaderHeroBackground({ colors }: { colors?: Partial<Shad
     mat.uniforms.uColor5.value.set(...hexToVec3(colorsRef.current.color5));
     mat.uniforms.uColor6.value.set(...hexToVec3(colorsRef.current.color6));
     mat.uniforms.uBase.value.set(...hexToVec3(colorsRef.current.base));
+    mat.uniforms.uGradientSize.value = colorsRef.current.gradientSize ?? 0.85;
+    mat.uniforms.uGradientCount.value = colorsRef.current.gradientCount ?? 12.0;
+    mat.uniforms.uSpeed.value = colorsRef.current.speed ?? 1.1;
+    mat.uniforms.uColor1Weight.value = colorsRef.current.color1Weight ?? 1.0;
+    mat.uniforms.uColor2Weight.value = colorsRef.current.color2Weight ?? 1.3;
   }, [colors]);
 
   return (

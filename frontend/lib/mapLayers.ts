@@ -183,7 +183,7 @@ const LAYER_STYLE = `
     position: relative;
   }
   .scheme-select-shadow .scheme-btn-list .scheme-btn[data-current="true"] {
-    box-shadow: 0 0 0 2px #f8583a;
+    box-shadow: 0 0 0 2px #141414;
   }
   @media (max-width: 767px) {
     .map-scheme { margin: 0 8px 8px 0 !important; }

@@ -22,7 +22,15 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const settings = await fetchSettings();
+  const ripple = {
+    ink1: settings?.water_ink1 || "#171717",
+    ink2: settings?.water_ink2 || "#0a0a0a",
+    inkTop: parseFloat(settings?.water_ink_top || "0.15"),
+    strength: parseFloat(settings?.water_strength || "1.0"),
+  };
+
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <head>
@@ -32,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" />
       </head>
       <body className={`min-h-full flex flex-col relative ${sigmaSerif.variable}`}>
-        <PageBackground />
+        <PageBackground ripple={ripple} />
         <VisitTracker />
         <div className="relative z-10 flex flex-col flex-1">{children}</div>
       </body>
