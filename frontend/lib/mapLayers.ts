@@ -72,7 +72,7 @@ export const TILE_LAYERS: TileLayerDef[] = [
       esriRef("World_Transportation"),
       esriRef("World_Boundaries_and_Places"),
     ],
-    thumb: { bg: "#33453A", road: "#F0F0EE", park: "#3D5235", water: "#1F3542", accent: "#F8583A" },
+    thumb: { bg: "#33453A", road: "#F0F0EE", park: "#3D5235", water: "#1F3542", accent: "#A0A0A0" },
   },
   {
     name: "Gaode",

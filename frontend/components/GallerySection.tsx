@@ -91,8 +91,8 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
                   top: `${y}%`,
                   width: isActive ? 14 : 7,
                   height: isActive ? 14 : 7,
-                  background: isActive ? "#f8583a" : "#ffffff",
-                  border: isActive ? "2px solid #f8583a" : "1px solid rgba(20,20,20,0.35)",
+                  background: isActive ? "#141414" : "#ffffff",
+                  border: isActive ? "2px solid #141414" : "1px solid rgba(20,20,20,0.35)",
                   boxShadow: isActive
                     ? "0 0 0 4px rgba(20,20,20,0.12), 0 2px 6px rgba(20,20,20,0.2)"
                     : "0 1px 3px rgba(20,20,20,0.12)",
@@ -162,15 +162,17 @@ function formatTime(dateStr: string | null) {
 export default function GallerySection({
   initialPhotos,
   initialTotal,
+  initialYears = [],
 }: {
   initialPhotos: Photo[];
   initialTotal: number;
+  initialYears?: string[];
 }) {
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
   const [total, setTotal] = useState(initialTotal);
   const yearOf = (p: Photo) => (p.shoot_time ? String(new Date(p.shoot_time).getFullYear()) : "");
-  const initialYears = [...new Set(initialPhotos.map(yearOf).filter(Boolean))].sort().reverse();
-  const [activeYear, setActiveYear] = useState<string>(initialYears[0] ?? "");
+  const allYears = initialYears.length > 0 ? initialYears : [...new Set(initialPhotos.map(yearOf).filter(Boolean))].sort().reverse();
+  const [activeYear, setActiveYear] = useState<string>(allYears[0] ?? "");
   const [loadingMore, setLoadingMore] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [colCount, setColCount] = useState(3); // 首帧与 SSR 一致，挂载后按窗口宽度调整
@@ -189,7 +191,7 @@ export default function GallerySection({
   const photosRef = useRef(photos);
   photosRef.current = photos;
 
-  const years = [...new Set(photos.map(yearOf).filter(Boolean))].sort().reverse() as string[];
+  const years = allYears;
 
   const hasMore = photos.length < total;
   const hasMoreRef = useRef(hasMore);

@@ -1,4 +1,4 @@
-import { Photo, fetchPhotos } from "@/lib/api-server";
+import { Photo, fetchPhotos, fetchYears } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GallerySection from "@/components/GallerySection";
@@ -6,10 +6,12 @@ import GallerySection from "@/components/GallerySection";
 export default async function GalleryPage() {
   let items: Photo[] = [];
   let total = 0;
+  let allYears: string[] = [];
   try {
     const data = await fetchPhotos(true, 0, 12);
     items = data.items;
     total = data.total;
+    allYears = await fetchYears();
   } catch {
     // Backend not available, show empty state
   }
@@ -18,7 +20,7 @@ export default async function GalleryPage() {
     <>
       <Navbar />
 
-      <section className="w-full py-8 md:py-12 px-4 md:px-grid-margin border-t border-primary/20 relative z-30 shadow-[0_-10px_30px_rgba(22,56,40,0.05)]">
+      <section className="w-full py-8 md:py-12 px-4 md:px-grid-margin border-t border-primary/20 relative z-30 shadow-[0_-10px_30px_rgba(20,20,20,0.05)]">
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `
             linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
@@ -76,7 +78,7 @@ export default async function GalleryPage() {
         </div>
 
         <div className="max-w-[1800px] mx-auto relative z-10 px-0 md:px-4">
-          <GallerySection initialPhotos={items} initialTotal={total} />
+          <GallerySection initialPhotos={items} initialTotal={total} initialYears={allYears} />
         </div>
       </section>
 

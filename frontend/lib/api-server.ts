@@ -1,5 +1,16 @@
 const API_BASE = "http://127.0.0.1:8001";
 
+export async function fetchYears(): Promise<string[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/photos/years`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.years || [];
+  } catch {
+    return [];
+  }
+}
+
 const IMG_BASE = "";
 
 export interface Photo {

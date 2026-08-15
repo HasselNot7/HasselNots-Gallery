@@ -13,7 +13,14 @@ const WaterRippleBackground = dynamic(() => import("@/components/WaterRippleBack
 
 export default function PageBackground({ ripple }: { ripple?: RippleSettings }) {
   const pathname = usePathname();
-  if (pathname === "/" || pathname === "/admin" || pathname.startsWith("/admin/")) return null;
+  if (
+    pathname === "/" ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname.startsWith("/photo/") ||
+    pathname === "/map"
+  )
+    return null;
 
   return <WaterRippleBackground settings={ripple ?? { ink1: "#171717", ink2: "#0a0a0a", inkTop: 0.15, strength: 1.0 }} />;
 }

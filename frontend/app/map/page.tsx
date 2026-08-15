@@ -184,7 +184,7 @@ export default async function MapPage() {
               </div>
               <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-primary/40 pointer-events-none" />
               <div className="p-4 md:p-6">
-                <h2 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-4">
+                <h2 className="text-headline-mobile font-bold uppercase text-primary tracking-widest border-b border-primary/15 pb-2 mb-4">
                   Locations
                 </h2>
                 {Object.values(locations).length === 0 ? (

@@ -21,6 +21,11 @@ export default function HeroSection({
     color5?: string;
     color6?: string;
     base?: string;
+    gradientSize?: number;
+    gradientCount?: number;
+    speed?: number;
+    color1Weight?: number;
+    color2Weight?: number;
   };
 }) {
   const titleLines = heroTitle.split("\n");
@@ -29,7 +34,7 @@ export default function HeroSection({
     <main className="relative h-[calc(100svh+120px)] w-full bg-primary-fixed/10 border-b border-primary/20">
       <div className="sticky top-[64px] md:top-[72px] h-[calc(100svh-64px)] md:h-[calc(100svh-72px)] w-full flex overflow-hidden">
         {/* Left Vertical Sidebar */}
-        <aside className="w-10 md:w-24 shrink-0 bg-primary-container text-primary-fixed flex flex-col justify-between items-center py-4 md:py-grid-margin border-r border-primary/30 z-20 shadow-[20px_0_40px_rgba(22,56,40,0.15)] relative">
+        <aside className="w-10 md:w-24 shrink-0 bg-primary-container text-primary-fixed flex flex-col justify-between items-center py-4 md:py-grid-margin border-r border-primary/30 z-20 shadow-[20px_0_40px_rgba(20,20,20,0.12)] relative">
           <div className="absolute inset-0 pointer-events-none" style={{
             backgroundImage: `
               linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),

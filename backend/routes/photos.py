@@ -278,6 +278,20 @@ def list_geotagged(db: Session = Depends(get_db)):
     return [PhotoOut.model_validate(p) for p in photos]
 
 
+@router.get("/years")
+def list_years(db: Session = Depends(get_db)):
+    from sqlalchemy import func
+
+    rows = (
+        db.query(func.strftime("%Y", Photo.shoot_time).label("year"))
+        .filter(Photo.shoot_time.isnot(None), Photo.is_published == True)
+        .distinct()
+        .all()
+    )
+    years = sorted((r[0] for r in rows if r[0]), reverse=True)
+    return {"years": years}
+
+
 @router.post("/batch-delete")
 def batch_delete_photos(
     payload: BatchDelete,
