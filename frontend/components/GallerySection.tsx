@@ -46,13 +46,13 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
       {/* Year label */}
       <div className="w-12 md:w-16 text-right flex-shrink-0 flex flex-col items-end gap-1.5">
         <span
-          className="text-label-caps text-primary leading-none"
-          style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
+          className="text-lg md:text-xl font-bold text-primary leading-none tracking-tight"
+          style={{ fontFamily: "'Sigma Serif', 'Noto Serif SC', serif" }}
         >
           {active || "—"}
         </span>
         <span
-          className="text-[8px] text-outline uppercase tracking-widest leading-none"
+          className="text-[8px] text-secondary uppercase tracking-[0.2em] leading-none"
           style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
         >
           Year
@@ -71,12 +71,12 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
         {/* Vertical rail */}
         <div
           ref={railRef}
-          className="relative w-1.5 h-full bg-surface-container-high border border-primary/15 rounded-full overflow-visible"
+          className="relative w-[3px] h-full bg-gradient-to-b from-primary/20 via-primary/10 to-primary/20 rounded-full overflow-visible"
         >
           {/* Progress fill above the active thumb */}
           <div
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-full rounded-full bg-gradient-to-b from-mint-accent via-mint-accent/50 to-white pointer-events-none"
-            style={{ height: `${activePos}%`, boxShadow: "0 0 6px rgba(45,79,62,0.25)" }}
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-full rounded-full bg-gradient-to-b from-secondary via-secondary/70 to-secondary/20 pointer-events-none"
+            style={{ height: `${activePos}%`, boxShadow: "0 0 8px rgba(248,88,58,0.35)" }}
           />
 
           {/* Node dots */}
@@ -89,13 +89,13 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
                 className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-200 pointer-events-none"
                 style={{
                   top: `${y}%`,
-                  width: isActive ? 18 : 9,
-                  height: isActive ? 18 : 9,
-                  background: isActive ? "#141414" : "#f8faf8",
-                  border: isActive ? "2px solid #f0f0f0" : "1px solid rgba(0,0,0,0.35)",
+                  width: isActive ? 14 : 7,
+                  height: isActive ? 14 : 7,
+                  background: isActive ? "#f8583a" : "#ffffff",
+                  border: isActive ? "2px solid #f8583a" : "1px solid rgba(20,20,20,0.35)",
                   boxShadow: isActive
-                    ? "0 0 0 4px rgba(209,231,211,0.65), 0 2px 8px rgba(22,56,40,0.3)"
-                    : "0 1px 3px rgba(22,56,40,0.15)",
+                    ? "0 0 0 4px rgba(248,88,58,0.18), 0 2px 6px rgba(20,20,20,0.2)"
+                    : "0 1px 3px rgba(20,20,20,0.12)",
                 }}
               />
             );
@@ -106,14 +106,14 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
             className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-primary border-2 border-primary-fixed pointer-events-none transition-[top] duration-100"
             style={{
               top: `${activePos}%`,
-              boxShadow: "0 0 0 3px rgba(209,231,211,0.45), 0 4px 12px rgba(22,56,40,0.35)",
+              boxShadow: "0 0 0 3px rgba(248,88,58,0.18), 0 4px 12px rgba(20,20,20,0.3)",
             }}
           >
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-primary-fixed" />
+              <div className="w-2 h-2 rounded-full bg-secondary" />
             </div>
             {/* Subtle pulse ring */}
-            <div className="absolute inset-0 rounded-full border border-mint-accent/50 animate-ping pointer-events-none" />
+            <div className="absolute inset-0 rounded-full border border-secondary/60 animate-ping pointer-events-none" />
           </div>
         </div>
       </div>
@@ -125,11 +125,12 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
             key={entry}
             className={`leading-none transition-all duration-200 cursor-pointer px-2 py-1 rounded-sm ${
               i === activeIdx
-                ? "text-primary font-bold bg-mint-accent/40 shadow-sm"
+                ? "text-secondary font-bold"
                 : "text-outline hover:text-primary"
             }`}
             style={{
-              border: i === activeIdx ? "1px solid rgba(209,231,211,0.9)" : "1px solid transparent",
+              border: i === activeIdx ? "1px solid rgba(248,88,58,0.35)" : "1px solid transparent",
+              background: i === activeIdx ? "rgba(248,88,58,0.06)" : "transparent",
             }}
             onClick={() => onChange(entry)}
           >
