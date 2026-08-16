@@ -259,6 +259,8 @@ def list_photos(
     query = db.query(Photo)
     if published_only and (current_user is None or not current_user.is_admin):
         query = query.filter(Photo.is_published == True)
+    elif not published_only and (current_user is None or not current_user.is_admin):
+        raise HTTPException(status_code=403, detail="Admin access required")
     if album_id is not None:
         query = query.filter(Photo.album_id == album_id)
 

@@ -31,6 +31,8 @@ def list_albums(
     query = db.query(Album)
     if published_only and (current_user is None or not current_user.is_admin):
         query = query.filter(Album.is_published == True)
+    elif not published_only and (current_user is None or not current_user.is_admin):
+        raise HTTPException(status_code=403, detail="Admin access required")
     albums = query.order_by(Album.created_at.desc()).all()
     return [_to_out(a, db) for a in albums]
 

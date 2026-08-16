@@ -43,6 +43,8 @@ def list_articles(
     query = db.query(Article)
     if published_only and (current_user is None or not current_user.is_admin):
         query = query.filter(Article.is_published == True)
+    elif not published_only and (current_user is None or not current_user.is_admin):
+        raise HTTPException(status_code=403, detail="Admin access required")
     articles = query.order_by(Article.created_at.desc()).all()
     return [_to_out(a) for a in articles]
 

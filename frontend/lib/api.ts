@@ -125,3 +125,16 @@ export function clearToken() {
 export function isAuthenticated(): boolean {
   return !!getToken();
 }
+
+export async function verifyAuth(): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

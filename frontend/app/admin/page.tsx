@@ -9,7 +9,7 @@ import {
   getPhotoImageUrl,
   getToken,
   clearToken,
-  isAuthenticated,
+  verifyAuth,
 } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -249,14 +249,22 @@ export default function AdminPage() {
   ];
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    if (!getToken()) {
       router.push("/login");
       return;
     }
-    loadPhotos();
-    loadSettings();
-    loadArticles();
-    loadAlbums();
+    (async () => {
+      const valid = await verifyAuth();
+      if (!valid) {
+        clearToken();
+        router.push("/login");
+        return;
+      }
+      loadPhotos();
+      loadSettings();
+      loadArticles();
+      loadAlbums();
+    })();
   }, [router]);
 
   const loadAlbums = async () => {
