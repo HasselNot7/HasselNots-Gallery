@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import piexif from "piexifjs";
 import {
   Photo,
-  fetchPhotos,
   getPhotoImageUrl,
   getToken,
   clearToken,
@@ -269,7 +268,9 @@ export default function AdminPage() {
 
   const loadAlbums = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/albums?published_only=false`);
+      const res = await fetch(`${API_BASE}/api/albums?published_only=false`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
       if (res.ok) setAlbums(await res.json());
     } catch {
       // ignore
@@ -278,7 +279,9 @@ export default function AdminPage() {
 
   const loadArticles = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/articles?published_only=false`);
+      const res = await fetch(`${API_BASE}/api/articles?published_only=false`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
       if (res.ok) setArticles(await res.json());
     } catch {
       // ignore
@@ -351,8 +354,21 @@ export default function AdminPage() {
 
   const loadPhotos = async () => {
     try {
-      const data = await fetchPhotos(false);
-      setPhotos(data);
+      const token = getToken();
+      const all: Photo[] = [];
+      let skip = 0;
+      for (;;) {
+        const res = await fetch(
+          `${API_BASE}/api/photos?published_only=false&skip=${skip}&limit=100`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) break;
+        const data = await res.json();
+        all.push(...(data.items || []));
+        if (all.length >= (data.total || 0)) break;
+        skip += 100;
+      }
+      setPhotos(all);
     } catch {
       // ignore
     } finally {
