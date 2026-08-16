@@ -120,7 +120,7 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
           .map(
             (m) => `
             <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #eef1ee;align-items:center;">
-              <a href="/photo/${m.id}" style="flex-shrink:0;width:56px;height:56px;overflow:hidden;border:1px solid #e2e8e2;display:block;">
+              <a href="/photo/${m.id}" style="flex-shrink:0;width:88px;height:88px;overflow:hidden;border:1px solid #e2e8e2;display:block;">
                 <img src="${m.thumbnail}" alt="${m.title}" style="width:100%;height:100%;object-fit:cover;" />
               </a>
               <div style="min-width:0;">
