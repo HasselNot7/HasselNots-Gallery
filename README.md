@@ -137,6 +137,6 @@ PROJECT.md              # 项目文档 / Project docs
 
 ## 许可 / License
 
-仅个人使用。照片版权归作者所有。
+代码采用 MIT 协议（见 [`LICENSE`](LICENSE)）。**照片与文章内容版权归作者所有，未经许可不得使用。**
 
-For personal use only. All photo copyrights belong to the author.
+Code is licensed under the [MIT License](LICENSE). **All photos and articles are copyrighted by the author; do not use without permission.**
