@@ -16,9 +16,17 @@ def _slugify(text: str) -> str:
 
 
 def _to_out(album: Album, db: Session) -> AlbumOut:
-    count = db.query(Photo).filter(Photo.album_id == album.id, Photo.is_published == True).count()
+    photos = (
+        db.query(Photo)
+        .filter(Photo.album_id == album.id, Photo.is_published == True)
+        .order_by(Photo.shoot_time.desc().nullslast(), Photo.id.desc())
+        .all()
+    )
     out = AlbumOut.model_validate(album)
-    out.photo_count = count
+    out.photo_count = len(photos)
+    # 封面自动回退：cover_photo_id 为空或不属于本专辑时，用专辑内最新照片
+    if not out.cover_photo_id or not any(p.id == out.cover_photo_id for p in photos):
+        out.cover_photo_id = photos[0].id if photos else None
     return out
 
 
@@ -85,7 +93,7 @@ def update_album(
         album.title = payload.title
     if payload.description is not None:
         album.description = payload.description
-    if payload.cover_photo_id is not None:
+    if "cover_photo_id" in payload.model_fields_set:
         album.cover_photo_id = payload.cover_photo_id
     if payload.is_published is not None:
         album.is_published = payload.is_published

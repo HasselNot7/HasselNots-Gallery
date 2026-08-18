@@ -2107,15 +2107,33 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <label className="text-label-caps text-outline block mb-1">Cover Photo ID (optional)</label>
-                <input
-                  type="number"
-                  min={1}
+                <label className="text-label-caps text-outline block mb-1">Cover Photo</label>
+                <select
                   value={albumForm.cover_photo_id}
                   onChange={(e) => setAlbumForm({ ...albumForm, cover_photo_id: e.target.value })}
                   className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
-                  placeholder="e.g. 20"
-                />
+                >
+                  <option value="">Auto (newest in album)</option>
+                  {albumModal?.album?.cover_photo_id &&
+                    !photos.some((p) => p.album_id === albumModal.album.id && p.id === albumModal.album.cover_photo_id) && (
+                      <option value={String(albumModal.album.cover_photo_id)}>
+                        #{albumModal.album.cover_photo_id} — Current cover
+                      </option>
+                    )}
+                  {photos
+                    .filter((p) => albumModal?.album && p.album_id === albumModal.album.id)
+                    .map((p) => (
+                      <option key={p.id} value={String(p.id)}>
+                        #{p.id} — {p.title || p.original_filename || "Untitled"}
+                      </option>
+                    ))}
+                  {photos.filter((p) => albumModal?.album && p.album_id === albumModal.album.id).length === 0 && (
+                    <option value="" disabled>
+                      No photos in this album yet
+                    </option>
+                  )}
+                </select>
+                <p className="text-metadata-sm text-outline mt-1">If empty, the newest photo in this album is used automatically.</p>
               </div>
             </div>
             <div className="flex justify-end gap-3 p-6 border-t border-border-subtle">
