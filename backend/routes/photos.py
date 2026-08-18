@@ -492,20 +492,25 @@ def upload_photo(
     # If the client provided EXIF (from frontend compression), inject it back
     # (raw byte-exact segment; piexif supports both JPEG and WebP)
     if exif_base64 and ext in (".jpg", ".jpeg", ".webp"):
+        import piexif
+        exif_bytes = base64.b64decode(exif_base64)
+        # Raw insert preserves GPS byte-for-byte. Some phone EXIF (e.g. Xiaomi
+        # private tags) cannot be re-serialized by piexif.dump — in that case
+        # keep the raw insert and skip orientation removal rather than losing
+        # all EXIF data.
+        piexif.insert(exif_bytes, file_path)
         try:
-            import piexif
-            exif_bytes = base64.b64decode(exif_base64)
-            piexif.insert(exif_bytes, file_path)
-            # Client-compressed pixels are already orientation-correct; drop the
-            # orientation flag so it is not applied twice (double rotation).
             exif_dict = piexif.load(file_path)
-            exif_dict["0th"].pop(274, None)
-            piexif.insert(piexif.dump(exif_dict), file_path)
-            img = Image.open(file_path)
-            exif_data = _read_exif(img)
+            if 274 in exif_dict["0th"]:
+                exif_dict["0th"].pop(274, None)
+                piexif.insert(piexif.dump(exif_dict), file_path)
         except Exception as e:
             import logging
-            logging.getLogger("photos").warning("EXIF injection failed: %s", e)
+            logging.getLogger("photos").warning(
+                "EXIF re-encode failed, keeping raw segment (GPS preserved): %s", e
+            )
+        img = Image.open(file_path)
+        exif_data = _read_exif(img)
 
     w, h = img.size
     # Thumbnails always saved as JPEG (HEIC has no encoder; RGBA needs RGB)
