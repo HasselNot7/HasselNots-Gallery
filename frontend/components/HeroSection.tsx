@@ -151,12 +151,12 @@ export default function HeroSection({
             <div className="relative flex items-center justify-center gap-4 md:gap-6 max-w-4xl">
               {/* Icon */}
               {heroIconUrl ? (
-                <div className="shrink-0 inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden border border-primary/10 bg-surface shadow-[0_8px_18px_rgba(0,0,0,0.40),0_24px_52px_rgba(0,0,0,0.36)]">
+                <div className="shrink-0 inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-full overflow-hidden border border-primary/10 bg-surface shadow-[0_8px_18px_rgba(0,0,0,0.40),0_24px_52px_rgba(0,0,0,0.36)]">
                   <img src={heroIconUrl} alt="" className="w-full h-full object-cover" />
                 </div>
               ) : (
-                <div className="shrink-0 inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full bg-primary-fixed text-primary border border-primary/10 shadow-[0_8px_18px_rgba(0,0,0,0.40),0_24px_52px_rgba(0,0,0,0.36)]">
-                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>{heroIcon}</span>
+                <div className="shrink-0 inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-full bg-primary-fixed text-primary border border-primary/10 shadow-[0_8px_18px_rgba(0,0,0,0.40),0_24px_52px_rgba(0,0,0,0.36)]">
+                  <span className="material-symbols-outlined text-[32px] md:text-[44px]" style={{ fontVariationSettings: "'FILL' 1" }}>{heroIcon}</span>
                 </div>
               )}
 
