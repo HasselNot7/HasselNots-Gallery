@@ -82,6 +82,16 @@ npm run dev
 
 Visit `http://localhost:3000`, admin at `/admin`.
 
+### 启动脚本 / Startup Scripts
+
+仓库根目录提供现成脚本 / Ready-made scripts in the repo root:
+
+| 脚本 Script | 用途 Purpose |
+|---|---|
+| `start-backend.sh` | 后端开发模式（建表 + uvicorn :8001）/ Backend dev (init DB + uvicorn :8001) |
+| `start-frontend-dev.sh` | 前端开发模式（`npm run dev`）/ Frontend dev (`npm run dev`) |
+| `start-frontend-prod.sh` | 前端生产模式（`npm run start`，需先 build；`--build` 参数可先构建再启动）/ Frontend production (`npm run start`, pass `--build` to build first) |
+
 ---
 
 ## 对象存储 / Object Storage (Cloudflare R2)

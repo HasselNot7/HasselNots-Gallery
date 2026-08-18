@@ -25,3 +25,6 @@ backend/.env
 docs/requirements.md
 others/
 design-screens/
+
+# test dir
+test_file/
