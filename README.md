@@ -143,6 +143,41 @@ PROJECT.md              # 项目文档 / Project docs
 - 环境变量：`NEXT_PUBLIC_SITE_URL`（站点域名）、`JWT_SECRET_KEY`（生产务必设置 / required in production）
 - 照片本体在 R2，迁移服务器无需搬运图片 / photos live in R2, no need to move images
 
+### 服务器日常操作 / Server Operations
+
+生产服务器（systemd 管理两个服务）/ Production server (both services managed by systemd):
+
+```bash
+# 后端重启 / Restart backend
+systemctl restart gallery-backend
+systemctl status gallery-backend          # 状态与最近日志 / status & recent logs
+journalctl -u gallery-backend -n 50       # 查看后端日志 / view backend logs
+
+# 前端重启 / Restart frontend
+systemctl restart gallery-frontend
+journalctl -u gallery-frontend -n 50      # 查看前端日志 / view frontend logs
+```
+
+部署新代码 / Deploying new code:
+
+```bash
+cd /root/app/gallery
+git pull origin main
+
+# 后端：直接重启即加载新代码 / backend: restart is enough (Python loads code directly)
+systemctl restart gallery-backend
+
+# 前端：必须先重新构建，再重启（只 build 不 restart 会导致页面加载失败）
+# frontend: MUST rebuild first, then restart
+# (building without restarting breaks the page — old process + new build mismatch)
+cd frontend
+npm run build
+systemctl restart gallery-frontend
+```
+
+> 注意：前端部署**必须 build + restart 两步**，缺一不可。
+> Note: frontend deploys require BOTH `npm run build` AND `systemctl restart gallery-frontend`.
+
 ---
 
 ## 许可 / License
