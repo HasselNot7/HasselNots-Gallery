@@ -25,7 +25,6 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
     const settings = {
       damping: 0.98,
       tension: 0.02,
-      resolution: 512,
       rippleStrength: s.strength,
       mouseIntensity: 0.3,
       clickIntensity: 2.0,
@@ -34,6 +33,19 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
       autoDropInterval: 3000,
       autoDropIntensity: 1.0,
     };
+
+    // 波纹网格以 16:9 为基准：网格高固定 512，宽随屏幕比例缩放，
+    // 使任何屏幕比例下波纹形状都与 16:9 屏幕一致（横向椭圆）
+    const BASE_GRID = 512;
+    const REF_ASPECT = 16 / 9;
+    let gridW = 512;
+    let gridH = 512;
+
+    function computeGrid(w: number, h: number) {
+      let gw = Math.round((BASE_GRID * (w / h)) / REF_ASPECT);
+      gw = Math.max(64, Math.min(1024, gw));
+      return { gw, gh: BASE_GRID };
+    }
 
     const gradientColors = {
       colorA1: [1.0, 1.0, 1.0],
@@ -49,11 +61,11 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
     }
 
     function addRipple(x: number, y: number, strength = 1.0) {
-      const { resolution, rippleRadius } = settings;
+      const { rippleRadius } = settings;
       const normalizedX = x / window.innerWidth;
       const normalizedY = 1.0 - y / window.innerHeight;
-      const texX = Math.floor(normalizedX * resolution);
-      const texY = Math.floor(normalizedY * resolution);
+      const texX = Math.floor(normalizedX * gridW);
+      const texY = Math.floor(normalizedY * gridH);
       const radius = rippleRadius;
       const radiusSquared = radius * radius;
       for (let i = -radius; i <= radius; i++) {
@@ -62,8 +74,8 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
           if (distanceSquared <= radiusSquared) {
             const posX = texX + i;
             const posY = texY + j;
-            if (posX >= 0 && posX < resolution && posY >= 0 && posY < resolution) {
-              const index = posY * resolution + posX;
+            if (posX >= 0 && posX < gridW && posY >= 0 && posY < gridH) {
+              const index = posY * gridW + posX;
               const distance = Math.sqrt(distanceSquared);
               const rippleValue = Math.cos(((distance / radius) * Math.PI) / 2) * strength;
               waterBuffers.previous[index] += rippleValue;
@@ -75,13 +87,13 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
 
     function updateWaterSimulation() {
       const { current, previous } = waterBuffers;
-      const { damping, tension, resolution } = settings;
+      const { damping, tension } = settings;
       const safeTension = Math.min(tension, 0.05);
-      for (let i = 1; i < resolution - 1; i++) {
-        for (let j = 1; j < resolution - 1; j++) {
-          const index = i * resolution + j;
-          const top = previous[index - resolution];
-          const bottom = previous[index + resolution];
+      for (let i = 1; i < gridH - 1; i++) {
+        for (let j = 1; j < gridW - 1; j++) {
+          const index = i * gridW + j;
+          const top = previous[index - gridW];
+          const bottom = previous[index + gridW];
           const left = previous[index - 1];
           const right = previous[index + 1];
           current[index] = (top + bottom + left + right) / 2 - current[index];
@@ -110,6 +122,9 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
 
       const width = window.innerWidth;
       const height = window.innerHeight;
+      const grid = computeGrid(width, height);
+      gridW = grid.gw;
+      gridH = grid.gh;
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -128,13 +143,13 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
       clock = new THREE.Clock();
 
       waterBuffers = {
-        current: new Float32Array(settings.resolution * settings.resolution),
-        previous: new Float32Array(settings.resolution * settings.resolution),
+        current: new Float32Array(gridW * gridH),
+        previous: new Float32Array(gridW * gridH),
       };
       waterTexture = new THREE.DataTexture(
         waterBuffers.current,
-        settings.resolution,
-        settings.resolution,
+        gridW,
+        gridH,
         THREE.RedFormat,
         THREE.FloatType
       );
@@ -255,6 +270,27 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
         if (scene.children[0] && scene.children[0].geometry) {
           scene.children[0].geometry.dispose();
           scene.children[0].geometry = new THREE.PlaneGeometry(w, h);
+        }
+        const grid = computeGrid(w, h);
+        if (grid.gw !== gridW || grid.gh !== gridH) {
+          gridW = grid.gw;
+          gridH = grid.gh;
+          waterBuffers = {
+            current: new Float32Array(gridW * gridH),
+            previous: new Float32Array(gridW * gridH),
+          };
+          waterTexture.dispose();
+          waterTexture = new THREE.DataTexture(
+            waterBuffers.current,
+            gridW,
+            gridH,
+            THREE.RedFormat,
+            THREE.FloatType
+          );
+          waterTexture.minFilter = THREE.LinearFilter;
+          waterTexture.magFilter = THREE.LinearFilter;
+          waterTexture.needsUpdate = true;
+          if (backgroundMaterial) backgroundMaterial.uniforms.waterTexture.value = waterTexture;
         }
       };
 
