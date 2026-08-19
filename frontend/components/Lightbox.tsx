@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { getPhotoImageUrl } from "@/lib/api-server";
 
@@ -31,6 +31,28 @@ export default function Lightbox({
   const next = useCallback(() => {
     onNavigate((index + 1) % photos.length);
   }, [index, photos.length, onNavigate]);
+
+  // 移动端左右滑动切换 / Mobile swipe navigation
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!touchStart.current) return;
+      const dx = e.changedTouches[0].clientX - touchStart.current.x;
+      const dy = e.changedTouches[0].clientY - touchStart.current.y;
+      touchStart.current = null;
+      if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        e.stopPropagation();
+        if (dx < 0) next();
+        else prev();
+      }
+    },
+    [next, prev]
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -84,7 +106,11 @@ export default function Lightbox({
       </div>
 
       {/* 图片区 */}
-      <div className="flex-1 relative flex items-center justify-center px-4 md:px-16 pb-4 min-h-0">
+      <div
+        className="flex-1 relative flex items-center justify-center px-4 md:px-16 pb-4 min-h-0"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         <img
           key={photo.id}
           src={getPhotoImageUrl(photo.id)}

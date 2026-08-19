@@ -18,7 +18,8 @@ export default function PageBackground({ ripple }: { ripple?: RippleSettings }) 
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
     pathname.startsWith("/photo/") ||
-    pathname === "/map"
+    pathname === "/map" ||
+    pathname === "/login"
   )
     return null;
 

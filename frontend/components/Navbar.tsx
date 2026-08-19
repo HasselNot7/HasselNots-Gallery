@@ -30,6 +30,7 @@ export default function Navbar() {
     { href: "/albums", label: "Albums" },
     { href: "/blog", label: "Blog" },
     { href: "/map", label: "Footprints" },
+    { href: "/equipment", label: "Gear" },
   ];
 
   return (
@@ -62,6 +63,18 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          <Link
+            href="/search"
+            aria-label="Search"
+            className={`flex items-center justify-center w-9 h-9 transition-colors ${
+              pathname === "/search"
+                ? "text-primary"
+                : "text-on-surface-variant hover:text-primary"
+            }`}
+          >
+            <span className="material-symbols-outlined text-[22px]">search</span>
+          </Link>
 
           {authed ? (
             <button onClick={handleLogout} style={{ fontFamily: "var(--font-sigma)" }} className="btn-outline !px-4 !py-2 whitespace-nowrap">
@@ -104,6 +117,17 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/search"
+              className={`flex items-center gap-2 px-3 py-3 text-[14px] transition-colors border-b border-border-subtle/50 ${
+                pathname === "/search"
+                  ? "text-primary font-bold"
+                  : "text-on-surface-variant"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[20px]">search</span>
+              Search
+            </Link>
             <div className="pt-3 pb-2">
               {authed ? (
                 <button onClick={handleLogout} className="btn-outline w-full !py-3">

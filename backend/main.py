@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base
-from routes import auth, photos, settings, articles, albums, comments, services
+from routes import auth, photos, settings, articles, albums, comments, services, stats, search
 
 Base.metadata.create_all(bind=engine)
 
@@ -23,6 +23,8 @@ app.include_router(articles.router)
 app.include_router(albums.router)
 app.include_router(comments.router)
 app.include_router(services.router)
+app.include_router(stats.router)
+app.include_router(search.router)
 
 
 @app.get("/api/health")

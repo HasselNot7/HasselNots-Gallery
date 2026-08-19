@@ -82,6 +82,41 @@ export function getPhotoImageUrl(id: number, thumb: boolean = false): string {
   return `${IMG_BASE}/api/photos/${id}/${endpoint}`;
 }
 
+export interface EquipmentStat {
+  name: string;
+  count: number;
+}
+
+export interface EquipmentStats {
+  total_photos: number;
+  cameras: EquipmentStat[];
+  lenses: EquipmentStat[];
+  focal_lengths: EquipmentStat[];
+  apertures: EquipmentStat[];
+  isos: EquipmentStat[];
+  shutter_speeds: EquipmentStat[];
+}
+
+const _empty_stats: EquipmentStats = {
+  total_photos: 0,
+  cameras: [],
+  lenses: [],
+  focal_lengths: [],
+  apertures: [],
+  isos: [],
+  shutter_speeds: [],
+};
+
+export async function fetchEquipmentStats(): Promise<EquipmentStats> {
+  try {
+    const res = await fetch(`${API_BASE}/api/stats/equipment`, { cache: "no-store" });
+    if (!res.ok) return _empty_stats;
+    return res.json();
+  } catch {
+    return _empty_stats;
+  }
+}
+
 export async function fetchPhotos(
   publishedOnly: boolean = true,
   skip: number = 0,
