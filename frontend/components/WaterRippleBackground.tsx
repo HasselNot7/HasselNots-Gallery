@@ -28,7 +28,6 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
       rippleStrength: s.strength,
       mouseIntensity: 0.3,
       clickIntensity: 2.0,
-      rippleRadius: 20,
       autoDrops: true,
       autoDropInterval: 3000,
       autoDropIntensity: 1.0,
@@ -61,12 +60,12 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
     }
 
     function addRipple(x: number, y: number, strength = 1.0) {
-      const { rippleRadius } = settings;
       const normalizedX = x / window.innerWidth;
       const normalizedY = 1.0 - y / window.innerHeight;
       const texX = Math.floor(normalizedX * gridW);
       const texY = Math.floor(normalizedY * gridH);
-      const radius = rippleRadius;
+      // 窄网格上按比例缩小初始涟漪半径，避免波纹相对屏幕过大
+      const radius = Math.max(8, Math.min(20, Math.round((20 * gridW) / BASE_GRID)));
       const radiusSquared = radius * radius;
       for (let i = -radius; i <= radius; i++) {
         for (let j = -radius; j <= radius; j++) {
@@ -89,6 +88,9 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
       const { current, previous } = waterBuffers;
       const { damping, tension } = settings;
       const safeTension = Math.min(tension, 0.05);
+      // 窄网格上按比例加大每步衰减，波纹扩散一段距离后自然消散，不会横穿全屏
+      // 桌面 16:9 网格（gridW=512）完全不受影响
+      const stepDamping = 1 - (1 - damping) / Math.max(0.35, Math.min(1, gridW / BASE_GRID));
       for (let i = 1; i < gridH - 1; i++) {
         for (let j = 1; j < gridW - 1; j++) {
           const index = i * gridW + j;
@@ -97,7 +99,7 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
           const left = previous[index - 1];
           const right = previous[index + 1];
           current[index] = (top + bottom + left + right) / 2 - current[index];
-          current[index] = current[index] * damping + previous[index] * (1 - damping);
+          current[index] = current[index] * stepDamping + previous[index] * (1 - stepDamping);
           current[index] += (0 - previous[index]) * safeTension;
           current[index] = Math.max(-1.0, Math.min(1.0, current[index]));
         }
@@ -160,6 +162,7 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
       const uniforms = {
         waterTexture: { value: waterTexture },
         rippleStrength: { value: settings.rippleStrength },
+        uWaveScale: { value: Math.max(0.4, Math.min(1, gridW / BASE_GRID)) },
         resolution: { value: new THREE.Vector2(width, height) },
         time: { value: 0 },
         uInkTop: { value: s.inkTop },
@@ -181,6 +184,7 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
         fragmentShader: `
           uniform sampler2D waterTexture;
           uniform float rippleStrength;
+          uniform float uWaveScale;
           uniform vec2 resolution;
           uniform float time;
           uniform float uInkTop;
@@ -212,7 +216,7 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
             vec2 distortion = vec2(
               texture2D(waterTexture, vec2(vUv.x + step, vUv.y)).r - texture2D(waterTexture, vec2(vUv.x - step, vUv.y)).r,
               texture2D(waterTexture, vec2(vUv.x, vUv.y + step)).r - texture2D(waterTexture, vec2(vUv.x, vUv.y - step)).r
-            ) * rippleStrength * 5.0;
+            ) * rippleStrength * 5.0 * uWaveScale;
 
             vec2 tuv = vUv + distortion;
             tuv -= 0.5;
@@ -290,7 +294,10 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
           waterTexture.minFilter = THREE.LinearFilter;
           waterTexture.magFilter = THREE.LinearFilter;
           waterTexture.needsUpdate = true;
-          if (backgroundMaterial) backgroundMaterial.uniforms.waterTexture.value = waterTexture;
+          if (backgroundMaterial) {
+            backgroundMaterial.uniforms.waterTexture.value = waterTexture;
+            backgroundMaterial.uniforms.uWaveScale.value = Math.max(0.4, Math.min(1, computeGrid(w, h).gw / BASE_GRID));
+          }
         }
       };
 
