@@ -87,8 +87,6 @@ export default async function EquipmentPage() {
             <Section title="Lenses" items={stats.lenses} />
             <Section title="Focal Lengths" items={stats.focal_lengths} />
             <Section title="Apertures" items={stats.apertures} />
-            <Section title="ISO" items={stats.isos} />
-            <Section title="Shutter Speeds" items={stats.shutter_speeds} />
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-24 text-center">
