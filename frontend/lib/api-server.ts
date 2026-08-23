@@ -5,7 +5,7 @@ export async function fetchYears(): Promise<string[]> {
     const res = await fetch(`${API_BASE}/api/photos/years`, { cache: "no-store" });
     if (!res.ok) return [];
     const data = await res.json();
-    return data.years || [];
+    return data.months || data.years || [];
   } catch {
     return [];
   }

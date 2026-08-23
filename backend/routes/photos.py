@@ -291,7 +291,16 @@ def list_years(db: Session = Depends(get_db)):
         .all()
     )
     years = sorted((r[0] for r in rows if r[0]), reverse=True)
-    return {"years": years}
+
+    month_rows = (
+        db.query(func.strftime("%Y-%m", Photo.shoot_time).label("month"))
+        .filter(Photo.shoot_time.isnot(None), Photo.is_published == True)
+        .distinct()
+        .all()
+    )
+    months = sorted((r[0] for r in month_rows if r[0]), reverse=True)
+
+    return {"years": years, "months": months}
 
 
 @router.post("/batch-delete")

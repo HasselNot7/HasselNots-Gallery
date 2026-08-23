@@ -1,27 +1,38 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Photo, getPhotoImageUrl } from "@/lib/api-server";
 import Lightbox from "@/components/Lightbox";
 
 const PAGE_SIZE = 12;
 
 function DraggableTimeline({ entries, active, onChange }: { entries: string[]; active: string; onChange: (y: string) => void }) {
-  const railRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const entriesList = entries;
+  const groups = useMemo(() => {
+    const years = [...new Set(entries.map((e) => e.slice(0, 4)))];
+    return years.map((y) => ({ year: y, months: entries.filter((e) => e.startsWith(`${y}-`)) }));
+  }, [entries]);
+
+  const activeYear = active.slice(0, 4);
 
   const valueFromY = useCallback(
     (clientY: number) => {
-      const rail = railRef.current;
-      if (!rail) return active;
-      const rect = rail.getBoundingClientRect();
-      const ratio = (clientY - rect.top) / rect.height;
-      const idx = Math.round(ratio * (entriesList.length - 1));
-      return entriesList[Math.max(0, Math.min(entriesList.length - 1, idx))];
+      let bestIdx = -1;
+      let bestDist = Infinity;
+      rowRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const dist = Math.abs(clientY - (rect.top + rect.height / 2));
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = i;
+        }
+      });
+      return bestIdx >= 0 ? (groups[bestIdx]?.months[0] ?? active) : active;
     },
-    [entriesList, active]
+    [groups, active]
   );
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -34,109 +45,88 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
     onChange(valueFromY(e.clientY));
   };
 
-  const handlePointerUp = () => {
-    setDragging(false);
-  };
-
-  const activeIdx = entriesList.indexOf(active);
-  const activePos = entriesList.length > 1 ? (activeIdx / (entriesList.length - 1)) * 100 : 50;
+  const stopDragging = () => setDragging(false);
 
   return (
-    <div className="flex items-center gap-3 md:gap-4 mb-8 select-none">
-      {/* Year label */}
-      <div className="w-12 md:w-16 text-right flex-shrink-0 flex flex-col items-end gap-1.5">
-        <span
-          className="text-lg md:text-xl font-bold text-primary leading-none tracking-tight"
-          style={{ fontFamily: "'Sigma Serif', 'Noto Serif SC', serif" }}
-        >
-          {active || "—"}
-        </span>
-        <span
-          className="text-[8px] text-secondary uppercase tracking-[0.2em] leading-none"
-          style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
-        >
-          Year
-        </span>
-      </div>
+    <div className="relative mb-8 select-none">
+      {/* Vertical guide line */}
+      <div className="absolute left-[5px] top-3 bottom-3 w-px bg-gradient-to-b from-primary/20 via-primary/10 to-primary/20 pointer-events-none" />
 
-      {/* Touch zone (wide hit area around the thin rail) */}
+      {/* Drag hit area over the line */}
       <div
-        className="relative flex items-center justify-center w-10 h-56 md:h-72 -mx-2 touch-none cursor-pointer"
+        className="absolute left-0 top-0 bottom-0 w-8 touch-none cursor-pointer"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      >
-        {/* Vertical rail */}
-        <div
-          ref={railRef}
-          className="relative w-[3px] h-full bg-gradient-to-b from-primary/20 via-primary/10 to-primary/20 rounded-full overflow-visible"
-        >
-          {/* Progress fill above the active thumb */}
-          <div
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-full rounded-full bg-gradient-to-b from-secondary via-secondary/70 to-secondary/20 pointer-events-none"
-            style={{ height: `${activePos}%`, boxShadow: "0 0 8px rgba(20,20,20,0.25)" }}
-          />
+        onPointerUp={stopDragging}
+        onPointerLeave={stopDragging}
+        onPointerCancel={stopDragging}
+      />
 
-          {/* Node dots */}
-          {entriesList.map((entry, i) => {
-            const isActive = i === activeIdx;
-            const y = entriesList.length > 1 ? (i / (entriesList.length - 1)) * 100 : 50;
-            return (
-              <span
-                key={entry}
-                className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-200 pointer-events-none"
-                style={{
-                  top: `${y}%`,
-                  width: isActive ? 14 : 7,
-                  height: isActive ? 14 : 7,
-                  background: isActive ? "#141414" : "#ffffff",
-                  border: isActive ? "2px solid #141414" : "1px solid rgba(20,20,20,0.35)",
-                  boxShadow: isActive
-                    ? "0 0 0 4px rgba(20,20,20,0.12), 0 2px 6px rgba(20,20,20,0.2)"
-                    : "0 1px 3px rgba(20,20,20,0.12)",
-                }}
-              />
-            );
-          })}
+      <div className="flex flex-col gap-9">
+        {groups.map((g, gi) => {
+          const isActiveYear = g.year === activeYear;
+          return (
+            <div
+              key={g.year}
+              ref={(el) => {
+                rowRefs.current[gi] = el;
+              }}
+              className="relative flex items-start gap-4"
+            >
+              {/* Node dot on the line */}
+              <span className="relative z-10 mt-2 flex h-3 w-3 flex-shrink-0 items-center justify-center">
+                <span
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: isActiveYear ? 8 : 5,
+                    height: isActiveYear ? 8 : 5,
+                    background: isActiveYear ? "#141414" : "#ffffff",
+                    border: "1px solid rgba(20,20,20,0.4)",
+                  }}
+                />
+              </span>
 
-          {/* Draggable thumb */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-primary border-2 border-primary-fixed pointer-events-none transition-[top] duration-100"
-            style={{
-              top: `${activePos}%`,
-              boxShadow: "0 0 0 3px rgba(20,20,20,0.12), 0 4px 12px rgba(20,20,20,0.3)",
-            }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-secondary" />
+              <div className="min-w-0 -mt-0.5">
+                {/* Year label */}
+                <button
+                  onClick={() => g.months[0] && onChange(g.months[0])}
+                  className={`block text-left text-xl font-bold leading-none tracking-tight transition-colors ${
+                    isActiveYear ? "text-primary" : "text-primary/45 hover:text-primary/80"
+                  }`}
+                  style={{ fontFamily: "'Sigma Serif', 'Noto Serif SC', serif" }}
+                >
+                  {g.year}
+                </button>
+
+                {/* Months as a typographic row */}
+                <div
+                  className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-2"
+                  style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
+                >
+                  {g.months.map((m) => {
+                    const isActive = m === active;
+                    return (
+                      <button
+                        key={m}
+                        onClick={() => onChange(m)}
+                        className={`relative pb-1 text-[11px] leading-none tracking-wider transition-colors ${
+                          isActive ? "text-primary font-bold" : "text-outline hover:text-primary"
+                        }`}
+                      >
+                        {m.slice(5)}
+                        <span
+                          className={`absolute left-0 right-0 -bottom-0.5 h-[2px] rounded-full transition-all duration-300 ${
+                            isActive ? "bg-mint-accent opacity-100" : "bg-primary/40 opacity-0"
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-            {/* Subtle pulse ring */}
-            <div className="absolute inset-0 rounded-full border border-secondary/60 animate-ping pointer-events-none" />
-          </div>
-        </div>
-      </div>
-
-      {/* Year list on the right (desktop only) */}
-      <div className="hidden md:flex flex-col justify-between h-56 md:h-72 text-[10px] py-1.5 pl-1" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-        {entriesList.map((entry, i) => (
-          <span
-            key={entry}
-            className={`leading-none transition-all duration-200 cursor-pointer px-2 py-1 rounded-sm ${
-              i === activeIdx
-                ? "text-secondary font-bold"
-                : "text-outline hover:text-primary"
-            }`}
-            style={{
-              border: i === activeIdx ? "1px solid rgba(20,20,20,0.25)" : "1px solid transparent",
-              background: i === activeIdx ? "rgba(20,20,20,0.06)" : "transparent",
-            }}
-            onClick={() => onChange(entry)}
-          >
-            {entry}
-          </span>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -170,7 +160,7 @@ export default function GallerySection({
 }) {
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
   const [total, setTotal] = useState(initialTotal);
-  const yearOf = (p: Photo) => (p.shoot_time ? String(new Date(p.shoot_time).getFullYear()) : "");
+  const yearOf = (p: Photo) => (p.shoot_time ? p.shoot_time.slice(0, 7) : "");
   const allYears = initialYears.length > 0 ? initialYears : [...new Set(initialPhotos.map(yearOf).filter(Boolean))].sort().reverse();
   const [activeYear, setActiveYear] = useState<string>(allYears[0] ?? "");
   const [loadingMore, setLoadingMore] = useState(false);
@@ -198,14 +188,18 @@ export default function GallerySection({
   hasMoreRef.current = hasMore;
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const loadingRef = useRef(false);
+
   const loadMore = useCallback(async (): Promise<boolean> => {
-    if (loadingMore) return false;
+    if (loadingRef.current) return false;
+    loadingRef.current = true;
     setLoadingMore(true);
     try {
       const res = await fetch(`/api/photos?published_only=true&skip=${photosRef.current.length}&limit=${PAGE_SIZE}`);
       const data = await res.json();
       setPhotos((prev) => {
-        const merged = [...prev, ...data.items];
+        const seen = new Set(prev.map((p) => p.id));
+        const merged = [...prev, ...data.items.filter((p: Photo) => !seen.has(p.id))];
         photosRef.current = merged;
         return merged;
       });
@@ -214,9 +208,10 @@ export default function GallerySection({
     } catch {
       return false;
     } finally {
+      loadingRef.current = false;
       setLoadingMore(false);
     }
-  }, [loadingMore]);
+  }, []);
 
   const jumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const jumpToYear = useCallback((year: string) => {
@@ -267,23 +262,42 @@ export default function GallerySection({
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* 移动端：横向年份快捷条 */}
+          {/* 移动端：横向月份快捷条 */}
           {years.length > 0 && (
-            <div className="md:hidden flex items-center gap-2 overflow-x-auto pb-4 -mx-4 px-4 mb-2">
-              {years.map((y) => (
-                <button
-                  key={y}
-                  onClick={() => jumpToYear(y)}
-                  className={`flex-shrink-0 text-label-caps px-4 py-2 border rounded-md transition-all ${
-                    activeYear === y
-                      ? "border-primary bg-primary text-white"
-                      : "border-border-subtle text-on-surface-variant"
-                  }`}
-                  style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
-                >
-                  {y}
-                </button>
-              ))}
+            <div className="md:hidden -mx-4 mb-4 border-y border-primary/10">
+              <div className="flex items-stretch overflow-x-auto px-2" style={{ scrollbarWidth: "none" }}>
+                {years.map((y) => {
+                  const isActive = activeYear === y;
+                  return (
+                    <button
+                      key={y}
+                      onClick={() => jumpToYear(y)}
+                      className="relative flex flex-col items-center flex-shrink-0 px-4 py-3"
+                      style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
+                    >
+                      <span
+                        className={`text-sm leading-none tracking-wider transition-colors ${
+                          isActive ? "text-primary font-bold" : "text-outline"
+                        }`}
+                      >
+                        {y.slice(5, 7)}
+                      </span>
+                      <span
+                        className={`mt-1.5 text-[9px] leading-none transition-colors ${
+                          isActive ? "text-primary/70" : "text-outline/60"
+                        }`}
+                      >
+                        {y.slice(0, 4)}
+                      </span>
+                      <span
+                        className={`absolute left-3 right-3 bottom-0 h-[2px] rounded-full transition-all duration-300 ${
+                          isActive ? "bg-mint-accent opacity-100" : "opacity-0"
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
           {photos.length === 0 ? (
