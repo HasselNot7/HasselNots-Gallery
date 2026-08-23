@@ -25,13 +25,15 @@ export default function Navbar() {
   };
 
   const links = [
-    { href: "/", label: "Home" },
-    { href: "/gallery", label: "Gallery" },
-    { href: "/albums", label: "Albums" },
-    { href: "/blog", label: "Blog" },
-    { href: "/map", label: "Footprints" },
-    { href: "/equipment", label: "Gear" },
+    { href: "/", label: "首页" },
+    { href: "/gallery", label: "图库" },
+    { href: "/albums", label: "相册" },
+    { href: "/blog", label: "笔记" },
+    { href: "/map", label: "足迹" },
+    { href: "/equipment", label: "器材" },
   ];
+
+  const navFontStyle = { fontFamily: "'Noto Serif SC', serif", fontWeight: 600 };
 
   return (
     <nav className="sticky top-0 z-50 isolate border-b border-border-subtle w-full glass-panel">
@@ -48,13 +50,13 @@ export default function Navbar() {
         </div>
 
         {/* 桌面端导航 */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-8">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              style={{ fontFamily: "var(--font-sigma)" }}
-              className={`text-label-caps text-[12px] pb-1 transition-colors ${
+              style={navFontStyle}
+              className={`text-label-caps text-[16px] pb-1 transition-colors ${
                 pathname === link.href
                   ? "text-primary border-b-2 border-primary"
                   : "text-on-surface-variant hover:text-primary"
@@ -77,12 +79,12 @@ export default function Navbar() {
           </Link>
 
           {authed ? (
-            <button onClick={handleLogout} style={{ fontFamily: "var(--font-sigma)" }} className="btn-outline !px-4 !py-2 whitespace-nowrap">
-              Logout
+            <button onClick={handleLogout} style={navFontStyle} className="btn-outline !px-4 !py-2 whitespace-nowrap">
+              退出登录
             </button>
           ) : (
-            <Link href="/login" style={{ fontFamily: "var(--font-sigma)" }} className="btn-outline !px-4 !py-2 whitespace-nowrap">
-              Admin Login
+            <Link href="/login" style={navFontStyle} className="btn-outline !px-4 !py-2 whitespace-nowrap">
+              管理员登录
             </Link>
           )}
         </div>
@@ -107,8 +109,8 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                style={{ fontFamily: "var(--font-sigma)" }}
-                className={`px-3 py-3 text-[14px] transition-colors border-b border-border-subtle/50 last:border-0 ${
+                style={navFontStyle}
+                className={`px-3 py-3 text-[16px] transition-colors border-b border-border-subtle/50 last:border-0 ${
                   pathname === link.href
                     ? "text-primary font-bold"
                     : "text-on-surface-variant"
@@ -119,23 +121,23 @@ export default function Navbar() {
             ))}
             <Link
               href="/search"
-              className={`flex items-center gap-2 px-3 py-3 text-[14px] transition-colors border-b border-border-subtle/50 ${
+              className={`flex items-center gap-2 px-3 py-3 text-[16px] transition-colors border-b border-border-subtle/50 ${
                 pathname === "/search"
                   ? "text-primary font-bold"
                   : "text-on-surface-variant"
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">search</span>
-              Search
+              搜索
             </Link>
             <div className="pt-3 pb-2">
               {authed ? (
-                <button onClick={handleLogout} className="btn-outline w-full !py-3">
-                  Logout
+                <button onClick={handleLogout} style={navFontStyle} className="btn-outline w-full !py-3">
+                  退出登录
                 </button>
               ) : (
-                <Link href="/login" className="btn-outline w-full !py-3 text-center block">
-                  Admin Login
+                <Link href="/login" style={navFontStyle} className="btn-outline w-full !py-3 text-center block">
+                  管理员登录
                 </Link>
               )}
             </div>

@@ -24,13 +24,13 @@ def _shutter_seconds(text: str) -> float:
 
 @router.get("/equipment")
 def equipment_stats(db: Session = Depends(get_db)):
-    def group(field):
-        rows = (
-            db.query(field, func.count(Photo.id).label("cnt"))
-            .filter(Photo.is_published == True, field != "", field.isnot(None))
-            .group_by(field)
-            .all()
+    def group(field, exclude=""):
+        q = db.query(field, func.count(Photo.id).label("cnt")).filter(
+            Photo.is_published == True, field != "", field.isnot(None)
         )
+        if exclude:
+            q = q.filter(field != exclude)
+        rows = q.group_by(field).all()
         return [{"name": name, "count": cnt} for name, cnt in rows]
 
     total = db.query(func.count(Photo.id)).filter(Photo.is_published == True).scalar() or 0
@@ -38,8 +38,8 @@ def equipment_stats(db: Session = Depends(get_db)):
     return {
         "total_photos": total,
         "cameras": sorted(group(Photo.camera_model), key=lambda r: -r["count"]),
-        "lenses": sorted(group(Photo.lens_model), key=lambda r: -r["count"]),
-        "focal_lengths": sorted(group(Photo.focal_length), key=lambda r: _num(r["name"])),
+        "lenses": sorted(group(Photo.lens_model, exclude="----"), key=lambda r: -r["count"]),
+        "focal_lengths": sorted(group(Photo.focal_length, exclude="0mm"), key=lambda r: _num(r["name"])),
         "apertures": sorted(group(Photo.aperture), key=lambda r: _num(r["name"])),
         "isos": sorted(group(Photo.iso), key=lambda r: _num(r["name"])),
         "shutter_speeds": sorted(group(Photo.shutter_speed), key=lambda r: _shutter_seconds(r["name"])),

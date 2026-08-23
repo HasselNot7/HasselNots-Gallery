@@ -238,13 +238,13 @@ export default function AdminPage() {
   const [batchBusy, setBatchBusy] = useState(false);
 
   const TABS = [
-    { id: "settings" as const, label: "Site Settings", icon: "settings" },
-    { id: "upload" as const, label: "Upload Photos", icon: "cloud_upload" },
-    { id: "photos" as const, label: "Photo Management", icon: "photo_library" },
-    { id: "albums" as const, label: "Albums", icon: "photo_album" },
-    { id: "blog" as const, label: "Blog", icon: "article" },
-    { id: "analytics" as const, label: "Analytics", icon: "monitoring" },
-    { id: "services" as const, label: "Services", icon: "monitor_heart" },
+    { id: "settings" as const, label: "站点设置", icon: "settings" },
+    { id: "upload" as const, label: "上传照片", icon: "cloud_upload" },
+    { id: "photos" as const, label: "照片管理", icon: "photo_library" },
+    { id: "albums" as const, label: "相册", icon: "photo_album" },
+    { id: "blog" as const, label: "笔记", icon: "article" },
+    { id: "analytics" as const, label: "访问分析", icon: "monitoring" },
+    { id: "services" as const, label: "服务检测", icon: "monitor_heart" },
   ];
 
   useEffect(() => {
@@ -633,7 +633,7 @@ export default function AdminPage() {
 
     for (let i = 0; i < files.length; i++) {
       setUploadProgress(
-        compressEnabled ? `Compressing ${i + 1}/${files.length}...` : `Uploading ${i + 1}/${files.length}...`
+        compressEnabled ? `正在压缩 ${i + 1}/${files.length}...` : `正在上传 ${i + 1}/${files.length}...`
       );
       let uploadFile = files[i];
       let exifBase64 = "";
@@ -661,7 +661,7 @@ export default function AdminPage() {
         });
         if (res.status === 409) {
           const d = await res.json().catch(() => ({}));
-          duplicates.push(d.detail || "Duplicate");
+          duplicates.push(d.detail || "重复照片");
         } else if (!res.ok) {
           console.error("Upload failed:", res.status);
         }
@@ -675,7 +675,7 @@ export default function AdminPage() {
     setUploadProgress("");
     setUploading(false);
     if (duplicates.length > 0) {
-      setUploadProgress(`Skipped ${duplicates.length} duplicate image${duplicates.length > 1 ? "s" : ""}: ${duplicates[0]}`);
+      setUploadProgress(`已跳过 ${duplicates.length} 张重复图片：${duplicates[0]}`);
     }
     await loadPhotos();
   };
@@ -950,13 +950,13 @@ export default function AdminPage() {
       <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-7xl mx-auto border-x border-border-subtle w-full">
         <div className="flex items-center justify-between mb-12">
           <div>
-            <h1 className="text-display-lg text-primary mb-2">Admin Panel</h1>
+            <h1 className="text-display-lg text-primary mb-2">管理后台</h1>
             <p className="text-body-md text-on-surface-variant">
-              Manage your portfolio content and settings.
+              管理你的作品集内容和站点设置。
             </p>
           </div>
           <button onClick={handleLogout} className="btn-outline">
-            Logout
+            登出
           </button>
         </div>
 
@@ -982,19 +982,19 @@ export default function AdminPage() {
         {/* Site Settings Section */}
         {activeTab === "settings" && (
         <div className="mb-16">
-          <h2 className="text-headline-lg text-primary mb-2">Homepage Hero</h2>
-          <p className="text-metadata-sm text-outline uppercase mb-6">Customize the hero section on the gallery homepage</p>
+          <h2 className="text-headline-lg text-primary mb-2">首页 Hero 区域</h2>
+          <p className="text-metadata-sm text-outline uppercase mb-6">自定义画廊首页的 Hero 区域</p>
 
           <div className="border border-border-subtle p-6 bg-surface-bright space-y-5">
             {/* Icon picker */}
             <div>
-              <label className="text-label-caps text-outline block mb-2">Icon</label>
+              <label className="text-label-caps text-outline block mb-2">图标</label>
 
               {/* Custom icon upload */}
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-14 h-14 rounded-full border border-border-subtle bg-surface flex items-center justify-center overflow-hidden">
                   {settings.hero_icon_url ? (
-                    <img src={settings.hero_icon_url} alt="Custom icon" className="w-10 h-10 object-contain" />
+                    <img src={settings.hero_icon_url} alt="自定义图标" className="w-10 h-10 object-contain" />
                   ) : (
                     <span className="material-symbols-outlined text-[24px] text-primary">{settings.hero_icon}</span>
                   )}
@@ -1006,19 +1006,19 @@ export default function AdminPage() {
                       disabled={iconUploading}
                       className="text-label-caps px-3 py-1.5 border border-primary text-primary hover:bg-primary hover:text-on-primary transition-all"
                     >
-                      {iconUploading ? "Uploading..." : "Upload Custom Image"}
+                      {iconUploading ? "上传中..." : "上传自定义图片"}
                     </button>
                     {settings.hero_icon_url && (
                       <button
                         onClick={handleIconDelete}
                         className="text-label-caps px-3 py-1.5 border border-error text-error hover:bg-error hover:text-on-error transition-all"
                       >
-                        Remove
+                        移除
                       </button>
                     )}
                   </div>
                   <span className="text-metadata-sm text-outline">
-                    PNG, JPG, WebP, SVG — max ~200KB recommended
+                    PNG、JPG、WebP、SVG — 建议不超过约 200KB
                   </span>
                 </div>
                 <input
@@ -1033,19 +1033,19 @@ export default function AdminPage() {
 
             {/* Title */}
             <div>
-              <label className="text-label-caps text-outline block mb-2">Title (use line breaks for multi-line)</label>
+              <label className="text-label-caps text-outline block mb-2">标题（可用换行实现多行）</label>
               <textarea
                 value={settings.hero_title}
                 onChange={(e) => setSettings({ ...settings, hero_title: e.target.value })}
                 rows={2}
                 className="w-full border border-border-subtle p-3 text-body-md bg-surface focus:outline-none focus:border-primary resize-none"
-                placeholder="Precision Capture.\nTimeless Frames."
+                placeholder="精准捕捉。\n定格永恒。"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="text-label-caps text-outline block mb-2">Description</label>
+              <label className="text-label-caps text-outline block mb-2">描述</label>
               <textarea
                 value={settings.hero_description}
                 onChange={(e) => setSettings({ ...settings, hero_description: e.target.value })}
@@ -1056,31 +1056,31 @@ export default function AdminPage() {
 
             {/* Site Tagline (footer & SEO) */}
             <div>
-              <label className="text-label-caps text-outline block mb-2">Site Tagline (footer & SEO description)</label>
+              <label className="text-label-caps text-outline block mb-2">网站标语（页脚与 SEO 描述）</label>
               <textarea
                 value={settings.site_tagline}
                 onChange={(e) => setSettings({ ...settings, site_tagline: e.target.value })}
                 rows={2}
                 className="w-full border border-border-subtle p-3 text-body-md bg-surface focus:outline-none focus:border-primary resize-none"
-                placeholder="Precision photography portfolio. Every frame tells a story."
+                placeholder="精准摄影作品集。每一帧都述说一个故事。"
               />
             </div>
 
             {/* Water Ripple Background */}
             <div className="border-t border-border-subtle pt-5">
               <div className="flex items-center justify-between mb-3">
-                <label className="text-label-caps text-outline">Water Ripple Background (page background)</label>
+                <label className="text-label-caps text-outline">水波纹背景（页面背景）</label>
                 <button
                   type="button"
                   onClick={() => setSettings({ ...settings, water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0" })}
                   className="text-label-caps px-3 py-1.5 bg-surface-variant text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-all rounded-md"
                 >
-                  Reset
+                  重置
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-metadata-sm text-outline block mb-1.5">Ink Color 1</label>
+                  <label className="text-metadata-sm text-outline block mb-1.5">墨水颜色 1</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
@@ -1097,7 +1097,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-metadata-sm text-outline block mb-1.5">Ink Color 2</label>
+                  <label className="text-metadata-sm text-outline block mb-1.5">墨水颜色 2</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
@@ -1114,7 +1114,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-metadata-sm text-outline block mb-1.5">Ink Coverage (-0.5 ~ 0.5, larger = more ink)</label>
+                  <label className="text-metadata-sm text-outline block mb-1.5">墨水覆盖度（-0.5 ~ 0.5，越大墨水越多）</label>
                   <input
                     type="range"
                     min="-0.5"
@@ -1127,7 +1127,7 @@ export default function AdminPage() {
                   <span className="text-metadata-sm text-on-surface-variant">{settings.water_ink_top}</span>
                 </div>
                 <div>
-                  <label className="text-metadata-sm text-outline block mb-1.5">Ripple Strength (0.2 ~ 2.0)</label>
+                  <label className="text-metadata-sm text-outline block mb-1.5">涟漪强度（0.2 ~ 2.0）</label>
                   <input
                     type="range"
                     min="0.2"
@@ -1140,12 +1140,12 @@ export default function AdminPage() {
                   <span className="text-metadata-sm text-on-surface-variant">{settings.water_strength}</span>
                 </div>
               </div>
-              <p className="text-metadata-sm text-outline mt-3">Changes apply after saving. Reopen / refresh a page to preview.</p>
+              <p className="text-metadata-sm text-outline mt-3">更改在保存后生效。重新打开或刷新页面即可预览。</p>
             </div>
 
             {/* Hero Background Colors */}
             <div className="border-t border-border-subtle pt-5">
-              <label className="text-label-caps text-outline block mb-3">Hero Background (Light Spots Shader)</label>
+              <label className="text-label-caps text-outline block mb-3">Hero 背景（光斑着色器）</label>
 
               {/* Presets */}
               <div className="flex flex-wrap gap-2 mb-5">
@@ -1172,13 +1172,13 @@ export default function AdminPage() {
               {/* Individual color pickers */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { key: "bg_color1", label: "Color 1" },
-                  { key: "bg_color2", label: "Color 2" },
-                  { key: "bg_color3", label: "Color 3" },
-                  { key: "bg_color4", label: "Color 4" },
-                  { key: "bg_color5", label: "Color 5" },
-                  { key: "bg_color6", label: "Color 6" },
-                  { key: "bg_base", label: "Base" },
+                  { key: "bg_color1", label: "颜色 1" },
+                  { key: "bg_color2", label: "颜色 2" },
+                  { key: "bg_color3", label: "颜色 3" },
+                  { key: "bg_color4", label: "颜色 4" },
+                  { key: "bg_color5", label: "颜色 5" },
+                  { key: "bg_color6", label: "颜色 6" },
+                  { key: "bg_base", label: "底色" },
                 ].map((field) => (
                   <div key={field.key} className="flex items-center gap-2 border border-border-subtle p-2 bg-surface">
                     <input
@@ -1198,7 +1198,7 @@ export default function AdminPage() {
               {/* Animation parameters (from others/three.js动态光斑效果) */}
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-metadata-sm text-outline block mb-1.5">Gradient Size (0.2 ~ 1.5)</label>
+                  <label className="text-metadata-sm text-outline block mb-1.5">渐变大小（0.2 ~ 1.5）</label>
                   <input
                     type="range"
                     min="0.2"
@@ -1211,7 +1211,7 @@ export default function AdminPage() {
                   <span className="text-metadata-sm text-on-surface-variant">{settings.hero_gradient_size}</span>
                 </div>
                 <div>
-                  <label className="text-metadata-sm text-outline block mb-1.5">Gradient Count (2 ~ 14)</label>
+                  <label className="text-metadata-sm text-outline block mb-1.5">渐变数量（2 ~ 14）</label>
                   <input
                     type="range"
                     min="2"
@@ -1224,7 +1224,7 @@ export default function AdminPage() {
                   <span className="text-metadata-sm text-on-surface-variant">{settings.hero_gradient_count}</span>
                 </div>
                 <div>
-                  <label className="text-metadata-sm text-outline block mb-1.5">Speed (0.3 ~ 3.0)</label>
+                  <label className="text-metadata-sm text-outline block mb-1.5">速度（0.3 ~ 3.0）</label>
                   <input
                     type="range"
                     min="0.3"
@@ -1237,7 +1237,7 @@ export default function AdminPage() {
                   <span className="text-metadata-sm text-on-surface-variant">{settings.hero_speed}</span>
                 </div>
                 <div>
-                  <label className="text-metadata-sm text-outline block mb-1.5">Color 1 Weight (0.1 ~ 3.0)</label>
+                  <label className="text-metadata-sm text-outline block mb-1.5">颜色 1 权重（0.1 ~ 3.0）</label>
                   <input
                     type="range"
                     min="0.1"
@@ -1250,7 +1250,7 @@ export default function AdminPage() {
                   <span className="text-metadata-sm text-on-surface-variant">{settings.hero_color1_weight}</span>
                 </div>
                 <div>
-                  <label className="text-metadata-sm text-outline block mb-1.5">Color 2 Weight (0.1 ~ 3.0)</label>
+                  <label className="text-metadata-sm text-outline block mb-1.5">颜色 2 权重（0.1 ~ 3.0）</label>
                   <input
                     type="range"
                     min="0.1"
@@ -1272,12 +1272,12 @@ export default function AdminPage() {
                 disabled={settingsSaving}
                 className="btn-primary"
               >
-                {settingsSaving ? "Saving..." : "Save Settings"}
+                {settingsSaving ? "保存中..." : "保存设置"}
               </button>
               {settingsSaved && (
                 <span className="text-metadata-sm text-primary flex items-center gap-1">
                   <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                  Saved!
+                  已保存！
                 </span>
               )}
             </div>
@@ -1288,7 +1288,7 @@ export default function AdminPage() {
         {/* Upload Zone */}
         {activeTab === "upload" && (
         <div className="mb-16">
-          <h2 className="text-headline-lg text-primary mb-6">Upload New Capture</h2>
+          <h2 className="text-headline-lg text-primary mb-6">上传新照片</h2>
 
           <label
             className={`border border-border-subtle border-dashed p-12 flex flex-col items-center justify-center text-center bg-surface hover:bg-mint-accent/10 transition-all duration-300 cursor-pointer min-h-[250px] relative overflow-hidden group ${
@@ -1296,10 +1296,10 @@ export default function AdminPage() {
             }`}
           >
             <span className="material-symbols-outlined text-5xl text-outline mb-4">cloud_upload</span>
-            <p className="text-body-md text-on-surface mb-2">Drag and drop raw files here</p>
-            <p className="text-metadata-sm text-outline uppercase mb-4">or click to browse local storage</p>
+            <p className="text-body-md text-on-surface mb-2">将原始文件拖放至此处</p>
+            <p className="text-metadata-sm text-outline uppercase mb-4">或点击浏览本地文件</p>
             <p className="text-metadata-sm text-outline text-[10px]">
-              Supports JPG, PNG, WebP, HEIC, TIFF
+              支持 JPG、PNG、WebP、HEIC、TIFF
             </p>
             <input
               type="file"
@@ -1322,11 +1322,11 @@ export default function AdminPage() {
                 className="w-4 h-4 accent-[#141414]"
               />
               <label htmlFor="compress-toggle" className="text-body-md text-on-surface cursor-pointer">
-                Compress images on upload
+                上传时压缩图片
               </label>
             </div>
             <div className={`flex items-center gap-2 transition-opacity ${compressEnabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
-              <label className="text-label-caps text-outline whitespace-nowrap">Max Size</label>
+              <label className="text-label-caps text-outline whitespace-nowrap">最大大小</label>
               <input
                 type="number"
                 min={0.1}
@@ -1340,8 +1340,8 @@ export default function AdminPage() {
             </div>
             <p className="text-metadata-sm text-outline md:ml-auto">
               {compressEnabled
-                ? `Compressed locally in your browser — JPG/PNG/WebP over ${targetSizeMb}MB get recompressed (dimensions kept)`
-                : "Files are stored as-is"}
+                ? `在浏览器本地压缩 — 超过 ${targetSizeMb}MB 的 JPG/PNG/WebP 将重新压缩并保持尺寸不变`
+                : "文件将按原样存储"}
             </p>
           </div>
 
@@ -1350,7 +1350,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
                 {previews.map((preview, i) => (
                   <div key={i} className="aspect-square border border-border-subtle overflow-hidden bg-surface-dim relative">
-                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={preview} alt={`预览 ${i + 1}`} className="w-full h-full object-cover" />
                     <button
                       onClick={() => {
                         setFiles((f) => f.filter((_, idx) => idx !== i));
@@ -1375,7 +1375,7 @@ export default function AdminPage() {
                 className="btn-primary flex items-center gap-2 mx-auto"
               >
                 <span className="material-symbols-outlined text-[16px]">publish</span>
-                {uploading ? "Uploading..." : `Upload ${files.length} File${files.length > 1 ? "s" : ""}`}
+                {uploading ? "上传中..." : `上传 ${files.length} 个文件`}
               </button>
             </div>
           )}
@@ -1387,14 +1387,14 @@ export default function AdminPage() {
         <div>
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <h2 className="text-headline-lg text-primary">Photo Management</h2>
+              <h2 className="text-headline-lg text-primary">照片管理</h2>
               <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                {photos.length} TOTAL · {photos.filter((p) => p.is_published).length} PUBLISHED · {photos.filter((p) => !p.is_published).length} DRAFT
+                {photos.length} 张 · {photos.filter((p) => p.is_published).length} 已发布 · {photos.filter((p) => !p.is_published).length} 草稿
               </span>
             </div>
             {/* Sort toggle */}
             <div className="flex items-center gap-2">
-              <span className="text-label-caps text-outline uppercase">Sort by</span>
+              <span className="text-label-caps text-outline uppercase">排序方式</span>
               <button
                 onClick={() => setSortBy("shoot")}
                 className={`text-label-caps px-3 py-1.5 border transition-all ${
@@ -1403,7 +1403,7 @@ export default function AdminPage() {
                     : "border-border-subtle text-on-surface-variant hover:border-primary"
                 }`}
               >
-                Shoot Date
+                拍摄日期
               </button>
               <button
                 onClick={() => setSortBy("upload")}
@@ -1413,7 +1413,7 @@ export default function AdminPage() {
                     : "border-border-subtle text-on-surface-variant hover:border-primary"
                 }`}
               >
-                Upload Time
+                上传时间
               </button>
             </div>
           </div>
@@ -1426,7 +1426,7 @@ export default function AdminPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by title..."
+                placeholder="按标题搜索..."
                 className="w-full border border-border-subtle bg-surface pl-10 pr-3 py-2 text-body-md focus:outline-none focus:border-primary"
               />
             </div>
@@ -1441,7 +1441,7 @@ export default function AdminPage() {
                       : "border-border-subtle text-on-surface-variant hover:border-primary"
                   }`}
                 >
-                  {s === "all" ? "All" : s === "published" ? "Published" : "Draft"}
+                  {s === "all" ? "全部" : s === "published" ? "已发布" : "草稿"}
                 </button>
               ))}
             </div>
@@ -1452,7 +1452,7 @@ export default function AdminPage() {
             selected.size > 0 ? "border-primary bg-mint-accent/15" : "border-transparent"
           }`}>
             <span className="text-label-caps text-primary uppercase">
-              {selected.size > 0 ? `${selected.size} Selected` : "No selection"}
+              {selected.size > 0 ? `已选择 ${selected.size} 项` : "未选择"}
             </span>
             {selected.size > 0 && (
               <>
@@ -1461,14 +1461,14 @@ export default function AdminPage() {
                   disabled={batchBusy}
                   className="text-label-caps px-3 py-1.5 border border-primary text-primary hover:bg-primary hover:text-on-primary transition-all disabled:opacity-50"
                 >
-                  Publish
+                  发布
                 </button>
                 <button
                   onClick={() => handleBatchStatus(false)}
                   disabled={batchBusy}
                   className="text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:border-primary hover:text-primary transition-all disabled:opacity-50"
                 >
-                  Hide
+                  隐藏
                 </button>
                 {batchConfirmDelete ? (
                   <>
@@ -1477,13 +1477,13 @@ export default function AdminPage() {
                       disabled={batchBusy}
                       className="text-label-caps px-3 py-1.5 border border-error text-error bg-error/10 hover:bg-error hover:text-on-error transition-all disabled:opacity-50"
                     >
-                      {batchBusy ? "Deleting..." : "Confirm Delete"}
+                      {batchBusy ? "删除中..." : "确认删除"}
                     </button>
                     <button
                       onClick={() => setBatchConfirmDelete(false)}
                       className="text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:text-primary"
                     >
-                      Cancel
+                      取消
                     </button>
                   </>
                 ) : (
@@ -1491,14 +1491,14 @@ export default function AdminPage() {
                     onClick={() => setBatchConfirmDelete(true)}
                     className="text-label-caps px-3 py-1.5 border border-error text-error hover:bg-error hover:text-on-error transition-all"
                   >
-                    Delete Selected
+                    删除所选
                   </button>
                 )}
                 <button
-                  onClick={() => setSelected(new Set())}
-                  className="text-label-caps px-3 py-1.5 text-on-surface-variant hover:text-primary"
-                >
-                  Clear
+                    onClick={() => setSelected(new Set())}
+                    className="text-label-caps px-3 py-1.5 text-on-surface-variant hover:text-primary"
+                  >
+                    清除选择
                 </button>
               </>
             )}
@@ -1523,11 +1523,11 @@ export default function AdminPage() {
                       className="w-4 h-4 accent-[#141414] cursor-pointer"
                     />
                   </div>
-                  <div className="col-span-2">Preview</div>
-                  <div className="col-span-3">Title</div>
-                  <div className="col-span-3">Shoot Date</div>
-                  <div className="col-span-1">Status</div>
-                  <div className="col-span-2 flex justify-end">Actions</div>
+                  <div className="col-span-2">预览</div>
+                  <div className="col-span-3">标题</div>
+                  <div className="col-span-3">拍摄日期</div>
+                  <div className="col-span-1">状态</div>
+                  <div className="col-span-2 flex justify-end">操作</div>
                 </div>
 
                 {filteredPhotos.map((photo) => (
@@ -1555,13 +1555,13 @@ export default function AdminPage() {
                       </a>
                     </div>
                     <div className="col-span-3 text-body-md text-on-surface truncate">
-                      {photo.title || "Untitled"}
+                      {photo.title || "无标题"}
                     </div>
                     <div className="col-span-3 text-metadata-sm text-on-surface-variant">
                       {formatDate(photo.shoot_time) || "—"}
                       <div className="mt-1">
                         <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                          Up {formatDate(photo.created_at) || "—"}
+                          上传于 {formatDate(photo.created_at) || "—"}
                         </span>
                       </div>
                     </div>
@@ -1574,21 +1574,21 @@ export default function AdminPage() {
                             : "bg-surface-variant text-on-surface-variant"
                         }`}
                       >
-                        {photo.is_published ? "PUB" : "DRF"}
+                        {photo.is_published ? "已发布" : "草稿"}
                       </button>
                     </div>
                     <div className="col-span-2 flex justify-end gap-2">
                       <button
                         onClick={() => startEdit(photo)}
                         className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors"
-                        title="Edit"
+                        title="编辑"
                       >
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                       </button>
                       <a
                         href={`/photo/${photo.id}`}
                         className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors"
-                        title="View"
+                        title="查看"
                       >
                         <span className="material-symbols-outlined text-[18px]">visibility</span>
                       </a>
@@ -1599,20 +1599,20 @@ export default function AdminPage() {
                             onClick={() => handleDelete(photo.id)}
                             className="text-label-caps text-error px-2"
                           >
-                            Confirm
+                            确认
                           </button>
                           <button
                             onClick={() => setDeleteConfirm(null)}
                             className="text-label-caps text-on-surface-variant px-2"
                           >
-                            Cancel
+                            取消
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setDeleteConfirm(photo.id)}
                           className="w-8 h-8 flex items-center justify-center hover:text-error transition-colors"
-                          title="Delete"
+                          title="删除"
                         >
                           <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
@@ -1655,13 +1655,13 @@ export default function AdminPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="text-body-md text-on-surface truncate font-medium">
-                        {photo.title || "Untitled"}
+                        {photo.title || "无标题"}
                       </div>
                       <div className="text-metadata-sm text-on-surface-variant mt-0.5">
                         {formatDate(photo.shoot_time) || "—"}
                       </div>
                       <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider mt-1" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                        Up {formatDate(photo.created_at) || "—"}
+                        上传于 {formatDate(photo.created_at) || "—"}
                       </span>
                       <button
                         onClick={() => handleTogglePublish(photo)}
@@ -1671,7 +1671,7 @@ export default function AdminPage() {
                             : "bg-surface-variant text-on-surface-variant"
                         }`}
                       >
-                        {photo.is_published ? "PUBLISHED" : "DRAFT"}
+                        {photo.is_published ? "已发布" : "草稿"}
                       </button>
                     </div>
 
@@ -1679,14 +1679,14 @@ export default function AdminPage() {
                       <button
                         onClick={() => startEdit(photo)}
                         className="w-9 h-9 flex items-center justify-center border border-border-subtle hover:border-primary hover:text-primary transition-colors"
-                        title="Edit"
+                        title="编辑"
                       >
                         <span className="material-symbols-outlined text-[20px]">edit</span>
                       </button>
                       <a
                         href={`/photo/${photo.id}`}
                         className="w-9 h-9 flex items-center justify-center border border-border-subtle hover:border-primary hover:text-primary transition-colors"
-                        title="View"
+                        title="查看"
                       >
                         <span className="material-symbols-outlined text-[20px]">visibility</span>
                       </a>
@@ -1696,7 +1696,7 @@ export default function AdminPage() {
                             onClick={() => handleDelete(photo.id)}
                             className="text-label-caps text-error px-1 py-1 border border-error"
                           >
-                            OK
+                            确定
                           </button>
                           <button
                             onClick={() => setDeleteConfirm(null)}
@@ -1709,7 +1709,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => setDeleteConfirm(photo.id)}
                           className="w-9 h-9 flex items-center justify-center border border-border-subtle hover:border-error hover:text-error transition-colors"
-                          title="Delete"
+                          title="删除"
                         >
                           <span className="material-symbols-outlined text-[20px]">delete</span>
                         </button>
@@ -1727,28 +1727,28 @@ export default function AdminPage() {
         {activeTab === "blog" && (
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="text-headline-lg text-primary">Blog Management</h2>
+            <h2 className="text-headline-lg text-primary">笔记管理</h2>
             <button
               onClick={() => openArticleEditor()}
               className="btn-primary !py-3"
             >
               <span className="material-symbols-outlined text-[16px] align-middle mr-1">add</span>
-              New Post
+              新建笔记
             </button>
           </div>
 
           {articles.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle text-on-surface-variant">
               <span className="material-symbols-outlined text-6xl mb-4">article</span>
-              <p className="text-headline-mobile text-on-surface-variant">No posts yet</p>
+              <p className="text-headline-mobile text-on-surface-variant">暂无笔记</p>
             </div>
           ) : (
             <div className="flex flex-col border border-border-subtle">
               <div className="grid grid-cols-12 gap-4 border-b border-border-subtle p-4 text-label-caps text-outline bg-surface-bright">
-                <div className="col-span-4">Title</div>
-                <div className="col-span-3">Slug</div>
-                <div className="col-span-2">Status</div>
-                <div className="col-span-3 flex justify-end">Actions</div>
+                <div className="col-span-4">标题</div>
+                <div className="col-span-3">别名</div>
+                <div className="col-span-2">状态</div>
+                <div className="col-span-3 flex justify-end">操作</div>
               </div>
               {articles.map((article) => (
                 <div
@@ -1756,9 +1756,9 @@ export default function AdminPage() {
                   className="grid grid-cols-12 gap-4 border-b border-border-subtle p-4 items-center hover:bg-mint-accent/5 transition-colors"
                 >
                   <div className="col-span-4 min-w-0">
-                    <div className="text-body-md text-on-surface truncate font-medium">{article.title || "Untitled"}</div>
+                    <div className="text-body-md text-on-surface truncate font-medium">{article.title || "无标题"}</div>
                     <div className="text-metadata-sm text-outline mt-0.5" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                      {new Date(article.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })} · {article.views} views
+                      {new Date(article.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })} · {article.views} 次浏览
                     </div>
                   </div>
                   <div className="col-span-3 text-metadata-sm text-on-surface-variant truncate" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
@@ -1773,30 +1773,30 @@ export default function AdminPage() {
                           : "bg-surface-variant text-on-surface-variant"
                       }`}
                     >
-                      {article.is_published ? "PUBLISHED" : "DRAFT"}
+                      {article.is_published ? "已发布" : "草稿"}
                     </button>
                   </div>
                   <div className="col-span-3 flex justify-end gap-2">
                     <button
                       onClick={() => openArticleEditor(article)}
                       className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors"
-                      title="Edit"
+                      title="编辑"
                     >
                       <span className="material-symbols-outlined text-[18px]">edit</span>
                     </button>
                     <a
                       href={`/blog/${article.slug}`}
                       className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors"
-                      title="View"
+                      title="查看"
                     >
                       <span className="material-symbols-outlined text-[18px]">visibility</span>
                     </a>
                     <button
                       onClick={() => {
-                        if (window.confirm(`Delete "${article.title}"?`)) handleDeleteArticle(article.slug);
+                        if (window.confirm(`确定删除「${article.title}」吗？`)) handleDeleteArticle(article.slug);
                       }}
                       className="w-8 h-8 flex items-center justify-center hover:text-error transition-colors"
-                      title="Delete"
+                      title="删除"
                     >
                       <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
@@ -1811,17 +1811,17 @@ export default function AdminPage() {
         {activeTab === "albums" && (
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="text-headline-lg text-primary">Albums</h2>
+            <h2 className="text-headline-lg text-primary">相册</h2>
             <button onClick={() => openAlbumEditor()} className="btn-primary !py-3">
               <span className="material-symbols-outlined text-[16px] align-middle mr-1">add</span>
-              New Album
+              新建相册
             </button>
           </div>
 
           {albums.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle text-on-surface-variant">
               <span className="material-symbols-outlined text-6xl mb-4">photo_album</span>
-              <p className="text-headline-mobile text-on-surface-variant">No albums yet</p>
+              <p className="text-headline-mobile text-on-surface-variant">暂无相册</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1850,16 +1850,16 @@ export default function AdminPage() {
                       <button
                         onClick={() => openAlbumEditor(album)}
                         className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors"
-                        title="Edit"
+                        title="编辑"
                       >
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                       </button>
                       <button
                         onClick={() => {
-                          if (window.confirm(`Delete album "${album.title}"? Photos will be kept.`)) handleDeleteAlbum(album.slug);
+                          if (window.confirm(`确定删除相册「${album.title}」吗？照片会保留。`)) handleDeleteAlbum(album.slug);
                         }}
                         className="w-8 h-8 flex items-center justify-center hover:text-error transition-colors"
-                        title="Delete"
+                        title="删除"
                       >
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
@@ -1876,27 +1876,27 @@ export default function AdminPage() {
         {activeTab === "analytics" && (
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-headline-lg text-primary">Analytics</h2>
+            <h2 className="text-headline-lg text-primary">访问分析</h2>
             <button onClick={loadAnalytics} className="text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:border-primary hover:text-primary transition-all">
-              Refresh
+              刷新
             </button>
           </div>
 
           {!analytics ? (
             <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle text-on-surface-variant">
               <span className="material-symbols-outlined text-6xl mb-4">monitoring</span>
-              <p className="text-metadata-sm text-outline uppercase">Loading analytics...</p>
+              <p className="text-metadata-sm text-outline uppercase">正在加载访问分析...</p>
             </div>
           ) : (
             <div className="flex flex-col gap-8">
               {/* 统计卡片 */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
-                  { label: "Today PV", value: analytics.today_pv },
-                  { label: "Today UV", value: analytics.today_uv },
-                  { label: "Week PV", value: analytics.week_pv },
-                  { label: "Total PV", value: analytics.total_pv },
-                  { label: "Total UV", value: analytics.total_uv },
+                  { label: "今日 PV", value: analytics.today_pv },
+                  { label: "今日 UV", value: analytics.today_uv },
+                  { label: "本周 PV", value: analytics.week_pv },
+                  { label: "总 PV", value: analytics.total_pv },
+                  { label: "总 UV", value: analytics.total_uv },
                 ].map((s) => (
                   <div key={s.label} className="border border-border-subtle p-4 bg-surface-bright">
                     <div className="text-headline-lg text-primary">{s.value}</div>
@@ -1907,7 +1907,7 @@ export default function AdminPage() {
 
               {/* 7 天 PV 曲线（简单条形） */}
               <div>
-                <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">LAST 7 DAYS</h3>
+                <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">最近 7 天</h3>
                 <div className="flex items-end gap-2 h-32">
                   {analytics.daily.map((d: any) => {
                     const max = Math.max(...analytics.daily.map((x: any) => x.pv), 1);
@@ -1930,9 +1930,9 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* 热门页面 */}
                 <div>
-                  <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">TOP PAGES (7D)</h3>
+                  <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">热门页面（7 天）</h3>
                   <div className="flex flex-col gap-2">
-                    {analytics.top_pages.length === 0 && <p className="text-metadata-sm text-outline">No data yet</p>}
+                    {analytics.top_pages.length === 0 && <p className="text-metadata-sm text-outline">暂无数据</p>}
                     {analytics.top_pages.map((p: any) => (
                       <div key={p.path} className="flex items-center justify-between text-metadata-sm">
                         <span className="text-on-surface truncate" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>{p.path}</span>
@@ -1943,9 +1943,9 @@ export default function AdminPage() {
                 </div>
                 {/* 热门照片 */}
                 <div>
-                  <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">TOP PHOTOS</h3>
+                  <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">热门照片</h3>
                   <div className="flex flex-col gap-2">
-                    {analytics.top_photos.length === 0 && <p className="text-metadata-sm text-outline">No data yet</p>}
+                    {analytics.top_photos.length === 0 && <p className="text-metadata-sm text-outline">暂无数据</p>}
                     {analytics.top_photos.map((p: any) => (
                       <a key={p.id} href={`/photo/${p.id}`} className="flex items-center justify-between text-metadata-sm hover:text-primary transition-colors">
                         <span className="text-on-surface truncate">{p.title}</span>
@@ -1956,9 +1956,9 @@ export default function AdminPage() {
                 </div>
                 {/* 热门文章 */}
                 <div>
-                  <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">TOP ARTICLES</h3>
+                  <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">热门文章</h3>
                   <div className="flex flex-col gap-2">
-                    {analytics.top_articles.length === 0 && <p className="text-metadata-sm text-outline">No data yet</p>}
+                    {analytics.top_articles.length === 0 && <p className="text-metadata-sm text-outline">暂无数据</p>}
                     {analytics.top_articles.map((a: any) => (
                       <a key={a.slug} href={`/blog/${a.slug}`} className="flex items-center justify-between text-metadata-sm hover:text-primary transition-colors">
                         <span className="text-on-surface truncate">{a.title}</span>
@@ -1976,29 +1976,29 @@ export default function AdminPage() {
         {activeTab === "services" && (
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-headline-lg text-primary">Services Health</h2>
+            <h2 className="text-headline-lg text-primary">服务健康检测</h2>
             <button
               onClick={loadServices}
               disabled={servicesLoading}
               className="text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:border-primary hover:text-primary transition-all disabled:opacity-50"
             >
-              {servicesLoading ? "Checking..." : "Re-check"}
+              {servicesLoading ? "检测中..." : "重新检测"}
             </button>
           </div>
 
           {!services ? (
             <p className="text-metadata-sm text-outline mb-6" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-              {servicesLoading ? "Checking all services..." : "Click Re-check to run the full health check."}
+              {servicesLoading ? "正在检测所有服务..." : "点击「重新检测」运行完整健康检查。"}
             </p>
           ) : (
             fullCheckDone && (
             <div className={`mb-6 p-4 border flex items-center gap-3 ${services.ok_count === services.total ? "border-primary/40 bg-mint-accent/10" : "border-error/40 bg-error/5"}`}>
               <span className={`w-3 h-3 rounded-full ${services.ok_count === services.total ? "bg-primary" : "bg-error"}`} />
               <span className="text-body-md text-on-surface">
-                {services.ok_count} / {services.total} services available
+                {services.ok_count} / {services.total} 项服务可用
               </span>
               <span className="text-metadata-sm text-outline ml-auto" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                checked at {services.checked_at}
+                检测于 {services.checked_at}
               </span>
             </div>
             )
@@ -2027,9 +2027,9 @@ export default function AdminPage() {
                     onClick={() => checkSingleService(s.name)}
                     disabled={s.checking || servicesLoading}
                     className="ml-auto flex-shrink-0 text-label-caps px-2 py-1 border border-border-subtle text-on-surface-variant hover:border-primary hover:text-primary transition-all disabled:opacity-50"
-                    title="Re-check this service"
+                    title="重新检测此服务"
                   >
-                    {s.checking ? "..." : "Check"}
+                    {s.checking ? "..." : "检测"}
                   </button>
                 </div>
                 <div className="text-metadata-sm text-outline truncate" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }} title={s.url}>
@@ -2040,7 +2040,7 @@ export default function AdminPage() {
                     className={s.ok === null ? "text-outline" : s.ok ? "text-primary" : "text-error"}
                     style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
                   >
-                    {s.ok === null ? "NOT CHECKED" : s.ok ? "OK" : "DOWN"} · {s.latency_ms}ms
+                    {s.ok === null ? "未检测" : s.ok ? "正常" : "故障"} · {s.latency_ms}ms
                   </span>
                 </div>
                 {s.ok === false && s.detail && (
@@ -2067,7 +2067,7 @@ export default function AdminPage() {
           >
             <div className="flex items-center justify-between p-4 md:p-6 border-b border-border-subtle">
               <h3 className="text-headline-lg text-primary">
-                {albumModal.editing ? `Edit Album: ${albumModal.album?.slug}` : "New Album"}
+                {albumModal.editing ? `编辑相册：${albumModal.album?.slug}` : "新建相册"}
               </h3>
               <button
                 onClick={() => setAlbumModal(null)}
@@ -2078,17 +2078,17 @@ export default function AdminPage() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="text-label-caps text-outline block mb-1">Title *</label>
+                <label className="text-label-caps text-outline block mb-1">标题 *</label>
                 <input
                   type="text"
                   value={albumForm.title}
                   onChange={(e) => setAlbumForm({ ...albumForm, title: e.target.value })}
                   className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
-                  placeholder="Ulanqab Trip"
+                  placeholder="乌兰察布之旅"
                 />
               </div>
               <div>
-                <label className="text-label-caps text-outline block mb-1">Slug (URL)</label>
+                <label className="text-label-caps text-outline block mb-1">别名（URL）</label>
                 <input
                   type="text"
                   value={albumForm.slug}
@@ -2098,7 +2098,7 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <label className="text-label-caps text-outline block mb-1">Description</label>
+                <label className="text-label-caps text-outline block mb-1">描述</label>
                 <textarea
                   value={albumForm.description}
                   onChange={(e) => setAlbumForm({ ...albumForm, description: e.target.value })}
@@ -2107,33 +2107,33 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <label className="text-label-caps text-outline block mb-1">Cover Photo</label>
+                <label className="text-label-caps text-outline block mb-1">封面照片</label>
                 <select
                   value={albumForm.cover_photo_id}
                   onChange={(e) => setAlbumForm({ ...albumForm, cover_photo_id: e.target.value })}
                   className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
                 >
-                  <option value="">Auto (newest in album)</option>
+                  <option value="">自动（相册中最新）</option>
                   {albumModal?.album?.cover_photo_id &&
                     !photos.some((p) => p.album_id === albumModal.album.id && p.id === albumModal.album.cover_photo_id) && (
                       <option value={String(albumModal.album.cover_photo_id)}>
-                        #{albumModal.album.cover_photo_id} — Current cover
+                        #{albumModal.album.cover_photo_id} — 当前封面
                       </option>
                     )}
                   {photos
                     .filter((p) => albumModal?.album && p.album_id === albumModal.album.id)
                     .map((p) => (
                       <option key={p.id} value={String(p.id)}>
-                        #{p.id} — {p.title || p.original_filename || "Untitled"}
+                        #{p.id} — {p.title || p.original_filename || "无标题"}
                       </option>
                     ))}
                   {photos.filter((p) => albumModal?.album && p.album_id === albumModal.album.id).length === 0 && (
                     <option value="" disabled>
-                      No photos in this album yet
+                      此相册中还没有照片
                     </option>
                   )}
                 </select>
-                <p className="text-metadata-sm text-outline mt-1">If empty, the newest photo in this album is used automatically.</p>
+                <p className="text-metadata-sm text-outline mt-1">留空时，将自动使用此相册中最新的一张照片。</p>
               </div>
             </div>
             <div className="flex justify-end gap-3 p-6 border-t border-border-subtle">
@@ -2141,14 +2141,14 @@ export default function AdminPage() {
                 onClick={() => setAlbumModal(null)}
                 className="text-label-caps px-4 py-2 border border-border-subtle text-on-surface-variant hover:text-primary"
               >
-                Cancel
+                取消
               </button>
               <button
                 onClick={handleSaveAlbum}
                 disabled={albumSaving || !albumForm.title.trim()}
                 className="btn-primary"
               >
-                {albumSaving ? "Saving..." : "Save Album"}
+                {albumSaving ? "保存中..." : "保存相册"}
               </button>
             </div>
           </div>
@@ -2167,7 +2167,7 @@ export default function AdminPage() {
           >
             <div className="flex items-center justify-between p-4 md:p-6 border-b border-border-subtle sticky top-0 bg-surface z-10">
               <h3 className="text-headline-lg text-primary">
-                {articleModal.editing ? `Edit Post: ${articleModal.article?.slug}` : "New Post"}
+                {articleModal.editing ? `编辑笔记：${articleModal.article?.slug}` : "新建笔记"}
               </h3>
               <button
                 onClick={() => setArticleModal(null)}
@@ -2180,17 +2180,17 @@ export default function AdminPage() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-label-caps text-outline block mb-1">Title *</label>
+                <label className="text-label-caps text-outline block mb-1">标题 *</label>
                   <input
                     type="text"
                     value={articleForm.title}
                     onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })}
                     className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
-                    placeholder="My First Post"
+                    placeholder="我的第一篇笔记"
                   />
                 </div>
                 <div>
-                  <label className="text-label-caps text-outline block mb-1">Slug (URL)</label>
+                  <label className="text-label-caps text-outline block mb-1">别名（URL）</label>
                   <input
                     type="text"
                     value={articleForm.slug}
@@ -2201,46 +2201,46 @@ export default function AdminPage() {
                 </div>
               </div>
               <div>
-                <label className="text-label-caps text-outline block mb-1">Excerpt</label>
+                <label className="text-label-caps text-outline block mb-1">摘要</label>
                 <input
                   type="text"
                   value={articleForm.excerpt}
                   onChange={(e) => setArticleForm({ ...articleForm, excerpt: e.target.value })}
                   className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
-                  placeholder="Short summary shown in the blog list"
+                  placeholder="显示在笔记列表中的简短摘要"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-label-caps text-outline block mb-1">Tags (comma separated)</label>
+                  <label className="text-label-caps text-outline block mb-1">标签（逗号分隔）</label>
                   <input
                     type="text"
                     value={articleForm.tags}
                     onChange={(e) => setArticleForm({ ...articleForm, tags: e.target.value })}
                     className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
-                    placeholder="travel, sydney, b&w"
+                    placeholder="旅行，悉尼，黑白"
                   />
                 </div>
                 <div>
-                  <label className="text-label-caps text-outline block mb-1">Cover Photo ID (optional)</label>
+                  <label className="text-label-caps text-outline block mb-1">封面照片 ID（可选）</label>
                   <input
                     type="number"
                     min={1}
                     value={articleForm.cover_photo_id}
                     onChange={(e) => setArticleForm({ ...articleForm, cover_photo_id: e.target.value })}
                     className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
-                    placeholder="e.g. 20"
+                    placeholder="例如 20"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-label-caps text-outline block mb-1">Content (Markdown)</label>
+                <label className="text-label-caps text-outline block mb-1">内容（Markdown）</label>
                 <textarea
                   value={articleForm.content_md}
                   onChange={(e) => setArticleForm({ ...articleForm, content_md: e.target.value })}
                   rows={14}
                   className="w-full border border-border-subtle p-3 text-body-md bg-surface focus:outline-none focus:border-primary font-mono resize-y"
-                  placeholder={"# Title\n\nWrite your post in Markdown...\n\n- supports **bold**, images, code blocks"}
+                  placeholder={"# 标题\n\n使用 Markdown 撰写你的笔记...\n\n- 支持 **粗体**、图片、代码块"}
                 />
               </div>
             </div>
@@ -2250,14 +2250,14 @@ export default function AdminPage() {
                 onClick={() => setArticleModal(null)}
                 className="text-label-caps px-4 py-2 border border-border-subtle text-on-surface-variant hover:text-primary"
               >
-                Cancel
+                取消
               </button>
               <button
                 onClick={handleSaveArticle}
                 disabled={articleSaving || !articleForm.title.trim()}
                 className="btn-primary"
               >
-                {articleSaving ? "Saving..." : "Save Post"}
+                {articleSaving ? "保存中..." : "保存笔记"}
               </button>
             </div>
           </div>
@@ -2282,7 +2282,7 @@ export default function AdminPage() {
                   alt=""
                   className="w-10 h-10 object-cover border border-border-subtle"
                 />
-                <h3 className="text-headline-lg text-primary">Edit Photo #{editingPhoto.id}</h3>
+                <h3 className="text-headline-lg text-primary">编辑照片 #{editingPhoto.id}</h3>
               </div>
               <button
                 onClick={() => setEditingPhoto(null)}
@@ -2295,18 +2295,18 @@ export default function AdminPage() {
             {/* Modal body */}
             <div className="p-6 space-y-4">
               {[
-                { key: "title", label: "Title", type: "text" },
-                { key: "description", label: "Description", type: "textarea" },
-                { key: "shoot_time", label: "Shoot Time", type: "datetime-local" },
-                { key: "camera_model", label: "Camera Model", type: "text" },
-                { key: "lens_model", label: "Lens Model", type: "text" },
-                { key: "focal_length", label: "Focal Length", type: "text" },
-                { key: "aperture", label: "Aperture", type: "text" },
-                { key: "shutter_speed", label: "Shutter Speed", type: "text" },
+                { key: "title", label: "标题", type: "text" },
+                { key: "description", label: "描述", type: "textarea" },
+                { key: "shoot_time", label: "拍摄时间", type: "datetime-local" },
+                { key: "camera_model", label: "相机型号", type: "text" },
+                { key: "lens_model", label: "镜头型号", type: "text" },
+                { key: "focal_length", label: "焦距", type: "text" },
+                { key: "aperture", label: "光圈", type: "text" },
+                { key: "shutter_speed", label: "快门速度", type: "text" },
                 { key: "iso", label: "ISO", type: "text" },
-                { key: "latitude", label: "Latitude", type: "text" },
-                { key: "longitude", label: "Longitude", type: "text" },
-                { key: "location_name", label: "Location Name", type: "text" },
+                { key: "latitude", label: "纬度", type: "text" },
+                { key: "longitude", label: "经度", type: "text" },
+                { key: "location_name", label: "地点名称", type: "text" },
               ].map((field) => (
                 <div key={field.key}>
                   <label className="text-label-caps text-outline block mb-1">{field.label}</label>
@@ -2328,13 +2328,13 @@ export default function AdminPage() {
                 </div>
               ))}
               <div>
-                <label className="text-label-caps text-outline block mb-1">Album</label>
+                <label className="text-label-caps text-outline block mb-1">相册</label>
                 <select
                   value={editForm.album_id || ""}
                   onChange={(e) => setEditForm({ ...editForm, album_id: e.target.value })}
                   className="w-full border border-border-subtle p-2 text-body-md bg-surface focus:outline-none focus:border-primary"
                 >
-                  <option value="">No album</option>
+                  <option value="">不属于任何相册</option>
                   {albums.map((a) => (
                     <option key={a.id} value={String(a.id)}>{a.title}</option>
                   ))}
@@ -2348,14 +2348,14 @@ export default function AdminPage() {
                 onClick={() => setEditingPhoto(null)}
                 className="text-label-caps px-4 py-2 border border-border-subtle text-on-surface-variant hover:text-primary"
               >
-                Cancel
+                取消
               </button>
               <button
                 onClick={handleSavePhoto}
                 disabled={photoSaving}
                 className="btn-primary"
               >
-                {photoSaving ? "Saving..." : "Save Changes"}
+                {photoSaving ? "保存中..." : "保存更改"}
               </button>
             </div>
           </div>
