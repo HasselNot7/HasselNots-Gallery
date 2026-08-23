@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Photo, getPhotoImageUrl } from "@/lib/api-server";
 import Lightbox from "@/components/Lightbox";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 24;
 
 function DraggableTimeline({ entries, active, onChange }: { entries: string[]; active: string; onChange: (y: string) => void }) {
   const [dragging, setDragging] = useState(false);

@@ -8,7 +8,7 @@ export default async function GalleryPage() {
   let total = 0;
   let allYears: string[] = [];
   try {
-    const data = await fetchPhotos(true, 0, 12);
+    const data = await fetchPhotos(true, 0, 24);
     items = data.items;
     total = data.total;
     allYears = await fetchYears();
