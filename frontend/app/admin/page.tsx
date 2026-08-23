@@ -1560,7 +1560,7 @@ export default function AdminPage() {
                     <div className="col-span-3 text-metadata-sm text-on-surface-variant">
                       {formatDate(photo.shoot_time) || "—"}
                       <div className="mt-1">
-                        <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+                        <span className="inline-block text-[9px] text-primary bg-white border border-primary/40 px-1.5 py-0.5 uppercase tracking-wider" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                           上传于 {formatDate(photo.created_at) || "—"}
                         </span>
                       </div>
@@ -1568,10 +1568,8 @@ export default function AdminPage() {
                     <div className="col-span-1">
                       <button
                         onClick={() => handleTogglePublish(photo)}
-                        className={`text-label-caps px-2 py-1 ${
-                          photo.is_published
-                            ? "bg-mint-accent/50 text-primary"
-                            : "bg-surface-variant text-on-surface-variant"
+                        className={`text-label-caps px-2 py-1 bg-white text-primary border ${
+                          photo.is_published ? "border-primary" : "border-primary/40"
                         }`}
                       >
                         {photo.is_published ? "已发布" : "草稿"}
@@ -1660,15 +1658,13 @@ export default function AdminPage() {
                       <div className="text-metadata-sm text-on-surface-variant mt-0.5">
                         {formatDate(photo.shoot_time) || "—"}
                       </div>
-                      <span className="inline-block text-[9px] text-primary bg-mint-accent/40 border border-mint-accent px-1.5 py-0.5 uppercase tracking-wider mt-1" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+                      <span className="inline-block text-[9px] text-primary bg-white border border-primary/40 px-1.5 py-0.5 uppercase tracking-wider mt-1" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                         上传于 {formatDate(photo.created_at) || "—"}
                       </span>
                       <button
                         onClick={() => handleTogglePublish(photo)}
-                        className={`text-label-caps px-2 py-0.5 mt-1.5 ${
-                          photo.is_published
-                            ? "bg-mint-accent/50 text-primary"
-                            : "bg-surface-variant text-on-surface-variant"
+                        className={`text-label-caps px-2 py-0.5 mt-1.5 bg-white text-primary border block ${
+                          photo.is_published ? "border-primary" : "border-primary/40"
                         }`}
                       >
                         {photo.is_published ? "已发布" : "草稿"}
@@ -1767,10 +1763,8 @@ export default function AdminPage() {
                   <div className="col-span-2">
                     <button
                       onClick={() => handleToggleArticlePublish(article)}
-                      className={`text-label-caps px-2 py-1 ${
-                        article.is_published
-                          ? "bg-mint-accent/50 text-primary"
-                          : "bg-surface-variant text-on-surface-variant"
+                      className={`text-label-caps px-2 py-1 bg-white text-primary border ${
+                        article.is_published ? "border-primary" : "border-primary/40"
                       }`}
                     >
                       {article.is_published ? "已发布" : "草稿"}
