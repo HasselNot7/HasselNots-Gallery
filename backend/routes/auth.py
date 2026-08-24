@@ -60,6 +60,38 @@ def list_users(db: Session = Depends(get_db), current_user: User = Depends(requi
     return db.query(User).order_by(User.id).all()
 
 
+@router.post("/register", response_model=UserOut)
+def register(
+    payload: AdminCreate,
+    db: Session = Depends(get_db),
+):
+    username = payload.username.strip()
+    if not username or len(payload.password) < 6:
+        raise HTTPException(status_code=400, detail="Username required, password at least 6 chars")
+    if db.query(User).filter(User.username == username).first():
+        raise HTTPException(status_code=400, detail="Username already exists")
+    user = User(username=username, hashed_password=get_password_hash(payload.password), is_admin=False)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.post("/users/{user_id}/grant", response_model=UserOut)
+def grant_admin(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_admin = True
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @router.post("/users", response_model=UserOut)
 def create_user(
     payload: AdminCreate,

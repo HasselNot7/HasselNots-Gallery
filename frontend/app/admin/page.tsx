@@ -12,6 +12,7 @@ import {
   fetchUsers,
   createUser,
   deleteUser,
+  grantAdmin,
   AdminUser,
 } from "@/lib/api";
 import Navbar from "@/components/Navbar";
@@ -319,6 +320,15 @@ export default function AdminPage() {
       await loadUsers();
     } catch (err: any) {
       setUserError(err?.message?.replace(/^.*"detail":"([^"]+)".*$/, "$1") || "删除失败");
+    }
+  };
+
+  const handleGrantAdmin = async (id: number) => {
+    try {
+      await grantAdmin(id);
+      await loadUsers();
+    } catch (err: any) {
+      setUserError(err?.message?.replace(/^.*"detail":"([^"]+)".*$/, "$1") || "授权失败");
     }
   };
 
@@ -2118,14 +2128,22 @@ export default function AdminPage() {
                 {users.map((u) => (
                   <div key={u.id} className="py-3 flex items-center gap-3">
                     <span className="material-symbols-outlined text-[20px] text-primary flex-shrink-0">
-                      {u.is_admin ? "verified_user" : "person"}
+                      {u.is_admin ? "verified_user" : "person_add"}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="text-body-md text-on-surface truncate">{u.username}</div>
                       <div className="text-metadata-sm text-outline">
-                        {u.is_admin ? "管理员" : "普通用户"} · ID {u.id}
+                        {u.is_admin ? "管理员" : "待授权"} · ID {u.id}
                       </div>
                     </div>
+                    {!u.is_admin && (
+                      <button
+                        onClick={() => handleGrantAdmin(u.id)}
+                        className="flex-shrink-0 text-label-caps px-3 py-1.5 border border-primary text-primary hover:bg-primary hover:text-white transition-all"
+                      >
+                        授权
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDeleteUser(u.id)}
                       disabled={u.id === me?.id}
@@ -2141,6 +2159,9 @@ export default function AdminPage() {
 
             <div className="border border-border-subtle p-6 bg-surface-bright mt-6 space-y-4">
               <h3 className="text-body-md text-on-surface font-medium">添加管理员</h3>
+              <p className="text-metadata-sm text-outline">
+                创建一个账号并立即授予管理员权限（新账号也可由用户自行注册后，在此页点「授权」）。
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   value={newUsername}

@@ -135,6 +135,21 @@ export async function login(username: string, password: string): Promise<TokenRe
   return res.json();
 }
 
+export async function register(username: string, password: string): Promise<AdminUser> {
+  return fetcher<AdminUser>("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export async function grantAdmin(id: number): Promise<AdminUser> {
+  return fetcher<AdminUser>(`/api/auth/users/${id}/grant`, {
+    method: "POST",
+    token: getToken() ?? undefined,
+  });
+}
+
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("gallery_token");
