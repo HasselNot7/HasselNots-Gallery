@@ -42,6 +42,11 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     if not user or not verify_password(req.password, user.hashed_password):
         _failures.setdefault(ip, []).append(time.time())
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account not authorized yet. Please wait for admin approval.",
+        )
 
     _failures.pop(ip, None)
     token = create_access_token(data={"sub": user.username})
@@ -63,12 +68,23 @@ def list_users(db: Session = Depends(get_db), current_user: User = Depends(requi
 @router.post("/register", response_model=UserOut)
 def register(
     payload: AdminCreate,
+    request: Request,
     db: Session = Depends(get_db),
 ):
+    ip = _client_ip(request)
+    lockout = _remaining_lockout(ip)
+    if lockout > 0:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many attempts. Try again in {max(lockout, 1)} seconds.",
+            headers={"Retry-After": str(max(lockout, 1))},
+        )
     username = payload.username.strip()
     if not username or len(payload.password) < 6:
+        _failures.setdefault(ip, []).append(time.time())
         raise HTTPException(status_code=400, detail="Username required, password at least 6 chars")
     if db.query(User).filter(User.username == username).first():
+        _failures.setdefault(ip, []).append(time.time())
         raise HTTPException(status_code=400, detail="Username already exists")
     user = User(username=username, hashed_password=get_password_hash(payload.password), is_admin=False)
     db.add(user)

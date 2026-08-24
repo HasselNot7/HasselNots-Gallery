@@ -27,9 +27,9 @@ export default function LoginPage() {
           <div className="glass-panel p-10 shadow-[0_20px_40px_rgba(20,20,20,0.06)]">
             <div className="flex flex-col items-center mb-8">
               <span className="material-symbols-outlined text-4xl text-primary mb-4">lock</span>
-              <h1 className="text-headline-lg text-primary mb-2">Admin Access</h1>
+              <h1 className="text-headline-lg text-primary mb-2">管理登录</h1>
               <span className="text-label-caps bg-mint-accent/20 border border-mint-accent text-primary px-3 py-1">
-                Protected Area
+                受保护区域
               </span>
             </div>
             <LoginForm />
