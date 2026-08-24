@@ -22,6 +22,41 @@ def _shutter_seconds(text: str) -> float:
     return float(m.group(1))
 
 
+FOCAL_RANGES = [
+    ("<16mm", lambda v: v < 16),
+    ("16-24mm", lambda v: 16 <= v < 24),
+    ("24-35mm", lambda v: 24 <= v < 35),
+    ("35-70mm", lambda v: 35 <= v < 70),
+    ("70-105mm", lambda v: 70 <= v < 105),
+    ("105-200mm", lambda v: 105 <= v < 200),
+    (">200mm", lambda v: v >= 200),
+]
+
+
+def _focal_bucket(text: str) -> str | None:
+    v = _num(text)
+    if v == float("inf"):
+        return None
+    for label, in_range in FOCAL_RANGES:
+        if in_range(v):
+            return label
+    return None
+
+
+def _focal_buckets(db: Session) -> list[dict]:
+    values = (
+        db.query(Photo.id, Photo.focal_length)
+        .filter(Photo.is_published == True, Photo.focal_length.isnot(None), Photo.focal_length != "")
+        .all()
+    )
+    counts: dict[str, int] = {}
+    for _, raw in values:
+        label = _focal_bucket(raw)
+        if label:
+            counts[label] = counts.get(label, 0) + 1
+    return [{"name": label, "count": counts.get(label, 0)} for label, _ in FOCAL_RANGES]
+
+
 @router.get("/equipment")
 def equipment_stats(db: Session = Depends(get_db)):
     def group(field, exclude=""):
@@ -39,7 +74,7 @@ def equipment_stats(db: Session = Depends(get_db)):
         "total_photos": total,
         "cameras": sorted(group(Photo.camera_model), key=lambda r: -r["count"]),
         "lenses": sorted(group(Photo.lens_model, exclude="----"), key=lambda r: -r["count"]),
-        "focal_lengths": sorted(group(Photo.focal_length, exclude="0mm"), key=lambda r: _num(r["name"])),
+        "focal_lengths": _focal_buckets(db),
         "apertures": sorted(group(Photo.aperture), key=lambda r: _num(r["name"])),
         "isos": sorted(group(Photo.iso), key=lambda r: _num(r["name"])),
         "shutter_speeds": sorted(group(Photo.shutter_speed), key=lambda r: _shutter_seconds(r["name"])),
