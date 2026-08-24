@@ -59,11 +59,11 @@ def _focal_buckets(db: Session) -> list[dict]:
 
 APERTURE_RANGES = [
     (">f/1.4", lambda v: 0 < v < 1.4),
-    ("f1.4-f2.0", lambda v: 1.4 <= v < 2.0),
-    ("f2.0-f2.8", lambda v: 2.0 <= v < 2.8),
-    ("f2.8-f4.0", lambda v: 2.8 <= v < 4.0),
-    ("f4.0-f8.0", lambda v: 4.0 <= v < 8.0),
-    ("<f8.0", lambda v: v >= 8.0),
+    ("f/1.4-f/2.0", lambda v: 1.4 <= v < 2.0),
+    ("f/2.0-f/2.8", lambda v: 2.0 <= v < 2.8),
+    ("f/2.8-f/4.0", lambda v: 2.8 <= v < 4.0),
+    ("f/4.0-f/8.0", lambda v: 4.0 <= v < 8.0),
+    ("<f/8.0", lambda v: v >= 8.0),
 ]
 
 
