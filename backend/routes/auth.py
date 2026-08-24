@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User
-from schemas import LoginRequest, Token
-from auth import verify_password, create_access_token, get_current_user
+from schemas import LoginRequest, Token, AdminCreate, UserOut
+from auth import verify_password, create_access_token, get_current_user, require_admin, get_password_hash
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -53,3 +53,42 @@ def me(current_user: User = Depends(get_current_user)):
     if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     return {"id": current_user.id, "username": current_user.username, "is_admin": current_user.is_admin}
+
+
+@router.get("/users", response_model=list[UserOut])
+def list_users(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    return db.query(User).order_by(User.id).all()
+
+
+@router.post("/users", response_model=UserOut)
+def create_user(
+    payload: AdminCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    username = payload.username.strip()
+    if not username or len(payload.password) < 6:
+        raise HTTPException(status_code=400, detail="Username required, password at least 6 chars")
+    if db.query(User).filter(User.username == username).first():
+        raise HTTPException(status_code=400, detail="Username already exists")
+    user = User(username=username, hashed_password=get_password_hash(payload.password), is_admin=True)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db.delete(user)
+    db.commit()
+    return {"ok": True}

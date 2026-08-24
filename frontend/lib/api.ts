@@ -69,6 +69,32 @@ export interface TokenResponse {
   token_type: string;
 }
 
+export interface AdminUser {
+  id: number;
+  username: string;
+  is_admin: boolean;
+}
+
+export async function fetchUsers(): Promise<AdminUser[]> {
+  return fetcher<AdminUser[]>("/api/auth/users", { token: getToken() ?? undefined });
+}
+
+export async function createUser(username: string, password: string): Promise<AdminUser> {
+  return fetcher<AdminUser>("/api/auth/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+    token: getToken() ?? undefined,
+  });
+}
+
+export async function deleteUser(id: number): Promise<void> {
+  await fetcher<{ ok: boolean }>(`/api/auth/users/${id}`, {
+    method: "DELETE",
+    token: getToken() ?? undefined,
+  });
+}
+
 export function getPhotoImageUrl(id: number, thumb: boolean = false): string {
   const endpoint = thumb ? "thumbnail" : "image";
   return `${API_BASE}/api/photos/${id}/${endpoint}`;

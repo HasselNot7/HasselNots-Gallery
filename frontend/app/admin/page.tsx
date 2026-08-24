@@ -9,6 +9,10 @@ import {
   getToken,
   clearToken,
   verifyAuth,
+  fetchUsers,
+  createUser,
+  deleteUser,
+  AdminUser,
 } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -190,7 +194,14 @@ export default function AdminPage() {
   const [albumSaving, setAlbumSaving] = useState(false);
 
   // Active tab
-  const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos" | "blog" | "albums" | "analytics" | "services">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos" | "blog" | "albums" | "analytics" | "services" | "users">("settings");
+
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [me, setMe] = useState<AdminUser | null>(null);
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [userSaving, setUserSaving] = useState(false);
+  const [userError, setUserError] = useState("");
 
   // Analytics
   const [analytics, setAnalytics] = useState<any>(null);
@@ -245,6 +256,7 @@ export default function AdminPage() {
     { id: "blog" as const, label: "笔记", icon: "article" },
     { id: "analytics" as const, label: "访问分析", icon: "monitoring" },
     { id: "services" as const, label: "服务检测", icon: "monitor_heart" },
+    { id: "users" as const, label: "管理员", icon: "group" },
   ];
 
   useEffect(() => {
@@ -263,8 +275,52 @@ export default function AdminPage() {
       loadSettings();
       loadArticles();
       loadAlbums();
+      loadUsers();
     })();
   }, [router]);
+
+  const loadUsers = async () => {
+    try {
+      const token = getToken();
+      const [meRes, usersList] = await Promise.all([
+        fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetchUsers(),
+      ]);
+      if (meRes.ok) setMe(await meRes.json());
+      setUsers(usersList);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (userSaving) return;
+    if (!newUsername.trim() || newPassword.length < 6) {
+      setUserError("请输入用户名，密码至少 6 位");
+      return;
+    }
+    setUserSaving(true);
+    setUserError("");
+    try {
+      await createUser(newUsername.trim(), newPassword);
+      setNewUsername("");
+      setNewPassword("");
+      await loadUsers();
+    } catch (err: any) {
+      setUserError(err?.message?.replace(/^.*"detail":"([^"]+)".*$/, "$1") || "创建失败");
+    } finally {
+      setUserSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    try {
+      await deleteUser(id);
+      await loadUsers();
+    } catch (err: any) {
+      setUserError(err?.message?.replace(/^.*"detail":"([^"]+)".*$/, "$1") || "删除失败");
+    }
+  };
 
   const loadAlbums = async () => {
     try {
@@ -2046,6 +2102,74 @@ export default function AdminPage() {
             ))}
           </div>
         </div>
+        )}
+
+        {/* Admin Users Section */}
+        {activeTab === "users" && (
+          <div className="mb-16">
+            <h2 className="text-headline-lg text-primary mb-2">管理员</h2>
+            <p className="text-metadata-sm text-outline uppercase mb-6">添加或移除具有后台管理权限的账号</p>
+
+            <div className="border border-border-subtle p-6 bg-surface-bright space-y-5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-body-md text-on-surface font-medium">现有账号（{users.length}）</h3>
+              </div>
+              <div className="divide-y divide-border-subtle">
+                {users.map((u) => (
+                  <div key={u.id} className="py-3 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-[20px] text-primary flex-shrink-0">
+                      {u.is_admin ? "verified_user" : "person"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-body-md text-on-surface truncate">{u.username}</div>
+                      <div className="text-metadata-sm text-outline">
+                        {u.is_admin ? "管理员" : "普通用户"} · ID {u.id}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteUser(u.id)}
+                      disabled={u.id === me?.id}
+                      className="flex-shrink-0 text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:border-error hover:text-error transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={u.id === me?.id ? "不能删除自己" : "删除该账号"}
+                    >
+                      删除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border border-border-subtle p-6 bg-surface-bright mt-6 space-y-4">
+              <h3 className="text-body-md text-on-surface font-medium">添加管理员</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  placeholder="用户名"
+                  className="w-full px-3 py-2.5 border border-border-subtle bg-surface text-body-md text-on-surface placeholder:text-outline focus:border-primary focus:outline-none transition-colors"
+                />
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="密码（至少 6 位）"
+                  className="w-full px-3 py-2.5 border border-border-subtle bg-surface text-body-md text-on-surface placeholder:text-outline focus:border-primary focus:outline-none transition-colors"
+                />
+              </div>
+              {userError && (
+                <p className="text-metadata-sm text-error" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+                  {userError}
+                </p>
+              )}
+              <button
+                onClick={handleCreateUser}
+                disabled={userSaving}
+                className="px-5 py-2.5 bg-primary text-white text-label-caps hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {userSaving ? "创建中..." : "创建管理员"}
+              </button>
+            </div>
+          </div>
         )}
       </main>
 

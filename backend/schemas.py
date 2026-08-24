@@ -13,6 +13,19 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class AdminCreate(BaseModel):
+    username: str
+    password: str
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    is_admin: bool
+
+    model_config = {"from_attributes": True}
+
+
 class PhotoOut(BaseModel):
     id: int
     filename: str
