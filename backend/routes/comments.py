@@ -6,8 +6,20 @@ from database import get_db
 from models import Comment, Photo, Article, VisitLog
 from schemas import CommentOut, CommentCreate
 from auth import require_admin
+import ratelimit
 
 router = APIRouter(prefix="/api", tags=["comments"])
+
+# 评论限速：每 IP 每小时 20 条
+_COMMENT_MAX = 20
+_COMMENT_WINDOW = 3600
+# PV 打点限速：每 IP 每分钟 300 次（拦截脚本灌库，不影响正常浏览）
+_VISIT_MAX = 300
+_VISIT_WINDOW = 60
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
 
 
 @router.get("/comments", response_model=list[CommentOut])
@@ -25,7 +37,16 @@ def list_comments(
 
 
 @router.post("/comments", response_model=CommentOut)
-def create_comment(payload: CommentCreate, db: Session = Depends(get_db)):
+def create_comment(payload: CommentCreate, request: Request, db: Session = Depends(get_db)):
+    ip = _client_ip(request)
+    key = f"comment:{ip}"
+    lockout = ratelimit.blocked(key, _COMMENT_MAX, _COMMENT_WINDOW)
+    if lockout > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many comments. Try again in {lockout} seconds.",
+            headers={"Retry-After": str(lockout)},
+        )
     if not payload.author.strip() or not payload.content.strip():
         raise HTTPException(status_code=400, detail="Author and content required")
     if len(payload.content) > 2000:
@@ -44,6 +65,7 @@ def create_comment(payload: CommentCreate, db: Session = Depends(get_db)):
         author=payload.author.strip()[:50],
         content=payload.content.strip(),
     )
+    ratelimit.record(key, _COMMENT_WINDOW)
     db.add(comment)
     db.commit()
     db.refresh(comment)
@@ -67,6 +89,15 @@ def delete_comment(
 @router.post("/visit")
 def record_visit(request: Request, db: Session = Depends(get_db)):
     """记录一次页面访问（PV），用 IP 哈希 + 日期做 UV 去重。"""
+    key = f"visit:{_client_ip(request)}"
+    lockout = ratelimit.blocked(key, _VISIT_MAX, _VISIT_WINDOW)
+    if lockout > 0:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests",
+            headers={"Retry-After": str(lockout)},
+        )
+    ratelimit.record(key, _VISIT_WINDOW)
     path = (request.query_params.get("path") or "/")[:300]
     ip = request.client.host if request.client else ""
     ip_hash = hashlib.sha256(ip.encode()).hexdigest()[:16]

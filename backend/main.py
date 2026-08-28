@@ -1,6 +1,8 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import envfile
 from database import engine, Base
 from routes import auth, photos, settings, articles, albums, comments, services, stats, search
 
@@ -8,13 +10,17 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Gallery API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# 浏览器与 API 同源（Next.js rewrites 反代），默认无需 CORS；
+# 前后端分离部署时通过 CORS_ORIGINS 显式开启，例如 "https://a.com,https://b.com"
+cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+if cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 app.include_router(auth.router)
 app.include_router(photos.router)

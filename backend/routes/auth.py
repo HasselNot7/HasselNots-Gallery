@@ -1,54 +1,50 @@
-import time
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User
 from schemas import LoginRequest, Token, AdminCreate, UserOut
 from auth import verify_password, create_access_token, get_current_user, require_admin, get_password_hash
+import ratelimit
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 # 登录限速：15 分钟窗口内最多 5 次失败，超过后锁定到窗口结束
-_MAX_FAILURES = 5
-_WINDOW_SECONDS = 900
-_failures: dict[str, list[float]] = {}
+_LOGIN_MAX_FAILURES = 5
+_LOGIN_WINDOW = 900
+# 注册限速：成功注册每 IP 每小时最多 10 个（失败计入登录锁定）
+_REGISTER_MAX = 10
+_REGISTER_WINDOW = 3600
 
 
 def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def _remaining_lockout(ip: str) -> int:
-    now = time.time()
-    attempts = [t for t in _failures.get(ip, []) if now - t < _WINDOW_SECONDS]
-    _failures[ip] = attempts
-    if len(attempts) >= _MAX_FAILURES:
-        return int(_WINDOW_SECONDS - (now - attempts[0])) + 1
-    return 0
-
-
 @router.post("/login", response_model=Token)
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     ip = _client_ip(request)
-    lockout = _remaining_lockout(ip)
+    key = f"login:{ip}"
+    lockout = ratelimit.blocked(key, _LOGIN_MAX_FAILURES, _LOGIN_WINDOW)
     if lockout > 0:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Too many failed attempts. Try again in {max(lockout, 1)} seconds.",
-            headers={"Retry-After": str(max(lockout, 1))},
+            detail=f"Too many failed attempts. Try again in {lockout} seconds.",
+            headers={"Retry-After": str(lockout)},
         )
 
     user = db.query(User).filter(User.username == req.username).first()
     if not user or not verify_password(req.password, user.hashed_password):
-        _failures.setdefault(ip, []).append(time.time())
+        ratelimit.record(key, _LOGIN_WINDOW)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if not user.is_admin:
+        # 密码验证成功但账号未授权：同样计入失败，否则待审核账号的密码可被无限爆破
+        ratelimit.record(key, _LOGIN_WINDOW)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account not authorized yet. Please wait for admin approval.",
         )
 
-    _failures.pop(ip, None)
+    ratelimit.reset(key)
     token = create_access_token(data={"sub": user.username})
     return Token(access_token=token, token_type="bearer")
 
@@ -72,24 +68,34 @@ def register(
     db: Session = Depends(get_db),
 ):
     ip = _client_ip(request)
-    lockout = _remaining_lockout(ip)
+    reg_key = f"register:{ip}"
+    lockout = ratelimit.blocked(reg_key, _REGISTER_MAX, _REGISTER_WINDOW)
     if lockout > 0:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Too many attempts. Try again in {max(lockout, 1)} seconds.",
-            headers={"Retry-After": str(max(lockout, 1))},
+            detail=f"Too many registrations. Try again in {lockout} seconds.",
+            headers={"Retry-After": str(lockout)},
+        )
+    login_key = f"login:{ip}"
+    lockout = ratelimit.blocked(login_key, _LOGIN_MAX_FAILURES, _LOGIN_WINDOW)
+    if lockout > 0:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many attempts. Try again in {lockout} seconds.",
+            headers={"Retry-After": str(lockout)},
         )
     username = payload.username.strip()
     if not username or len(payload.password) < 6:
-        _failures.setdefault(ip, []).append(time.time())
+        ratelimit.record(login_key, _LOGIN_WINDOW)
         raise HTTPException(status_code=400, detail="Username required, password at least 6 chars")
     if db.query(User).filter(User.username == username).first():
-        _failures.setdefault(ip, []).append(time.time())
+        ratelimit.record(login_key, _LOGIN_WINDOW)
         raise HTTPException(status_code=400, detail="Username already exists")
     user = User(username=username, hashed_password=get_password_hash(payload.password), is_admin=False)
     db.add(user)
     db.commit()
     db.refresh(user)
+    ratelimit.record(reg_key, _REGISTER_WINDOW)
     return user
 
 

@@ -46,9 +46,16 @@ def list_albums(
 
 
 @router.get("/{slug}", response_model=AlbumOut)
-def get_album(slug: str, db: Session = Depends(get_db)):
+def get_album(
+    slug: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     album = db.query(Album).filter(Album.slug == slug).first()
     if not album:
+        raise HTTPException(status_code=404, detail="Album not found")
+    # 未发布相册只对管理员可见；用 404 避免泄露其存在性
+    if not album.is_published and (current_user is None or not current_user.is_admin):
         raise HTTPException(status_code=404, detail="Album not found")
     return _to_out(album, db)
 

@@ -95,9 +95,11 @@ export async function deleteUser(id: number): Promise<void> {
   });
 }
 
-export function getPhotoImageUrl(id: number, thumb: boolean = false): string {
+export function getPhotoImageUrl(id: number, thumb: boolean = false, token?: string): string {
   const endpoint = thumb ? "thumbnail" : "image";
-  return `${API_BASE}/api/photos/${id}/${endpoint}`;
+  const base = `${API_BASE}/api/photos/${id}/${endpoint}`;
+  // <img> 标签无法携带 Authorization 头，未发布图片的受控访问走 ?token=
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base;
 }
 
 export async function fetchPhotos(publishedOnly: boolean = true): Promise<Photo[]> {

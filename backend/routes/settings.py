@@ -88,8 +88,12 @@ def upload_icon(
     current_user=Depends(require_admin),
 ):
     ext = os.path.splitext(file.filename or "icon.png")[1].lower()
-    if ext not in (".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"):
-        raise HTTPException(status_code=400, detail="Unsupported image format")
+    if ext not in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
+        raise HTTPException(status_code=400, detail="Unsupported image format (SVG not allowed)")
+
+    data = file.file.read(5 * 1024 * 1024 + 1)
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large (max 5MB)")
 
     os.makedirs(ICON_DIR, exist_ok=True)
     for f in os.listdir(ICON_DIR):
@@ -98,7 +102,7 @@ def upload_icon(
 
     filename = f"icon_{uuid.uuid4().hex}{ext}"
     with open(os.path.join(ICON_DIR, filename), "wb") as f:
-        f.write(file.file.read())
+        f.write(data)
 
     _set(db, "hero_icon_url", ICON_URL_PATH)
     return _get_all(db)
@@ -124,4 +128,9 @@ def get_icon(db: Session = Depends(get_db)):
     path = _icon_file()
     if not path or not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Icon file not found")
-    return FileResponse(path)
+    # attachment 让直接导航时下载而非执行（SVG 曾是 XSS 载体）；<img> 引用不受影响
+    return FileResponse(
+        path,
+        filename=f"icon{os.path.splitext(path)[1]}",
+        content_disposition_type="attachment",
+    )

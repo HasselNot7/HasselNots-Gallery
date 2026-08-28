@@ -1,13 +1,22 @@
 import datetime
 import re
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Article
 from schemas import ArticleOut, ArticleCreate, ArticleUpdate
 from auth import get_current_user, require_admin
+import ratelimit
 
 router = APIRouter(prefix="/api/articles", tags=["articles"])
+
+# 浏览量限速：每 IP 每篇文章每分钟 2 次
+_VIEW_MAX = 2
+_VIEW_WINDOW = 60
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
 
 
 def _slugify(text: str) -> str:
@@ -18,10 +27,13 @@ def _slugify(text: str) -> str:
 def _render_markdown(md: str) -> str:
     try:
         import markdown
-        return markdown.markdown(
-            md,
-            extensions=["fenced_code", "tables", "toc", "nl2br"],
-            output_format="html5",
+        import nh3
+        return nh3.clean(
+            markdown.markdown(
+                md,
+                extensions=["fenced_code", "tables", "toc", "nl2br"],
+                output_format="html5",
+            )
         )
     except ImportError:
         import html
@@ -50,9 +62,16 @@ def list_articles(
 
 
 @router.get("/{slug}", response_model=ArticleOut)
-def get_article(slug: str, db: Session = Depends(get_db)):
+def get_article(
+    slug: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     article = db.query(Article).filter(Article.slug == slug).first()
     if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    # 未发布文章只对管理员可见；用 404 避免泄露其存在性
+    if not article.is_published and (current_user is None or not current_user.is_admin):
         raise HTTPException(status_code=404, detail="Article not found")
     return _to_out(article)
 
@@ -130,10 +149,19 @@ def delete_article(
 
 
 @router.post("/{slug}/view")
-def increment_article_view(slug: str, db: Session = Depends(get_db)):
+def increment_article_view(slug: str, request: Request, db: Session = Depends(get_db)):
     article = db.query(Article).filter(Article.slug == slug).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
+    key = f"aview:{_client_ip(request)}:{slug}"
+    lockout = ratelimit.blocked(key, _VIEW_MAX, _VIEW_WINDOW)
+    if lockout > 0:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests",
+            headers={"Retry-After": str(lockout)},
+        )
+    ratelimit.record(key, _VIEW_WINDOW)
     article.views = (article.views or 0) + 1
     db.commit()
     return {"ok": True, "views": article.views}

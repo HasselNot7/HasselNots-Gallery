@@ -20,6 +20,13 @@ import Footer from "@/components/Footer";
 
 const API_BASE = "";
 
+// 后端对未发布照片的 image/thumbnail 返回 404，<img> 无法带 Authorization 头，
+// 管理端统一用 ?token= 访问
+function adminPhotoUrl(id: number, thumb = true): string {
+  const token = getToken();
+  return getPhotoImageUrl(id, thumb, token ?? undefined);
+}
+
 function extractExifSegment(arrayBuffer: ArrayBuffer): string {
   // Extract the raw EXIF APP1 segment (starting with "Exif\0\0") without parsing.
   // This preserves GPS data byte-for-byte (piexifjs re-encoding corrupts it).
@@ -1614,7 +1621,7 @@ export default function AdminPage() {
                     <div className="col-span-2">
                       <a href={`/photo/${photo.id}`} className="w-16 h-16 bg-surface-container overflow-hidden border border-border-subtle block">
                         <img
-                          src={getPhotoImageUrl(photo.id, true)}
+                          src={adminPhotoUrl(photo.id)}
                           alt={photo.title}
                           className="w-full h-full object-cover"
                         />
@@ -1711,7 +1718,7 @@ export default function AdminPage() {
                       className="w-16 h-16 flex-shrink-0 bg-surface-container overflow-hidden border border-border-subtle block"
                     >
                       <img
-                        src={getPhotoImageUrl(photo.id, true)}
+                        src={adminPhotoUrl(photo.id)}
                         alt={photo.title}
                         className="w-full h-full object-cover"
                       />
@@ -1889,7 +1896,7 @@ export default function AdminPage() {
                 <div key={album.id} className="border border-border-subtle bg-surface overflow-hidden">
                   <a href={`/album/${album.slug}`} className="block aspect-[4/3] bg-surface-container relative">
                     {album.cover_photo_id ? (
-                      <img src={getPhotoImageUrl(album.cover_photo_id, true)} alt="" className="w-full h-full object-cover" />
+                      <img src={adminPhotoUrl(album.cover_photo_id)} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <span className="material-symbols-outlined text-5xl text-outline">photo_album</span>
@@ -2417,7 +2424,7 @@ export default function AdminPage() {
             <div className="flex items-center justify-between p-4 md:p-6 border-b border-border-subtle sticky top-0 bg-surface z-10">
               <div className="flex items-center gap-3">
                 <img
-                  src={getPhotoImageUrl(editingPhoto.id, true)}
+                  src={adminPhotoUrl(editingPhoto.id)}
                   alt=""
                   className="w-10 h-10 object-cover border border-border-subtle"
                 />

@@ -21,6 +21,7 @@ gallery.db
 backend/.env
 .vscode/
 .env.local
+.qoder/
 
 docs/requirements.md
 others/

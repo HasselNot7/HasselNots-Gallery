@@ -7,7 +7,7 @@ import urllib.request
 import urllib.parse
 from fractions import Fraction
 from io import BytesIO
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from PIL import Image
@@ -16,8 +16,9 @@ from PIL import ImageOps
 from database import get_db
 from models import Photo
 from schemas import PhotoOut, PhotoUpdate, BatchDelete, BatchStatus, PhotoLocationUpdate
-from auth import get_current_user, require_admin
+from auth import get_current_user, require_admin, user_from_token
 import storage
+import ratelimit
 
 # Register HEIF/HEIC opener so PIL can decode iPhone photos
 try:
@@ -29,6 +30,15 @@ except ImportError:
 router = APIRouter(prefix="/api/photos", tags=["photos"])
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 THUMBNAIL_SIZE = (800, 800)
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+
+# 浏览量限速：每 IP 每张照片每分钟 2 次，防止刷计数
+_VIEW_MAX = 2
+_VIEW_WINDOW = 60
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
 
 
 def _resolve_path(stored_path: str) -> str:
@@ -331,18 +341,35 @@ def batch_status_photos(
 
 
 @router.get("/{photo_id}", response_model=PhotoOut)
-def get_photo(photo_id: int, db: Session = Depends(get_db)):
+def get_photo(
+    photo_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    # 未发布照片只对管理员可见；用 404 避免泄露其存在性
+    if not photo.is_published and (current_user is None or not current_user.is_admin):
         raise HTTPException(status_code=404, detail="Photo not found")
     return PhotoOut.model_validate(photo)
 
 
 @router.get("/{photo_id}/image")
-def get_photo_image(photo_id: int, db: Session = Depends(get_db)):
+def get_photo_image(
+    photo_id: int,
+    token: str = Query(""),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
+    # <img> 标签无法携带 Authorization 头，管理端通过 ?token= 访问未发布图片
+    if not photo.is_published:
+        user = current_user or user_from_token(token or None, db)
+        if user is None or not user.is_admin:
+            raise HTTPException(status_code=404, detail="Photo not found")
     if storage.is_remote(photo.file_path):
         url = storage.public_url(photo.file_path)
         if not url:
@@ -356,10 +383,19 @@ def get_photo_image(photo_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{photo_id}/thumbnail")
-def get_photo_thumbnail(photo_id: int, db: Session = Depends(get_db)):
+def get_photo_thumbnail(
+    photo_id: int,
+    token: str = Query(""),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
+    if not photo.is_published:
+        user = current_user or user_from_token(token or None, db)
+        if user is None or not user.is_admin:
+            raise HTTPException(status_code=404, detail="Photo not found")
     stored = photo.thumbnail_path or photo.file_path
     if storage.is_remote(stored):
         url = storage.public_url(stored)
@@ -393,7 +429,12 @@ def _compress_to_size(img: Image.Image, target_bytes: int) -> bytes:
             lo = q + 1
         else:
             hi = q - 1
-    return best if best is not None else work.save(BytesIO(), format="JPEG", quality=5, optimize=True)
+    if best is not None:
+        return best
+    # 即使 quality=5 也超目标大小时，返回最低质量结果而不是 None
+    buf = BytesIO()
+    work.save(buf, format="JPEG", quality=5, optimize=True)
+    return buf.getvalue()
 
 
 def _dms_to_deg(vals) -> float:
@@ -464,7 +505,9 @@ def upload_photo(
 
     # 重复检测：以收到的文件内容哈希为准（客户端压缩过的文件哈希稳定）
     import hashlib
-    contents = file.file.read()
+    contents = file.file.read(MAX_UPLOAD_BYTES + 1)
+    if len(contents) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="File too large (max 100MB)")
     file_hash = hashlib.sha256(contents).hexdigest()
     dup = db.query(Photo).filter(Photo.file_hash == file_hash).first()
     if dup:
@@ -480,142 +523,160 @@ def upload_photo(
         f.write(contents)
 
     thumb_path = os.path.join(UPLOAD_DIR, f"thumb_{unique_name}")
-    img = Image.open(file_path)
-    exif_data = _read_exif(img)
-    img = ImageOps.exif_transpose(img)
 
-    # Optional recompression to target size (dimensions unchanged)
-    if compress:
-        target_bytes = max(int(target_size_mb * 1024 * 1024), 1)
-        if os.path.getsize(file_path) > target_bytes:
-            data = _compress_to_size(img, target_bytes)
-            jpg_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4().hex}.jpg")
-            with open(jpg_path, "wb") as f:
-                f.write(data)
-            os.remove(file_path)
-            file_path = jpg_path
-            unique_name = os.path.basename(jpg_path)
-            thumb_path = os.path.join(UPLOAD_DIR, f"thumb_{unique_name}")
-            img = Image.open(file_path)
-
-    # If the client provided EXIF (from frontend compression), inject it back
-    # (raw byte-exact segment; piexif supports both JPEG and WebP)
-    if exif_base64 and ext in (".jpg", ".jpeg", ".webp"):
-        import piexif
-        exif_bytes = base64.b64decode(exif_base64)
-        # Raw insert preserves GPS byte-for-byte. Some phone EXIF (e.g. Xiaomi
-        # private tags) cannot be re-serialized by piexif.dump — in that case
-        # keep the raw insert and skip orientation removal rather than losing
-        # all EXIF data.
-        piexif.insert(exif_bytes, file_path)
-        try:
-            exif_dict = piexif.load(file_path)
-            if 274 in exif_dict["0th"]:
-                exif_dict["0th"].pop(274, None)
-                piexif.insert(piexif.dump(exif_dict), file_path)
-        except Exception as e:
-            import logging
-            logging.getLogger("photos").warning(
-                "EXIF re-encode failed, keeping raw segment (GPS preserved): %s", e
-            )
+    # 落盘后的任何失败都要清掉已生成的文件（本地与 R2），避免孤儿文件
+    r2_file = r2_thumb = None
+    try:
         img = Image.open(file_path)
         exif_data = _read_exif(img)
+        img = ImageOps.exif_transpose(img)
 
-    w, h = img.size
-    # Thumbnails always saved as JPEG (HEIC has no encoder; RGBA needs RGB)
-    thumb_img = img.convert("RGB")
-    thumb_img.thumbnail(THUMBNAIL_SIZE, Image.LANCZOS)
-    thumb_path = os.path.join(UPLOAD_DIR, f"thumb_{os.path.splitext(unique_name)[0]}.jpg")
-    thumb_img.save(thumb_path, format="JPEG", quality=85)
+        # Optional recompression to target size (dimensions unchanged)
+        if compress:
+            target_bytes = max(int(target_size_mb * 1024 * 1024), 1)
+            if os.path.getsize(file_path) > target_bytes:
+                data = _compress_to_size(img, target_bytes)
+                jpg_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4().hex}.jpg")
+                with open(jpg_path, "wb") as f:
+                    f.write(data)
+                os.remove(file_path)
+                file_path = jpg_path
+                unique_name = os.path.basename(jpg_path)
+                thumb_path = os.path.join(UPLOAD_DIR, f"thumb_{unique_name}")
+                img = Image.open(file_path)
 
-    shoot_time = _parse_date(
-        exif_data.get("DateTimeOriginal")
-        or exif_data.get("DateTimeDigitized")
-        or exif_data.get("DateTime")
-    )
-
-    photo = Photo(
-        filename=unique_name,
-        original_filename=file.filename or "photo.jpg",
-        title=title or (file.filename or "Untitled"),
-        description=description,
-        file_path=unique_name,
-        thumbnail_path=f"thumb_{os.path.splitext(unique_name)[0]}.jpg",
-        file_hash=file_hash,
-        shoot_time=shoot_time,
-        camera_model=str(exif_data.get("Model", "")),
-        lens_model=str(exif_data.get("LensModel", "")).replace("\x00", "").strip(),
-        focal_length=_format_focal(exif_data.get("FocalLength")),
-        aperture=_format_aperture(exif_data.get("FNumber")),
-        shutter_speed=_format_shutter(exif_data.get("ExposureTime")),
-        iso=str(exif_data.get("ISOSpeedRatings", "")),
-        latitude=exif_data.get("parsed_latitude"),
-        longitude=exif_data.get("parsed_longitude"),
-        altitude=exif_data.get("parsed_altitude"),
-        location_name=_reverse_geocode(
-            exif_data["parsed_latitude"], exif_data["parsed_longitude"]
-        ) if exif_data.get("parsed_latitude") is not None and exif_data.get("parsed_longitude") is not None else "",
-        image_width=w,
-        image_height=h,
-        is_published=True,
-    )
-    # Prefer client-provided EXIF JSON (reliable path for frontend-compressed uploads)
-    if exif_json:
-        try:
-            _apply_exif_json(photo, json.loads(exif_json))
-        except Exception:
-            pass
-    # Clean NaN coords that may come from corrupt injected EXIF
-    import math
-    if photo.latitude is not None and (isinstance(photo.latitude, float) and math.isnan(photo.latitude)):
-        photo.latitude = None
-    if photo.longitude is not None and (isinstance(photo.longitude, float) and math.isnan(photo.longitude)):
-        photo.longitude = None
-    # Reverse geocode if we now have coordinates but no location name
-    if photo.latitude is not None and photo.longitude is not None and not photo.location_name:
-        # 优先复用附近（约 1km）已有照片的地名，保证同地点命名一致
-        # 纬度 0.01 度 ≈ 1.1km，经度按纬度缩放
-        deg_lat = 0.01
-        deg_lng = deg_lat / max(abs(math.cos(math.radians(photo.latitude))), 0.1)
-        nearby = (
-            db.query(Photo)
-            .filter(
-                Photo.latitude.isnot(None),
-                Photo.longitude.isnot(None),
-                Photo.location_name != "",
-                Photo.latitude.between(photo.latitude - deg_lat, photo.latitude + deg_lat),
-                Photo.longitude.between(photo.longitude - deg_lng, photo.longitude + deg_lng),
-            )
-            .first()
-        )
-        if nearby:
-            photo.location_name = nearby.location_name
-        else:
-            photo.location_name = _reverse_geocode(photo.latitude, photo.longitude)
-    # Snapshot the EXIF-derived coordinates so the admin can reset manual edits later
-    photo.original_latitude = photo.latitude
-    photo.original_longitude = photo.longitude
-
-    # Upload to R2 if configured; keep local files otherwise
-    r2_file = storage.upload_file(file_path, f"photos/{os.path.basename(file_path)}")
-    r2_thumb = storage.upload_file(thumb_path, f"photos/{os.path.basename(thumb_path)}")
-    if r2_file:
-        if r2_thumb is None:
-            storage.delete_object(r2_file)
-        else:
-            photo.file_path = r2_file
-            photo.thumbnail_path = r2_thumb
-            # Local copies are no longer needed once safely in R2
+        # If the client provided EXIF (from frontend compression), inject it back
+        # (raw byte-exact segment; piexif supports both JPEG and WebP)
+        if exif_base64 and ext in (".jpg", ".jpeg", ".webp"):
+            import piexif
+            exif_bytes = base64.b64decode(exif_base64)
+            # Raw insert preserves GPS byte-for-byte. Some phone EXIF (e.g. Xiaomi
+            # private tags) cannot be re-serialized by piexif.dump — in that case
+            # keep the raw insert and skip orientation removal rather than losing
+            # all EXIF data.
+            piexif.insert(exif_bytes, file_path)
             try:
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                if os.path.exists(thumb_path):
-                    os.remove(thumb_path)
+                exif_dict = piexif.load(file_path)
+                if 274 in exif_dict["0th"]:
+                    exif_dict["0th"].pop(274, None)
+                    piexif.insert(piexif.dump(exif_dict), file_path)
+            except Exception as e:
+                import logging
+                logging.getLogger("photos").warning(
+                    "EXIF re-encode failed, keeping raw segment (GPS preserved): %s", e
+                )
+            img = Image.open(file_path)
+            exif_data = _read_exif(img)
+
+        w, h = img.size
+        # Thumbnails always saved as JPEG (HEIC has no encoder; RGBA needs RGB)
+        thumb_img = img.convert("RGB")
+        thumb_img.thumbnail(THUMBNAIL_SIZE, Image.LANCZOS)
+        thumb_path = os.path.join(UPLOAD_DIR, f"thumb_{os.path.splitext(unique_name)[0]}.jpg")
+        thumb_img.save(thumb_path, format="JPEG", quality=85)
+
+        shoot_time = _parse_date(
+            exif_data.get("DateTimeOriginal")
+            or exif_data.get("DateTimeDigitized")
+            or exif_data.get("DateTime")
+        )
+
+        photo = Photo(
+            filename=unique_name,
+            original_filename=file.filename or "photo.jpg",
+            title=title or (file.filename or "Untitled"),
+            description=description,
+            file_path=unique_name,
+            thumbnail_path=f"thumb_{os.path.splitext(unique_name)[0]}.jpg",
+            file_hash=file_hash,
+            shoot_time=shoot_time,
+            camera_model=str(exif_data.get("Model", "")),
+            lens_model=str(exif_data.get("LensModel", "")).replace("\x00", "").strip(),
+            focal_length=_format_focal(exif_data.get("FocalLength")),
+            aperture=_format_aperture(exif_data.get("FNumber")),
+            shutter_speed=_format_shutter(exif_data.get("ExposureTime")),
+            iso=str(exif_data.get("ISOSpeedRatings", "")),
+            latitude=exif_data.get("parsed_latitude"),
+            longitude=exif_data.get("parsed_longitude"),
+            altitude=exif_data.get("parsed_altitude"),
+            location_name=_reverse_geocode(
+                exif_data["parsed_latitude"], exif_data["parsed_longitude"]
+            ) if exif_data.get("parsed_latitude") is not None and exif_data.get("parsed_longitude") is not None else "",
+            image_width=w,
+            image_height=h,
+            is_published=True,
+        )
+        # Prefer client-provided EXIF JSON (reliable path for frontend-compressed uploads)
+        if exif_json:
+            try:
+                _apply_exif_json(photo, json.loads(exif_json))
+            except Exception:
+                pass
+        # Clean NaN coords that may come from corrupt injected EXIF
+        import math
+        if photo.latitude is not None and (isinstance(photo.latitude, float) and math.isnan(photo.latitude)):
+            photo.latitude = None
+        if photo.longitude is not None and (isinstance(photo.longitude, float) and math.isnan(photo.longitude)):
+            photo.longitude = None
+        # Reverse geocode if we now have coordinates but no location name
+        if photo.latitude is not None and photo.longitude is not None and not photo.location_name:
+            # 优先复用附近（约 1km）已有照片的地名，保证同地点命名一致
+            # 纬度 0.01 度 ≈ 1.1km，经度按纬度缩放
+            deg_lat = 0.01
+            deg_lng = deg_lat / max(abs(math.cos(math.radians(photo.latitude))), 0.1)
+            nearby = (
+                db.query(Photo)
+                .filter(
+                    Photo.latitude.isnot(None),
+                    Photo.longitude.isnot(None),
+                    Photo.location_name != "",
+                    Photo.latitude.between(photo.latitude - deg_lat, photo.latitude + deg_lat),
+                    Photo.longitude.between(photo.longitude - deg_lng, photo.longitude + deg_lng),
+                )
+                .first()
+            )
+            if nearby:
+                photo.location_name = nearby.location_name
+            else:
+                photo.location_name = _reverse_geocode(photo.latitude, photo.longitude)
+        # Snapshot the EXIF-derived coordinates so the admin can reset manual edits later
+        photo.original_latitude = photo.latitude
+        photo.original_longitude = photo.longitude
+
+        # Upload to R2 if configured; keep local files otherwise
+        r2_file = storage.upload_file(file_path, f"photos/{os.path.basename(file_path)}")
+        r2_thumb = storage.upload_file(thumb_path, f"photos/{os.path.basename(thumb_path)}")
+        if r2_file:
+            if r2_thumb is None:
+                storage.delete_object(r2_file)
+                r2_file = None
+            else:
+                photo.file_path = r2_file
+                photo.thumbnail_path = r2_thumb
+                # Local copies are no longer needed once safely in R2
+                try:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                    if os.path.exists(thumb_path):
+                        os.remove(thumb_path)
+                except OSError:
+                    pass
+
+        db.add(photo)
+        db.commit()
+    except Exception:
+        db.rollback()
+        for leftover in (file_path, thumb_path):
+            try:
+                if os.path.exists(leftover):
+                    os.remove(leftover)
             except OSError:
                 pass
-
-    db.add(photo)
-    db.commit()
+        if r2_file:
+            storage.delete_object(r2_file)
+        if r2_thumb:
+            storage.delete_object(r2_thumb)
+        raise
     db.refresh(photo)
     return PhotoOut.model_validate(photo)
 
@@ -664,10 +725,19 @@ def reset_photo_location(
 
 
 @router.post("/{photo_id}/view")
-def increment_photo_view(photo_id: int, db: Session = Depends(get_db)):
+def increment_photo_view(photo_id: int, request: Request, db: Session = Depends(get_db)):
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
+    key = f"pview:{_client_ip(request)}:{photo_id}"
+    lockout = ratelimit.blocked(key, _VIEW_MAX, _VIEW_WINDOW)
+    if lockout > 0:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests",
+            headers={"Retry-After": str(lockout)},
+        )
+    ratelimit.record(key, _VIEW_WINDOW)
     photo.views = (photo.views or 0) + 1
     db.commit()
     return {"ok": True, "views": photo.views}
