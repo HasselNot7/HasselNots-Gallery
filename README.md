@@ -140,7 +140,7 @@ PROJECT.md              # 项目文档 / Project docs
 完整部署步骤（systemd + nginx + HTTPS）见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。要点 / Highlights：
 
 - 代码 + `backend/gallery.db` + `backend/.env`（密钥）三件套迁移 / migrate code + db + secrets
-- 环境变量：`NEXT_PUBLIC_SITE_URL`（站点域名）、`JWT_SECRET_KEY`（生产务必设置 / required in production）
+- 环境变量：`NEXT_PUBLIC_SITE_URL`（站点域名）、`JWT_SECRET_KEY`（**必填**，缺失后端将拒绝启动；轮换密钥会使所有登录失效 / **required** — backend refuses to start without it; rotating it logs everyone out）
 - 照片本体在 R2，迁移服务器无需搬运图片 / photos live in R2, no need to move images
 
 ### 服务器日常操作 / Server Operations

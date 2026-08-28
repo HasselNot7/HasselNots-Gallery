@@ -36,12 +36,19 @@ scp user@old-server:/path/to/gallery/backend/gallery.db backend/
 
 # 密钥配置
 cp backend/.env.example backend/.env
-vi backend/.env   # 填入 R2 五项配置
+vi backend/.env   # 填入 JWT_SECRET_KEY（必填，生成命令见下方）与 R2 配置
 ```
 
 `.env` 内容：
 
 ```bash
+# 必填：JWT 签名密钥，缺失后端启动时直接报错退出。
+# 生成方式：
+python3 -c "import secrets; print(secrets.token_hex(32))"
+JWT_SECRET_KEY=上一步生成的64位随机值
+
+# 轮换（更换）此密钥会使所有已登录用户失效，需要重新登录。
+
 R2_ACCOUNT_ID=你的Cloudflare账户ID（32位十六进制）
 R2_ACCESS_KEY_ID=xxx
 R2_SECRET_ACCESS_KEY=xxx
