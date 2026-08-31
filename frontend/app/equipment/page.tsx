@@ -31,7 +31,7 @@ export default async function EquipmentPage() {
         <div className="mb-10">
           <h1
             className="text-headline-lg md:text-display-lg text-primary mb-2 uppercase"
-            style={{ fontFamily: "var(--font-sigma)" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             器材
           </h1>

@@ -24,7 +24,7 @@ export default async function BlogPage() {
       <Navbar />
       <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-4xl mx-auto w-full">
         <div className="mb-10">
-          <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 uppercase" style={{ fontFamily: "var(--font-sigma)" }}>
+          <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 uppercase" style={{ fontFamily: "var(--font-display)" }}>
             Blog
           </h1>
           <span className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
@@ -52,7 +52,7 @@ export default async function BlogPage() {
                     {a.views}
                   </span>
                 </div>
-                <h2 className="text-headline-lg text-primary mb-2 group-hover:text-primary-container transition-colors" style={{ fontFamily: "var(--font-sigma)" }}>
+                <h2 className="text-headline-lg text-primary mb-2 group-hover:text-primary-container transition-colors" style={{ fontFamily: "var(--font-display)" }}>
                   {a.title}
                 </h2>
                 {a.excerpt && (

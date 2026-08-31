@@ -75,7 +75,7 @@ export default function SearchPage() {
         <div className="mb-10">
           <h1
             className="text-headline-lg md:text-display-lg text-primary mb-6 uppercase"
-            style={{ fontFamily: "var(--font-sigma)" }}
+            style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', serif" }}
           >
             搜索
           </h1>
@@ -89,7 +89,7 @@ export default function SearchPage() {
               <SearchField.Input
                 placeholder="搜索照片、笔记、地点、相机…"
                 className="text-lg md:text-2xl py-2 placeholder:text-on-surface-variant/50"
-                style={{ fontFamily: "var(--font-sigma)" }}
+                style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', serif" }}
                 autoFocus
               />
               <SearchField.ClearButton />
@@ -151,7 +151,7 @@ export default function SearchPage() {
                       <Card className="p-5 md:p-6 hover:border-primary/40 transition-colors">
                         <h3
                           className="text-body-lg text-primary mb-1"
-                          style={{ fontFamily: "var(--font-sigma)" }}
+                          style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', serif" }}
                         >
                           {a.title}
                         </h3>

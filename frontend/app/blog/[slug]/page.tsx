@@ -68,7 +68,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </a>
 
         <div className="mb-8">
-          <h1 className="text-headline-lg md:text-display-lg text-primary mb-4" style={{ fontFamily: "var(--font-sigma)" }}>
+          <h1 className="text-headline-lg md:text-display-lg text-primary mb-4" style={{ fontFamily: "var(--font-display)" }}>
             {article.title}
           </h1>
           <div className="flex flex-wrap items-center gap-4 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>

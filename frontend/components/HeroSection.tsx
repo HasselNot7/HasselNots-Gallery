@@ -161,7 +161,7 @@ export default function HeroSection({
               )}
 
               {/* Title */}
-              <h1 className="text-3xl md:text-5xl lg:text-6xl text-primary tracking-normal uppercase drop-shadow-[0_5px_14px_rgba(0,0,0,0.45)]" style={{ fontFamily: "var(--font-sigma)" }}>
+              <h1 className="text-3xl md:text-5xl lg:text-6xl text-primary tracking-normal uppercase drop-shadow-[0_5px_14px_rgba(0,0,0,0.45)]" style={{ fontFamily: "var(--font-display)" }}>
                 {titleLines.map((line, i) => (
                   <span key={i} className="block md:whitespace-nowrap">
                     {line}
