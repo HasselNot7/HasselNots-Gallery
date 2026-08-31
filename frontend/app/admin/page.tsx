@@ -1692,7 +1692,7 @@ export default function AdminPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {albums.map((album) => (
-                  <Card key={album.id} className="overflow-hidden gap-0">
+                  <div key={album.id} className="border border-border-subtle bg-surface overflow-hidden">
                     <a href={`/album/${album.slug}`} className="block aspect-[4/3] bg-surface-container relative">
                       {album.cover_photo_id ? (
                         <img src={adminPhotoUrl(album.cover_photo_id)} alt="" className="w-full h-full object-cover" />
@@ -1701,14 +1701,16 @@ export default function AdminPage() {
                           <span className="material-symbols-outlined text-5xl text-outline">photo_album</span>
                         </div>
                       )}
-                      <span className="absolute bottom-2 right-2">
-                        <Chip size="sm">{album.photo_count}</Chip>
+                      <span className="absolute bottom-2 right-2 text-metadata-sm text-white bg-primary/70 px-2 py-0.5" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+                        {album.photo_count}
                       </span>
                     </a>
                     <div className="p-4 flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-body-md text-on-surface truncate font-medium">{album.title}</div>
-                        <div className="text-metadata-sm text-outline truncate">/album/{album.slug}</div>
+                        <div className="text-metadata-sm text-outline truncate" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+                          /album/{album.slug}
+                        </div>
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
                         <Button isIconOnly size="sm" variant="ghost" onPress={() => openAlbumEditor(album)} aria-label="编辑">
@@ -1727,7 +1729,7 @@ export default function AdminPage() {
                         </Button>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
             )}
