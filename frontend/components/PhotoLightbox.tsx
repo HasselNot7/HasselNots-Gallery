@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Modal, useOverlayState } from "@heroui/react";
+import { Modal, useOverlayState } from "@heroui/react";
 
 /** 详情页大图灯箱：点击图片全屏查看，Esc/点击关闭。 */
 export default function PhotoLightbox({
@@ -16,9 +16,14 @@ export default function PhotoLightbox({
 
   return (
     <>
-      <Button slot="trigger" onPress={state.open} className="block w-full cursor-zoom-in text-left">
+      <button
+        type="button"
+        onClick={state.open}
+        aria-label={alt}
+        className="block w-full cursor-zoom-in text-left appearance-none border-0 bg-transparent p-0"
+      >
         {children}
-      </Button>
+      </button>
       <Modal.Backdrop isOpen={state.isOpen} onOpenChange={state.setOpen} variant="blur" className="bg-primary/95">
         <Modal.Container size="full">
           <Modal.Dialog className="flex flex-col">
