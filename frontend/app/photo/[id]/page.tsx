@@ -1,4 +1,5 @@
 import { fetchPhoto, getPhotoImageUrl, Photo } from "@/lib/api-server";
+import PhotoTags from "@/components/PhotoTags";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PhotoLocationPanel from "@/components/PhotoLocationPanel";
@@ -129,19 +130,11 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
                 <p className="text-body-md text-on-surface-variant">{photo.description}</p>
               )}
 
-              <div className="flex flex-wrap gap-2">
-                {photo.camera_model && (
-                  <span className="inline-flex items-center px-3 py-1 bg-primary text-white text-label-caps rounded-md">
-                    {photo.camera_model}
-                  </span>
-                )}
-                {photo.latitude && photo.longitude && (
-                  <span className="px-3 py-1 bg-surface-container border border-border-subtle text-label-caps text-on-surface-variant flex items-center gap-1 rounded-md">
-                    <span className="material-symbols-outlined text-[14px]">location_on</span>
-                    {photo.latitude.toFixed(4)}, {photo.longitude.toFixed(4)}
-                  </span>
-                )}
-              </div>
+              <PhotoTags
+                cameraModel={photo.camera_model}
+                latitude={photo.latitude}
+                longitude={photo.longitude}
+              />
 
               <div className="grid grid-cols-2 gap-2 text-metadata-sm">
                 <div className="text-outline text-[10px]">

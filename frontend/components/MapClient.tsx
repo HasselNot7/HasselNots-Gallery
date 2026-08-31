@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SearchField, Spinner } from "@heroui/react";
 import { attachLayerSwitcher } from "@/lib/mapLayers";
 import { yearColor, yearOf } from "@/lib/mapYears";
 import { searchPlaces, GeoResult } from "@/lib/geocode";
@@ -163,40 +164,42 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
       <div id="leaflet-map" className="w-full h-full" />
       {/* 地名搜索框 */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[600] w-64 max-w-[80%]">
-        <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-outline pointer-events-none">search</span>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => handleSearch(e.target.value)}
-            onFocus={() => setShowResults(true)}
-            onBlur={() => setTimeout(() => setShowResults(false), 200)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && results.length > 0) jumpTo(results[0]);
-            }}
-            placeholder="Search places..."
-            className="w-full bg-surface/95 backdrop-blur border border-border-subtle pl-10 pr-3 py-2 text-body-md text-on-surface focus:outline-none focus:border-primary shadow-md rounded-md"
-          />
-          {query && (
-            <button
-              onClick={() => {
+        <SearchField
+          value={query}
+          onChange={(v) => {
+            handleSearch(v);
+            setShowResults(true);
+          }}
+          className="w-full"
+        >
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input
+              placeholder="搜索地点…"
+              onFocus={() => setShowResults(true)}
+              onBlur={() => setTimeout(() => setShowResults(false), 200)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && results.length > 0) jumpTo(results[0]);
+              }}
+            />
+            <SearchField.ClearButton
+              onPress={() => {
                 setQuery("");
                 setResults([]);
                 setShowResults(false);
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-outline hover:text-primary rounded-md"
-            >
-              <span className="material-symbols-outlined text-[16px]">close</span>
-            </button>
-          )}
-        </div>
+            />
+          </SearchField.Group>
+        </SearchField>
         {showResults && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-surface/95 backdrop-blur border border-border-subtle shadow-lg overflow-hidden rounded-md z-[700]">
             {searching ? (
-              <div className="px-4 py-3 text-metadata-sm text-outline">Searching...</div>
+              <div className="px-4 py-3 text-metadata-sm text-outline flex items-center gap-2">
+                <Spinner size="sm" /> 搜索中...
+              </div>
             ) : results.length === 0 ? (
               query.trim() && (
-                <div className="px-4 py-3 text-metadata-sm text-outline">No places found</div>
+                <div className="px-4 py-3 text-metadata-sm text-outline">没有找到相关地点</div>
               )
             ) : (
               results.map((r, i) => (

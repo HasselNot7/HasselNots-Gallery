@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { Button } from "@heroui/react";
 import { isAuthenticated, getToken } from "@/lib/api";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-surface-container-low border border-border-subtle flex items-center justify-center">
-      <span className="text-metadata-sm text-outline uppercase">Loading map...</span>
+      <span className="text-metadata-sm text-outline uppercase">地图加载中...</span>
     </div>
   ),
 });
@@ -18,7 +19,7 @@ const DisplayMap = dynamic(() => import("@/components/PhotoMapWrapper"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-surface-container-low border border-border-subtle flex items-center justify-center">
-      <span className="text-metadata-sm text-outline uppercase">Loading map...</span>
+      <span className="text-metadata-sm text-outline uppercase">地图加载中...</span>
     </div>
   ),
 });
@@ -87,11 +88,11 @@ export default function PhotoLocationPanel({
       if (!res.ok) throw new Error();
       const d = await res.json();
       setName(d.location_name || "");
-      flash("Location saved");
+      flash("地点已保存");
       setEditing(false);
       router.refresh();
     } catch {
-      flash("Save failed");
+      flash("保存失败");
     } finally {
       setBusy(false);
     }
@@ -110,13 +111,13 @@ export default function PhotoLocationPanel({
       setCoords(d.latitude != null && d.longitude != null ? [d.latitude, d.longitude] : null);
       flash(
         d.latitude != null
-          ? "Restored to EXIF location"
-          : "Restored (no EXIF location)"
+          ? "已还原为 EXIF 地点"
+          : "已还原（无 EXIF 地点）"
       );
       setEditing(false);
       router.refresh();
     } catch {
-      flash("Reset failed");
+      flash("还原失败");
     } finally {
       setBusy(false);
     }
@@ -127,7 +128,7 @@ export default function PhotoLocationPanel({
   return (
     <div className="mt-16">
       <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
-        <h2 className="text-headline-lg text-primary" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>Location</h2>
+        <h2 className="text-headline-lg text-primary" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>拍摄地点</h2>
         <div className="flex items-center gap-3">
           {name && (
             <span className="text-label-caps text-on-surface-variant flex items-center gap-1">
@@ -137,28 +138,30 @@ export default function PhotoLocationPanel({
           )}
           {message && <span className="text-metadata-sm text-primary">{message}</span>}
           {authed && !editing && (
-            <button
-              onClick={() => {
+            <Button
+              size="sm"
+              variant="primary"
+              onPress={() => {
                 setEditing(true);
                 setCoords(
                   latitude != null && longitude != null ? [latitude, longitude] : null
                 );
               }}
-              className="text-label-caps px-3 py-1.5 border border-primary text-primary hover:bg-primary hover:text-on-primary transition-all"
             >
-              <span className="material-symbols-outlined text-[14px] align-middle mr-1">edit_location_alt</span>
-              {hasLocation ? "Edit Location" : "Set Location"}
-            </button>
+              <span className="material-symbols-outlined text-[14px]">edit_location_alt</span>
+              {hasLocation ? "编辑地点" : "设置地点"}
+            </Button>
           )}
           {authed && !editing && canReset && (
-            <button
-              onClick={reset}
-              disabled={busy}
-              className="text-label-caps px-3 py-1.5 border border-border-subtle text-on-surface-variant hover:border-error hover:text-error transition-all disabled:opacity-50"
+            <Button
+              size="sm"
+              variant="tertiary"
+              isDisabled={busy}
+              onPress={reset}
             >
-              <span className="material-symbols-outlined text-[14px] align-middle mr-1">restart_alt</span>
-              Reset to EXIF
-            </button>
+              <span className="material-symbols-outlined text-[14px]">restart_alt</span>
+              还原 EXIF 地点
+            </Button>
           )}
         </div>
       </div>
@@ -172,24 +175,27 @@ export default function PhotoLocationPanel({
             />
           </div>
           <div className="absolute bottom-3 left-3 flex gap-2 z-[500]">
-            <button
-              onClick={() => setEditing(false)}
-              disabled={busy}
-              className="text-label-caps px-3 py-1.5 bg-surface/95 backdrop-blur border border-border-subtle text-on-surface-variant hover:text-primary transition-all"
+            <Button
+              size="sm"
+              variant="secondary"
+              isDisabled={busy}
+              onPress={() => setEditing(false)}
             >
-              Cancel
-            </button>
-            <button
-              onClick={save}
-              disabled={busy || !coords}
-              className="text-label-caps px-3 py-1.5 bg-primary text-on-primary border border-primary hover:bg-primary-container transition-all disabled:opacity-50"
+              取消
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              isDisabled={busy || !coords}
+              isPending={busy}
+              onPress={save}
             >
-              {busy ? "Saving..." : "Save Location"}
-            </button>
+              {busy ? "保存中..." : "保存地点"}
+            </Button>
           </div>
           {!coords && (
             <div className="absolute inset-x-0 top-16 mx-auto w-max px-3 py-1.5 bg-surface/95 backdrop-blur border border-primary/20 text-label-caps text-on-surface-variant z-[500]">
-              Click on the map to place the marker
+              点击地图放置标记
             </div>
           )}
         </div>
@@ -212,7 +218,7 @@ export default function PhotoLocationPanel({
             <div className="border border-dashed border-border-subtle rounded h-[200px] flex flex-col items-center justify-center text-on-surface-variant">
               <span className="material-symbols-outlined text-4xl mb-2 text-outline">location_off</span>
               <p className="text-metadata-sm text-outline uppercase">
-                {authed ? "No location yet — click Set Location to place it on the map" : "No location data"}
+                {authed ? "尚无地点 — 点击「设置地点」在地图上标注" : "暂无地点数据"}
               </p>
             </div>
           )}

@@ -1,8 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const DEFAULT_TAGLINE = "Precision photography portfolio. Every frame tells a story.";
+
+const NAV_LINKS = [
+  { href: "/", label: "首页" },
+  { href: "/gallery", label: "图库" },
+  { href: "/albums", label: "相册" },
+  { href: "/blog", label: "笔记" },
+  { href: "/map", label: "足迹" },
+];
+
+const SERIF = { fontFamily: "'Noto Serif SC', serif", fontWeight: 500 };
 
 export default function Footer() {
   const [tagline, setTagline] = useState(DEFAULT_TAGLINE);
@@ -31,28 +42,18 @@ export default function Footer() {
 
         <div className="col-span-1 flex flex-col gap-3">
           <span className="text-label-caps text-secondary tracking-widest uppercase" style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, fontSize: "12px" }}>导航</span>
-          <a href="/" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 500 }}>
-            首页
-          </a>
-          <a href="/gallery" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 500 }}>
-            图库
-          </a>
-          <a href="/albums" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 500 }}>
-            相册
-          </a>
-          <a href="/blog" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 500 }}>
-            笔记
-          </a>
-          <a href="/map" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 500 }}>
-            足迹
-          </a>
+          {NAV_LINKS.map((l) => (
+            <Link key={l.href} href={l.href} className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={SERIF}>
+              {l.label}
+            </Link>
+          ))}
         </div>
 
         <div className="col-span-1 flex flex-col gap-3">
           <span className="text-label-caps text-secondary tracking-widest uppercase" style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, fontSize: "12px" }}>管理</span>
-          <a href="/login" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 500 }}>
+          <Link href="/login" className="text-metadata-sm text-on-surface-variant hover:text-primary transition-colors uppercase" style={SERIF}>
             登录
-          </a>
+          </Link>
         </div>
       </div>
     </footer>

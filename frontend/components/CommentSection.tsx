@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Alert, Button, Card, Input, Label, TextArea, TextField } from "@heroui/react";
 import { isAuthenticated, getToken } from "@/lib/api";
 
 interface CommentItem {
@@ -44,7 +45,7 @@ export default function CommentSection({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!author.trim() || !content.trim()) {
-      setError("Name and comment are required");
+      setError("请填写昵称和评论内容");
       return;
     }
     setPosting(true);
@@ -62,14 +63,14 @@ export default function CommentSection({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.detail || "Failed to post comment");
+        setError(d.detail || "评论发送失败");
         return;
       }
       const c = await res.json();
       setComments((prev) => [...prev, c]);
       setContent("");
     } catch {
-      setError("Failed to post comment");
+      setError("评论发送失败");
     } finally {
       setPosting(false);
     }
@@ -92,13 +93,13 @@ export default function CommentSection({
       <h2 className="text-headline-lg text-primary mb-6" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>{title}</h2>
 
       {loading ? (
-        <p className="text-metadata-sm text-outline">Loading comments...</p>
+        <p className="text-metadata-sm text-outline">加载评论中...</p>
       ) : comments.length === 0 ? (
-        <p className="text-metadata-sm text-outline mb-6">No comments yet — be the first.</p>
+        <p className="text-metadata-sm text-outline mb-6">还没有评论 — 来抢沙发。</p>
       ) : (
         <div className="flex flex-col gap-4 mb-8">
           {comments.map((c) => (
-            <div key={c.id} className="border border-border-subtle bg-surface-container-low p-4 rounded-md">
+            <Card key={c.id} className="p-4">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-label-caps text-primary font-bold">{c.author}</span>
                 <div className="flex items-center gap-3">
@@ -106,53 +107,38 @@ export default function CommentSection({
                     {new Date(c.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                   </span>
                   {authed && (
-                    <button
-                      onClick={() => removeComment(c.id)}
-                      className="text-metadata-sm text-outline hover:text-error transition-colors"
-                      title="Delete comment"
-                    >
-                      delete
-                    </button>
+                    <Button size="sm" variant="ghost" className="text-outline hover:text-[var(--danger)]" onPress={() => removeComment(c.id)} aria-label="删除评论">
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                    </Button>
                   )}
                 </div>
               </div>
               <p className="text-body-md text-on-surface whitespace-pre-wrap">{c.content}</p>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
       <form onSubmit={submit} className="flex flex-col gap-3 max-w-xl">
-        <div className="flex flex-col gap-1">
-          <label className="text-label-caps text-outline uppercase">Name</label>
-          <input
-            type="text"
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            maxLength={50}
-            className="w-full border-b border-border-subtle bg-transparent py-2 text-body-md focus:outline-none focus:border-primary"
-            placeholder="Your name"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-label-caps text-outline uppercase">Comment</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            maxLength={2000}
-            rows={3}
-            className="w-full border border-border-subtle bg-surface p-3 text-body-md focus:outline-none focus:border-primary resize-none rounded-md"
-            placeholder="Share your thoughts..."
-          />
-        </div>
-        {error && <p className="text-metadata-sm text-error">{error}</p>}
-        <button
-          type="submit"
-          disabled={posting}
-          className="btn-primary !py-3 self-start"
-        >
-          {posting ? "Posting..." : "Post Comment"}
-        </button>
+        <TextField className="w-full" value={author} onChange={setAuthor}>
+          <Label className="text-label-caps text-outline">昵称</Label>
+          <Input maxLength={50} placeholder="你的昵称" variant="secondary" />
+        </TextField>
+        <TextField className="w-full" value={content} onChange={setContent}>
+          <Label className="text-label-caps text-outline">评论内容</Label>
+          <TextArea maxLength={2000} rows={3} placeholder="说点什么…" />
+        </TextField>
+        {error && (
+          <Alert status="danger">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>{error}</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+        <Button type="submit" isPending={posting} isDisabled={posting} className="self-start px-6">
+          {posting ? "发送中..." : "发表评论"}
+        </Button>
       </form>
     </div>
   );

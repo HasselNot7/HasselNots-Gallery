@@ -9,11 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@heroui/react": "^3.2.4",
+    "@react-aria/i18n": "^3.13.1",
+    "@react-aria/ssr": "^3.10.1",
+    "@react-aria/utils": "^3.34.1",
     "@react-leaflet/core": "^3.0.0",
     "leaflet": "^1.9.4",
     "next": "16.3.0",
     "piexifjs": "^1.0.6",
     "react": "19.2.8",
+    "react-aria": "^3.51.0",
+    "react-aria-components": "^1.20.0",
     "react-dom": "19.2.8",
     "react-leaflet": "^5.0.0",
     "three": "^0.185.1"

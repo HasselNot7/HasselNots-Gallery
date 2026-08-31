@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Card, Chip, SearchField, Spinner } from "@heroui/react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getPhotoImageUrl } from "@/lib/api-server";
@@ -32,11 +33,6 @@ export default function SearchPage() {
   const [photos, setPhotos] = useState<SearchPhoto[]>([]);
   const [articles, setArticles] = useState<SearchArticle[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
@@ -81,37 +77,30 @@ export default function SearchPage() {
             className="text-headline-lg md:text-display-lg text-primary mb-6 uppercase"
             style={{ fontFamily: "var(--font-sigma)" }}
           >
-            Search
+            搜索
           </h1>
-          <div className="flex items-center gap-3 border-b-2 border-primary/20 focus-within:border-primary transition-colors pb-3">
-            <span className="material-symbols-outlined text-[28px] text-on-surface-variant">
-              search
-            </span>
-            <input
-              ref={inputRef}
-              type="text"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Photos, articles, locations, cameras..."
-              className="flex-1 bg-transparent outline-none text-body-lg md:text-headline-mobile text-primary placeholder:text-on-surface-variant/50"
-              style={{ fontFamily: "var(--font-sigma)" }}
-            />
-            {q && (
-              <button
-                onClick={() => setQ("")}
-                className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
-                aria-label="Clear"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            )}
-          </div>
+          <SearchField
+            value={q}
+            onChange={setQ}
+            className="w-full [&_.searchfield__group]:border-0 [&_.searchfield__group]:border-b-2 [&_.searchfield__group]:border-primary/20 [&_.searchfield__group]:bg-transparent [&_.searchfield__group]:rounded-none [&_.searchfield__group]:shadow-none [&_.searchfield__group]:px-0"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input
+                placeholder="搜索照片、笔记、地点、相机…"
+                className="text-lg md:text-2xl py-2 placeholder:text-on-surface-variant/50"
+                style={{ fontFamily: "var(--font-sigma)" }}
+                autoFocus
+              />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
         </div>
 
         {loading && (
           <div className="flex items-center gap-3 text-on-surface-variant py-8">
-            <span className="material-symbols-outlined text-[24px] animate-spin">progress_activity</span>
-            <span className="text-body-md" style={{ fontFamily: MONO }}>SEARCHING...</span>
+            <Spinner size="sm" />
+            <span className="text-body-md" style={{ fontFamily: MONO }}>搜索中...</span>
           </div>
         )}
 
@@ -119,21 +108,21 @@ export default function SearchPage() {
           <>
             <div className="mb-8">
               <span className="text-metadata-sm text-outline" style={{ fontFamily: MONO }}>
-                {total} RESULT{total === 1 ? "" : "S"} FOR &quot;{q.trim()}&quot;
+                共 {total} 条结果 · &quot;{q.trim()}&quot;
               </span>
             </div>
 
             {photos.length > 0 && (
               <section className="mb-12">
                 <h2 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-5 uppercase">
-                  Photos · {photos.length}
+                  照片 · {photos.length}
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {photos.map((p) => (
                     <Link
                       key={p.id}
                       href={`/photo/${p.id}`}
-                      className="group relative aspect-square overflow-hidden border border-border-subtle bg-surface hover:border-primary/40 transition-colors"
+                      className="group relative aspect-square overflow-hidden border border-border-subtle bg-surface hover:border-primary/40 transition-colors rounded-lg"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -154,37 +143,32 @@ export default function SearchPage() {
             {articles.length > 0 && (
               <section className="mb-12">
                 <h2 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-5 uppercase">
-                  Articles · {articles.length}
+                  笔记 · {articles.length}
                 </h2>
                 <div className="space-y-3">
                   {articles.map((a) => (
-                    <Link
-                      key={a.id}
-                      href={`/blog/${a.slug}`}
-                      className="block border border-border-subtle p-5 md:p-6 bg-surface hover:border-primary/40 transition-colors"
-                    >
-                      <h3
-                        className="text-body-lg text-primary mb-1"
-                        style={{ fontFamily: "var(--font-sigma)" }}
-                      >
-                        {a.title}
-                      </h3>
-                      {a.excerpt && (
-                        <p className="text-body-md text-on-surface-variant line-clamp-2 mb-2">{a.excerpt}</p>
-                      )}
-                      <div className="flex gap-2 flex-wrap">
-                        {a.tags
-                          .split(",")
-                          .filter(Boolean)
-                          .map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-2 py-0.5 bg-primary/10 border border-primary/20 text-label-caps text-primary rounded-md"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                      </div>
+                    <Link key={a.id} href={`/blog/${a.slug}`} className="block">
+                      <Card className="p-5 md:p-6 hover:border-primary/40 transition-colors">
+                        <h3
+                          className="text-body-lg text-primary mb-1"
+                          style={{ fontFamily: "var(--font-sigma)" }}
+                        >
+                          {a.title}
+                        </h3>
+                        {a.excerpt && (
+                          <p className="text-body-md text-on-surface-variant line-clamp-2 mb-2">{a.excerpt}</p>
+                        )}
+                        <div className="flex gap-2 flex-wrap">
+                          {a.tags
+                            .split(",")
+                            .filter(Boolean)
+                            .map((tag) => (
+                              <Chip key={tag} size="sm" variant="soft">
+                                <Chip.Label>{tag}</Chip.Label>
+                              </Chip>
+                            ))}
+                        </div>
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -196,9 +180,9 @@ export default function SearchPage() {
                 <span className="material-symbols-outlined text-[48px] text-on-surface-variant mb-4">
                   search_off
                 </span>
-                <p className="text-headline-mobile text-on-surface-variant mb-1">No results found</p>
+                <p className="text-headline-mobile text-on-surface-variant mb-1">没有找到相关内容</p>
                 <p className="text-body-md text-on-surface-variant/70">
-                  Try different keywords — location, camera, or article tags
+                  换个关键词试试 — 地点、相机、镜头或笔记标签
                 </p>
               </div>
             )}
@@ -211,10 +195,10 @@ export default function SearchPage() {
               search
             </span>
             <p className="text-body-md text-on-surface-variant">
-              Type to search photos & articles
+              输入关键词即可搜索照片与笔记
             </p>
             <p className="text-metadata-sm text-outline mt-2" style={{ fontFamily: MONO }}>
-              TITLE · LOCATION · CAMERA · LENS · TAGS
+              标题 · 地点 · 相机 · 镜头 · 标签
             </p>
           </div>
         )}

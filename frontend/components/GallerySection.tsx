@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { Spinner } from "@heroui/react";
 import { Photo, getPhotoImageUrl } from "@/lib/api-server";
 import Lightbox from "@/components/Lightbox";
 
@@ -361,9 +362,10 @@ export default function GallerySection({
                 })()}
               </div>
 
-              <div ref={sentinelRef} className="flex justify-center mt-12 py-2">
+              <div ref={sentinelRef} className="flex items-center justify-center gap-2 mt-12 py-2">
+                {loadingMore && <Spinner size="sm" />}
                 <span className="text-label-caps text-outline">
-                  {loadingMore ? "Loading..." : hasMore ? "Scroll for more" : `All ${total} photos loaded`}
+                  {loadingMore ? "加载中..." : hasMore ? "继续滚动加载更多" : `已加载全部 ${total} 张`}
                 </span>
               </div>
             </>
