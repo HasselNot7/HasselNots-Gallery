@@ -74,7 +74,7 @@ export default function SearchPage() {
       <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-5xl mx-auto w-full">
         <div className="mb-10">
           <h1
-            className="text-headline-lg md:text-display-lg text-primary mb-6 uppercase"
+            className="text-2xl md:text-3xl text-primary mb-6 uppercase"
             style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', serif" }}
           >
             搜索
@@ -88,7 +88,7 @@ export default function SearchPage() {
               <SearchField.SearchIcon />
               <SearchField.Input
                 placeholder="搜索照片、笔记、地点、相机…"
-                className="text-lg md:text-2xl py-2 placeholder:text-on-surface-variant/50"
+                className="text-base md:text-lg py-2 placeholder:text-on-surface-variant/50"
                 style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', serif" }}
                 autoFocus
               />
