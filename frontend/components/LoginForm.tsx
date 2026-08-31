@@ -90,7 +90,7 @@ export default function LoginForm() {
           type="text"
           autoComplete="username"
           placeholder="用户名"
-          className="rounded-none border-0 border-b border-border-subtle bg-transparent shadow-none focus:ring-0"
+          className="text-metadata-sm rounded-none border-0 border-b border-border-subtle bg-transparent shadow-none focus:ring-0"
         />
       </TextField>
 
@@ -110,7 +110,7 @@ export default function LoginForm() {
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           placeholder="••••••••"
           minLength={6}
-          className="rounded-none border-0 border-b border-border-subtle bg-transparent shadow-none focus:ring-0"
+          className="text-metadata-sm rounded-none border-0 border-b border-border-subtle bg-transparent shadow-none focus:ring-0"
         />
       </TextField>
 
@@ -129,7 +129,7 @@ export default function LoginForm() {
             autoComplete="new-password"
             placeholder="••••••••"
             minLength={6}
-            className="rounded-none border-0 border-b border-border-subtle bg-transparent shadow-none focus:ring-0"
+            className="text-metadata-sm rounded-none border-0 border-b border-border-subtle bg-transparent shadow-none focus:ring-0"
           />
           <FieldError>两次输入的密码不一致</FieldError>
         </TextField>

@@ -96,6 +96,8 @@
   --font-display: var(--font-sigma), "Noto Serif SC", sans-serif;
   --font-body: "JetBrains Mono", "Noto Serif SC", sans-serif;
   --font-mono: "JetBrains Mono", "Noto Serif SC", monospace;
+  /* 让 HeroUI / Tailwind preflight 全局使用本站指定字体 */
+  --font-sans: "JetBrains Mono", "Noto Serif SC", sans-serif;
 
   --spacing-grid-margin: 40px;
   --spacing-gutter: 24px;
