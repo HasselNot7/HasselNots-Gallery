@@ -15,7 +15,6 @@ import {
   Select,
   Slider,
   Switch,
-  Tabs,
   TextField,
   TextArea,
   Toast,
@@ -1151,27 +1150,27 @@ export default function AdminPage() {
           </Button>
         </div>
 
-        <Tabs
-          className="w-full"
-          variant="secondary"
-          selectedKey={activeTab}
-          onSelectionChange={(key) => handleTabSwitch(String(key))}
-        >
-          <Tabs.ListContainer>
-            <Tabs.List aria-label="后台管理">
-              {TABS.map((tab) => (
-                <Tabs.Tab key={tab.id} id={tab.id}>
-                  <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.label.slice(0, 2)}</span>
-                  <Tabs.Indicator />
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-          </Tabs.ListContainer>
+        <div className="flex border-b border-border-subtle mb-10 overflow-x-auto">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabSwitch(tab.id)}
+              className={`flex items-center gap-2 px-3 sm:px-5 py-3 text-label-caps border-b-2 transition-all -mb-px whitespace-nowrap rounded-none ${
+                activeTab === tab.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-on-surface-variant hover:text-primary hover:border-primary/30"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label.slice(0, 2)}</span>
+            </button>
+          ))}
+        </div>
 
           {/* Site Settings */}
-          <Tabs.Panel id="settings" className="pt-8 space-y-10">
+          {activeTab === "settings" && (
+          <div className="pt-8 space-y-10">
             <section>
               <h2 className="text-headline-lg text-primary mb-2">首页 Hero 区域</h2>
               <p className="text-metadata-sm text-outline uppercase mb-6">自定义画廊首页的 Hero 区域</p>
@@ -1362,10 +1361,12 @@ export default function AdminPage() {
                 </div>
               </Card>
             </section>
-          </Tabs.Panel>
+          </div>
+          )}
 
           {/* Upload */}
-          <Tabs.Panel id="upload" className="pt-8">
+          {activeTab === "upload" && (
+          <div className="pt-8">
             <h2 className="text-headline-lg text-primary mb-6">上传新照片</h2>
 
             <label
@@ -1454,10 +1455,12 @@ export default function AdminPage() {
                 </Button>
               </div>
             )}
-          </Tabs.Panel>
+          </div>
+          )}
 
           {/* Photos */}
-          <Tabs.Panel id="photos" className="pt-8">
+          {activeTab === "photos" && (
+          <div className="pt-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h2 className="text-headline-lg text-primary">照片管理</h2>
@@ -1667,10 +1670,12 @@ export default function AdminPage() {
                 </div>
               </>
             )}
-          </Tabs.Panel>
+          </div>
+          )}
 
           {/* Albums */}
-          <Tabs.Panel id="albums" className="pt-8">
+          {activeTab === "albums" && (
+          <div className="pt-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <h2 className="text-headline-lg text-primary">相册</h2>
               <Button onPress={() => openAlbumEditor()}>
@@ -1726,10 +1731,12 @@ export default function AdminPage() {
                 ))}
               </div>
             )}
-          </Tabs.Panel>
+          </div>
+          )}
 
           {/* Blog */}
-          <Tabs.Panel id="blog" className="pt-8">
+          {activeTab === "blog" && (
+          <div className="pt-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <h2 className="text-headline-lg text-primary">笔记管理</h2>
               <Button onPress={() => openArticleEditor()}>
@@ -1795,10 +1802,12 @@ export default function AdminPage() {
                 ))}
               </div>
             )}
-          </Tabs.Panel>
+          </div>
+          )}
 
           {/* Analytics */}
-          <Tabs.Panel id="analytics" className="pt-8">
+          {activeTab === "analytics" && (
+          <div className="pt-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-headline-lg text-primary">访问分析</h2>
               <Button size="sm" variant="tertiary" onPress={loadAnalytics}>
@@ -1887,10 +1896,12 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
-          </Tabs.Panel>
+          </div>
+          )}
 
           {/* Services */}
-          <Tabs.Panel id="services" className="pt-8">
+          {activeTab === "services" && (
+          <div className="pt-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-headline-lg text-primary">服务健康检测</h2>
               <Button size="sm" variant="tertiary" isPending={servicesLoading} onPress={loadServices}>
@@ -1956,10 +1967,12 @@ export default function AdminPage() {
                 </Card>
               ))}
             </div>
-          </Tabs.Panel>
+          </div>
+          )}
 
           {/* Users */}
-          <Tabs.Panel id="users" className="pt-8">
+          {activeTab === "users" && (
+          <div className="pt-8">
             <h2 className="text-headline-lg text-primary mb-2">管理员</h2>
             <p className="text-metadata-sm text-outline uppercase mb-6">用户自行注册后，在此授权管理员权限</p>
 
@@ -2013,8 +2026,8 @@ export default function AdminPage() {
                 {userSaving ? "创建中..." : "创建管理员"}
               </Button>
             </Card>
-          </Tabs.Panel>
-        </Tabs>
+          </div>
+          )}
       </main>
 
       {/* Album Edit Modal */}
