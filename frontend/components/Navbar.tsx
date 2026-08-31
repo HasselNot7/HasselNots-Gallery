@@ -78,16 +78,10 @@ export default function Navbar() {
             <span className="material-symbols-outlined text-[22px]">search</span>
           </Link>
 
-          {authed ? (
+          {authed && (
             <Button variant="primary" size="sm" style={navFontStyle} onPress={handleLogout}>
               退出登录
             </Button>
-          ) : (
-            <a href="/login" className="no-underline">
-              <Button variant="primary" size="sm" style={navFontStyle}>
-                管理员登录
-              </Button>
-            </a>
           )}
         </div>
 
@@ -133,19 +127,13 @@ export default function Navbar() {
                   搜索
                 </Link>
               </Drawer.Body>
-              <Drawer.Footer>
-                {authed ? (
+              {authed && (
+                <Drawer.Footer>
                   <Button fullWidth style={navFontStyle} onPress={handleLogout}>
                     退出登录
                   </Button>
-                ) : (
-                  <a href="/login" className="w-full no-underline">
-                    <Button fullWidth style={navFontStyle}>
-                      管理员登录
-                    </Button>
-                  </a>
-                )}
-              </Drawer.Footer>
+                </Drawer.Footer>
+              )}
           </Drawer.Dialog>
         </Drawer.Content>
       </Drawer.Backdrop>
