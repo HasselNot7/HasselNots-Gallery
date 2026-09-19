@@ -194,6 +194,9 @@ class SettingsOut(BaseModel):
     hero_speed: str = "1.1"
     hero_color1_weight: str = "1.0"
     hero_color2_weight: str = "1.3"
+    show_hero_decorations: str = "true"
+    show_hero_shader: str = "true"
+    show_water_ripple: str = "true"
 
 
 class SettingsUpdate(BaseModel):
@@ -218,3 +221,6 @@ class SettingsUpdate(BaseModel):
     hero_speed: Optional[str] = None
     hero_color1_weight: Optional[str] = None
     hero_color2_weight: Optional[str] = None
+    show_hero_decorations: Optional[str] = None
+    show_hero_shader: Optional[str] = None
+    show_water_ripple: Optional[str] = None

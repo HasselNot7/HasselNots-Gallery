@@ -200,7 +200,13 @@ export interface SiteSettings {
   hero_speed: string;
   hero_color1_weight: string;
   hero_color2_weight: string;
+  show_hero_decorations: string;
+  show_hero_shader: string;
+  show_water_ripple: string;
 }
+
+/** 装饰性动效开关：只有显式 "false" 才算关，字段缺失/空串/旧数据一律退化为开 */
+export const isOn = (v?: string) => v !== "false";
 
 export async function fetchSettings(): Promise<SiteSettings> {
   try {
@@ -230,6 +236,9 @@ export async function fetchSettings(): Promise<SiteSettings> {
       hero_speed: "1.1",
       hero_color1_weight: "1.0",
       hero_color2_weight: "1.3",
+      show_hero_decorations: "true",
+      show_hero_shader: "true",
+      show_water_ripple: "true",
     };
   }
 }

@@ -32,6 +32,9 @@ DEFAULTS = {
     "hero_speed": "1.1",
     "hero_color1_weight": "1.0",
     "hero_color2_weight": "1.3",
+    "show_hero_decorations": "true",
+    "show_hero_shader": "true",
+    "show_water_ripple": "true",
 }
 
 ICON_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "icon")

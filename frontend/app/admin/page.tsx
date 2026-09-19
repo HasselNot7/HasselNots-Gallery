@@ -501,8 +501,15 @@ export default function AdminPage() {
     hero_speed: "1.1",
     hero_color1_weight: "1.0",
     hero_color2_weight: "1.3",
+    show_hero_decorations: "true",
+    show_hero_shader: "true",
+    show_water_ripple: "true",
   });
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const setToggle = (
+    key: "show_hero_decorations" | "show_hero_shader" | "show_water_ripple",
+    v: boolean,
+  ) => setSettings((s) => ({ ...s, [key]: v ? "true" : "false" }));
   const [iconUploading, setIconUploading] = useState(false);
   const iconInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -804,7 +811,7 @@ export default function AdminPage() {
       const res = await fetch(`${API_BASE}/api/settings`);
       if (res.ok) {
         const data = await res.json();
-        setSettings({ hero_title: "", hero_description: "", site_tagline: "", water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0", hero_gradient_size: "0.85", hero_gradient_count: "12.0", hero_speed: "1.1", hero_color1_weight: "1.0", hero_color2_weight: "1.3", hero_icon: "photo_camera", hero_icon_url: "", ...data });
+        setSettings({ hero_title: "", hero_description: "", site_tagline: "", water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0", hero_gradient_size: "0.85", hero_gradient_count: "12.0", hero_speed: "1.1", hero_color1_weight: "1.0", hero_color2_weight: "1.3", hero_icon: "photo_camera", hero_icon_url: "", show_hero_decorations: "true", show_hero_shader: "true", show_water_ripple: "true", ...data });
       }
     } catch {
       // ignore
@@ -1511,12 +1518,64 @@ export default function AdminPage() {
 
                 <div className="border-t border-border-subtle pt-5">
                   <div className="flex items-center justify-between mb-3">
+                    <p className="text-label-caps text-outline">装饰与背景</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onPress={() =>
+                        setSettings({ ...settings, show_hero_decorations: "true", show_hero_shader: "true", show_water_ripple: "true" })
+                      }
+                    >
+                      重置
+                    </Button>
+                  </div>
+                  <div className="flex flex-col gap-4 max-w-3xl">
+                    {(
+                      [
+                        {
+                          key: "show_hero_decorations",
+                          label: "显示 Hero 装饰元素",
+                          desc: "首页的 HUD 准星、刻度尺、测量线与右侧装饰竖栏。网格底纹、左侧品牌竖栏与标题本体不受此开关影响。",
+                        },
+                        {
+                          key: "show_hero_shader",
+                          label: "显示 Hero 动态背景",
+                          desc: "关闭后不再加载 WebGL 着色器，省掉 three.js 的 GPU 上下文与逐帧动画循环，低端设备与移动端更省电。",
+                        },
+                        {
+                          key: "show_water_ripple",
+                          label: "显示页面水波纹背景",
+                          desc: "仅在图库、相册、笔记、器材等页面生效，首页与后台本就不显示。",
+                        },
+                      ] as const
+                    ).map((field) => (
+                      <div key={field.key} className="flex flex-col gap-1">
+                        <Switch
+                          isSelected={settings[field.key] !== "false"}
+                          onChange={(v) => setToggle(field.key, v)}
+                        >
+                          <Switch.Content>
+                            <Switch.Control>
+                              <Switch.Thumb />
+                            </Switch.Control>
+                            <span className="text-body-md text-on-surface">{field.label}</span>
+                          </Switch.Content>
+                        </Switch>
+                        <p className="text-metadata-sm text-outline">{field.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-metadata-sm text-outline mt-3">更改在保存后生效，刷新前台页面即可预览。</p>
+                </div>
+
+                <div className="border-t border-border-subtle pt-5">
+                  <div className="flex items-center justify-between mb-3">
                     <p className="text-label-caps text-outline">水波纹背景（页面背景）</p>
                     <Button
                       size="sm"
                       variant="ghost"
                       onPress={() =>
-                        setSettings({ ...settings, water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0" })
+                        setSettings({ ...settings, water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0", show_water_ripple: "true" })
                       }
                     >
                       重置
