@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Button, Drawer } from "@heroui/react";
 import { useOverlayState } from "@heroui/react";
 import { isAuthenticated, clearToken } from "@/lib/api";
@@ -19,7 +19,7 @@ const links = [
 
 const navFontStyle = { fontFamily: "'Noto Serif SC', serif", fontWeight: 600 };
 
-export default function Navbar() {
+export default function Navbar({ leadingSlot }: { leadingSlot?: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [authed, setAuthed] = useState(false);
@@ -41,15 +41,18 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 isolate border-b border-border-subtle w-full glass-panel">
       <div className="flex items-center justify-between h-[64px] md:h-[72px] pl-0 pr-4 md:pr-grid-margin">
-        <div className="w-28 md:w-36 flex items-center self-stretch">
-          <Link
-            href="/"
-            className="flex-1 flex items-center justify-center text-xl md:text-2xl tracking-[-0.01em] text-primary leading-none whitespace-nowrap"
-            style={{ fontFamily: "var(--font-sigma)" }}
-          >
-            Art
-          </Link>
-          <div className="w-px self-stretch bg-primary/20" />
+        <div className="flex items-center self-stretch">
+          {leadingSlot}
+          <div className="w-28 md:w-36 flex items-center self-stretch">
+            <Link
+              href="/"
+              className="flex-1 flex items-center justify-center text-xl md:text-2xl tracking-[-0.01em] text-primary leading-none whitespace-nowrap"
+              style={{ fontFamily: "var(--font-sigma)" }}
+            >
+              Art
+            </Link>
+            <div className="w-px self-stretch bg-primary/20" />
+          </div>
         </div>
 
         <div className="hidden md:flex items-center gap-8">

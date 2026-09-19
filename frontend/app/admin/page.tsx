@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import piexif from "piexifjs";
 import {
   Button,
   Card,
   Checkbox,
   Chip,
+  Drawer,
   Input,
   Label,
   ListBox,
@@ -34,7 +36,6 @@ import {
   AdminUser,
 } from "@/lib/api";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 const API_BASE = "";
 
@@ -226,6 +227,238 @@ function ParamSlider({
   );
 }
 
+type TabId =
+  | "settings"
+  | "upload"
+  | "photos"
+  | "blog"
+  | "albums"
+  | "analytics"
+  | "services"
+  | "users";
+
+type NavItem = { id: TabId; label: string; icon: string };
+
+const PRIMARY_TABS: NavItem[] = [
+  { id: "settings", label: "站点设置", icon: "settings" },
+  { id: "upload", label: "上传照片", icon: "cloud_upload" },
+  { id: "photos", label: "照片管理", icon: "photo_library" },
+  { id: "albums", label: "相册", icon: "photo_album" },
+  { id: "blog", label: "笔记", icon: "article" },
+];
+
+const MORE_TABS: NavItem[] = [
+  { id: "analytics", label: "访问分析", icon: "monitoring" },
+  { id: "services", label: "服务检测", icon: "monitor_heart" },
+  { id: "users", label: "管理员", icon: "group" },
+];
+
+const ALL_TABS: NavItem[] = [...PRIMARY_TABS, ...MORE_TABS];
+
+/**
+ * 列表列宽。标题是唯一的弹性列（flex-1 + min-w-0，否则 grid/flex 的 min-width:auto
+ * 会让长标题撑破轨道、truncate 失效），其余列固定宽度不随容器拉伸。
+ */
+const PHOTO_COL = {
+  check: "w-6 shrink-0",
+  preview: "w-16 shrink-0",
+  title: "flex-1 min-w-0",
+  date: "w-48 shrink-0",
+  status: "w-24 shrink-0",
+  actions: "w-36 shrink-0 flex justify-end gap-2",
+};
+
+const BLOG_COL = {
+  title: "flex-1 min-w-0",
+  slug: "w-56 shrink-0",
+  status: "w-24 shrink-0",
+  actions: "w-28 shrink-0 flex justify-end gap-2",
+};
+
+const MORE_EXPANDED_KEY = "admin-nav-more-expanded";
+const NAV_COLLAPSED_KEY = "admin-nav-collapsed";
+
+// localStorage 是外部状态：用 useSyncExternalStore 读取，服务端快照固定为 false，
+// 使 SSR 首帧与 hydration 一致，同时仍能在客户端恢复上次的偏好。
+function makeNavPref(key: string) {
+  const listeners = new Set<() => void>();
+  return {
+    read: () => window.localStorage.getItem(key) === "1",
+    readServer: () => false,
+    write: (next: boolean) => {
+      window.localStorage.setItem(key, next ? "1" : "0");
+      listeners.forEach((notify) => notify());
+    },
+    subscribe: (notify: () => void) => {
+      listeners.add(notify);
+      return () => {
+        listeners.delete(notify);
+      };
+    },
+  };
+}
+
+const prefMoreExpanded = makeNavPref(MORE_EXPANDED_KEY);
+const prefNavCollapsed = makeNavPref(NAV_COLLAPSED_KEY);
+
+const navRowClass = (active: boolean, indent = false, collapsed = false) =>
+  [
+    "relative flex h-10 w-full items-center gap-3 rounded-lg text-sm transition-colors",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+    collapsed ? "justify-center px-0" : indent ? "px-3 pl-11" : "px-3",
+    active
+      ? "bg-primary/10 text-primary font-medium"
+      : "text-on-surface-variant font-normal hover:bg-primary/5 hover:text-primary",
+  ].join(" ");
+
+function NavRowContent({
+  icon,
+  label,
+  collapsed,
+}: {
+  icon: string;
+  label: string;
+  collapsed: boolean;
+}) {
+  return (
+    <>
+      <span className="material-symbols-outlined text-[22px]">{icon}</span>
+      {/* 折叠态保留可读文本给屏幕阅读器；sr-only 是绝对定位，不会占 flex gap */}
+      <span className={collapsed ? "sr-only" : undefined}>{label}</span>
+    </>
+  );
+}
+
+function NavRow({
+  icon,
+  label,
+  active = false,
+  indent = false,
+  collapsed = false,
+  onSelect,
+}: {
+  icon: string;
+  label: string;
+  active?: boolean;
+  indent?: boolean;
+  collapsed?: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      onClick={onSelect}
+      aria-current={active ? "page" : undefined}
+      title={collapsed ? label : undefined}
+      className={navRowClass(active, indent, collapsed)}
+    >
+      <NavRowContent icon={icon} label={label} collapsed={collapsed} />
+    </button>
+  );
+}
+
+function NavRowLink({
+  icon,
+  label,
+  href,
+  collapsed = false,
+}: {
+  icon: string;
+  label: string;
+  href: string;
+  collapsed?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      title={collapsed ? label : undefined}
+      className={navRowClass(false, false, collapsed)}
+    >
+      <NavRowContent icon={icon} label={label} collapsed={collapsed} />
+    </Link>
+  );
+}
+
+function NavList({
+  activeTab,
+  onSelect,
+  moreExpanded,
+  onToggleMore,
+  groupSuffix,
+  collapsed = false,
+  onExpandSidebar,
+}: {
+  activeTab: TabId;
+  onSelect: (id: TabId) => void;
+  moreExpanded: boolean;
+  onToggleMore: () => void;
+  groupSuffix: string;
+  collapsed?: boolean;
+  onExpandSidebar: () => void;
+}) {
+  const moreGroupActive = MORE_TABS.some((t) => t.id === activeTab);
+  const groupId = `admin-nav-more-${groupSuffix}`;
+  // 折叠态下分组没有可点的披露控件，强制视为展开以免留下点不动的死角
+  const showMoreItems = collapsed || moreExpanded;
+
+  return (
+    <ul className="flex flex-col gap-1">
+      {PRIMARY_TABS.map((tab) => (
+        <li key={tab.id}>
+          <NavRow
+            icon={tab.icon}
+            label={tab.label}
+            active={tab.id === activeTab}
+            collapsed={collapsed}
+            onSelect={() => onSelect(tab.id)}
+          />
+        </li>
+      ))}
+
+      <li>
+        {collapsed && (
+          <div aria-hidden="true" className="my-2 mx-auto w-6 border-t border-border-subtle" />
+        )}
+        <button
+          onClick={collapsed ? onExpandSidebar : onToggleMore}
+          aria-label={collapsed ? "展开侧栏" : undefined}
+          aria-expanded={collapsed ? undefined : moreExpanded}
+          aria-controls={collapsed ? undefined : groupId}
+          title={collapsed ? "更多功能" : undefined}
+          className={navRowClass(moreGroupActive, false, collapsed)}
+        >
+          <span className="material-symbols-outlined text-[22px]">more_horiz</span>
+          <span className={collapsed ? "sr-only" : "flex-1 text-left"}>更多功能</span>
+          {!collapsed && (
+            <span
+              aria-hidden="true"
+              className={`material-symbols-outlined text-[18px] motion-safe:transition-transform motion-safe:duration-200 ${
+                moreExpanded ? "rotate-[270deg]" : "rotate-[90deg]"
+              }`}
+            >
+              chevron_right
+            </span>
+          )}
+        </button>
+
+        <ul id={groupId} className="flex flex-col gap-1" hidden={!showMoreItems}>
+          {MORE_TABS.map((tab) => (
+            <li key={tab.id}>
+              <NavRow
+                icon={tab.icon}
+                label={tab.label}
+                indent
+                collapsed={collapsed}
+                active={tab.id === activeTab}
+                onSelect={() => onSelect(tab.id)}
+              />
+            </li>
+          ))}
+        </ul>
+      </li>
+    </ul>
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -309,7 +542,21 @@ export default function AdminPage() {
     },
   });
 
-  const [activeTab, setActiveTab] = useState<"settings" | "upload" | "photos" | "blog" | "albums" | "analytics" | "services" | "users">("settings");
+  const [activeTab, setActiveTab] = useState<TabId>("settings");
+  const navDrawerState = useOverlayState();
+  const moreExpanded = useSyncExternalStore(
+    prefMoreExpanded.subscribe,
+    prefMoreExpanded.read,
+    prefMoreExpanded.readServer
+  );
+  const navCollapsed = useSyncExternalStore(
+    prefNavCollapsed.subscribe,
+    prefNavCollapsed.read,
+    prefNavCollapsed.readServer
+  );
+  const toggleMore = () => prefMoreExpanded.write(!moreExpanded);
+  const toggleNavCollapsed = () => prefNavCollapsed.write(!navCollapsed);
+  const expandSidebar = () => prefNavCollapsed.write(false);
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [me, setMe] = useState<AdminUser | null>(null);
@@ -358,17 +605,6 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
   const [batchConfirmDelete, setBatchConfirmDelete] = useState(false);
   const [batchBusy, setBatchBusy] = useState(false);
-
-  const TABS = [
-    { id: "settings" as const, label: "站点设置", icon: "settings" },
-    { id: "upload" as const, label: "上传照片", icon: "cloud_upload" },
-    { id: "photos" as const, label: "照片管理", icon: "photo_library" },
-    { id: "albums" as const, label: "相册", icon: "photo_album" },
-    { id: "blog" as const, label: "笔记", icon: "article" },
-    { id: "analytics" as const, label: "访问分析", icon: "monitoring" },
-    { id: "services" as const, label: "服务检测", icon: "monitor_heart" },
-    { id: "users" as const, label: "管理员", icon: "group" },
-  ];
 
   useEffect(() => {
     if (!getToken()) {
@@ -1025,8 +1261,9 @@ export default function AdminPage() {
     }
   };
 
-  const handleTabSwitch = (tab: string) => {
-    setActiveTab(tab as any);
+  const handleTabSwitch = (tab: TabId) => {
+    setActiveTab(tab);
+    navDrawerState.close();
     if (tab === "analytics") loadAnalytics();
   };
 
@@ -1135,42 +1372,73 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Toast.Provider placement="top" />
-      <Navbar />
+      <Navbar
+        leadingSlot={
+          <button
+            onClick={navDrawerState.open}
+            aria-label="打开功能导航"
+            className="lg:hidden flex items-center gap-1.5 h-9 px-2 -ml-1 mr-1 rounded-lg text-sm text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <span className="material-symbols-outlined text-[22px]">menu</span>
+            <span className="font-medium">{ALL_TABS.find((t) => t.id === activeTab)?.label}</span>
+          </button>
+        }
+      />
 
-      <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-7xl mx-auto border-x border-border-subtle w-full">
-        <div className="flex items-center justify-between mb-10">
-          <div>
-            <h1 className="text-display-lg text-primary mb-2">管理后台</h1>
-            <p className="text-body-md text-on-surface-variant">
-              管理你的作品集内容和站点设置。
-            </p>
+      <div className="flex-1 flex items-start">
+        {/* 桌面端通高侧栏：导航自身滚动，底部钉脚不参与滚动 */}
+        <aside
+          id="admin-sidebar"
+          className={`hidden lg:flex lg:flex-col lg:shrink-0 lg:sticky lg:top-[72px] lg:h-[calc(100vh-72px)] bg-surface border-r border-border-subtle motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out ${
+            navCollapsed ? "lg:w-[68px]" : "lg:w-60"
+          }`}
+        >
+          {/* 折叠开关压在侧栏右分割线上；作为 aside 直接子元素，不随 nav 滚动 */}
+          <button
+            onClick={toggleNavCollapsed}
+            aria-label={navCollapsed ? "展开侧栏" : "收起侧栏"}
+            title={navCollapsed ? "展开侧栏" : "收起侧栏"}
+            aria-expanded={!navCollapsed}
+            aria-controls="admin-sidebar"
+            className="hidden lg:flex absolute -right-3 top-6 z-20 h-6 w-6 rounded-full items-center justify-center bg-surface border border-border-subtle text-on-surface-variant shadow-sm hover:text-primary hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              {navCollapsed ? "chevron_right" : "chevron_left"}
+            </span>
+          </button>
+          <nav aria-label="后台功能" className="flex-1 min-h-0 overflow-y-auto px-2 py-4">
+            <NavList
+              activeTab={activeTab}
+              onSelect={handleTabSwitch}
+              moreExpanded={moreExpanded}
+              onToggleMore={toggleMore}
+              groupSuffix="sidebar"
+              collapsed={navCollapsed}
+              onExpandSidebar={expandSidebar}
+            />
+          </nav>
+          <div className="shrink-0 border-t border-border-subtle px-2 py-3">
+            <NavRow
+              icon="logout"
+              label="登出"
+              collapsed={navCollapsed}
+              onSelect={handleLogout}
+            />
+            <NavRowLink
+              icon="arrow_back"
+              label="返回首页"
+              href="/"
+              collapsed={navCollapsed}
+            />
           </div>
-          <Button variant="tertiary" onPress={handleLogout}>
-            登出
-          </Button>
-        </div>
+        </aside>
 
-        <div className="flex border-b border-border-subtle mb-10 overflow-x-auto">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabSwitch(tab.id)}
-              className={`flex items-center gap-2 px-3 sm:px-5 py-3 text-label-caps border-b-2 transition-all -mb-px whitespace-nowrap rounded-none ${
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-on-surface-variant hover:text-primary hover:border-primary/30"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.label.slice(0, 2)}</span>
-            </button>
-          ))}
-        </div>
+        <main className="flex-1 min-w-0">
+          <div className="px-4 md:px-8 lg:px-10 xl:px-12 pt-6 pb-12">
 
           {/* Site Settings */}
           {activeTab === "settings" && (
-          <div className="pt-8 space-y-10">
+          <div className="space-y-10">
             <section>
               <h2 className="text-headline-lg text-primary mb-2">首页 Hero 区域</h2>
               <p className="text-metadata-sm text-outline uppercase mb-6">自定义画廊首页的 Hero 区域</p>
@@ -1216,26 +1484,29 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <LabeledTextarea
-                  label="标题（可用换行实现多行）"
-                  value={settings.hero_title}
-                  onChange={(v) => setSettings({ ...settings, hero_title: v })}
-                  rows={2}
-                  placeholder={"精准捕捉。\n定格永恒。"}
-                />
-                <LabeledTextarea
-                  label="描述"
-                  value={settings.hero_description}
-                  onChange={(v) => setSettings({ ...settings, hero_description: v })}
-                  rows={3}
-                />
-                <LabeledTextarea
-                  label="网站标语（页脚与 SEO 描述）"
-                  value={settings.site_tagline}
-                  onChange={(v) => setSettings({ ...settings, site_tagline: v })}
-                  rows={2}
-                  placeholder="精准摄影作品集。每一帧都述说一个故事。"
-                />
+                {/* 卡片铺满，但正文行长限住，避免超宽屏下一行拉到几百字符 */}
+                <div className="max-w-3xl space-y-5">
+                  <LabeledTextarea
+                    label="标题（可用换行实现多行）"
+                    value={settings.hero_title}
+                    onChange={(v) => setSettings({ ...settings, hero_title: v })}
+                    rows={2}
+                    placeholder={"精准捕捉。\n定格永恒。"}
+                  />
+                  <LabeledTextarea
+                    label="描述"
+                    value={settings.hero_description}
+                    onChange={(v) => setSettings({ ...settings, hero_description: v })}
+                    rows={3}
+                  />
+                  <LabeledTextarea
+                    label="网站标语（页脚与 SEO 描述）"
+                    value={settings.site_tagline}
+                    onChange={(v) => setSettings({ ...settings, site_tagline: v })}
+                    rows={2}
+                    placeholder="精准摄影作品集。每一帧都述说一个故事。"
+                  />
+                </div>
 
                 <div className="border-t border-border-subtle pt-5">
                   <div className="flex items-center justify-between mb-3">
@@ -1250,7 +1521,7 @@ export default function AdminPage() {
                       重置
                     </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                     {(
                       [
                         { key: "water_ink1", label: "墨水颜色 1" },
@@ -1320,7 +1591,7 @@ export default function AdminPage() {
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl">
                     {[
                       { key: "bg_color1", label: "颜色 1" },
                       { key: "bg_color2", label: "颜色 2" },
@@ -1345,7 +1616,7 @@ export default function AdminPage() {
                     ))}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
                     <ParamSlider label="渐变大小（0.2 ~ 1.5）" min={0.2} max={1.5} step={0.05} value={settings.hero_gradient_size} onChange={(v) => setSettings({ ...settings, hero_gradient_size: v })} />
                     <ParamSlider label="渐变数量（2 ~ 14）" min={2} max={14} step={1} value={settings.hero_gradient_count} onChange={(v) => setSettings({ ...settings, hero_gradient_count: v })} />
                     <ParamSlider label="速度（0.3 ~ 3.0）" min={0.3} max={3.0} step={0.1} value={settings.hero_speed} onChange={(v) => setSettings({ ...settings, hero_speed: v })} />
@@ -1366,7 +1637,7 @@ export default function AdminPage() {
 
           {/* Upload */}
           {activeTab === "upload" && (
-          <div className="pt-8">
+          <div>
             <h2 className="text-headline-lg text-primary mb-6">上传新照片</h2>
 
             <label
@@ -1460,15 +1731,15 @@ export default function AdminPage() {
 
           {/* Photos */}
           {activeTab === "photos" && (
-          <div className="pt-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center justify-between gap-6 flex-wrap mb-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <h2 className="text-headline-lg text-primary">照片管理</h2>
                 <span className="text-metadata-sm text-outline">
                   {photos.length} 张 · {photos.filter((p) => p.is_published).length} 已发布 · {photos.filter((p) => !p.is_published).length} 草稿
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0 ml-auto">
                 <span className="text-label-caps text-outline uppercase">排序方式</span>
                 <Button size="sm" variant={sortBy === "shoot" ? "primary" : "tertiary"} onPress={() => setSortBy("shoot")}>
                   拍摄日期
@@ -1545,8 +1816,8 @@ export default function AdminPage() {
             ) : (
               <>
                 <div className="hidden md:flex flex-col border border-border-subtle rounded-lg overflow-hidden">
-                  <div className="grid grid-cols-12 gap-4 border-b border-border-subtle p-4 text-label-caps text-outline bg-surface-bright">
-                    <div className="col-span-1">
+                  <div className="flex items-center gap-4 border-b border-border-subtle p-4 text-label-caps text-outline bg-surface-bright">
+                    <div className={PHOTO_COL.check}>
                       <Checkbox isSelected={allVisibleSelected} onChange={toggleSelectAll}>
                         <Checkbox.Content>
                           <Checkbox.Control>
@@ -1555,21 +1826,21 @@ export default function AdminPage() {
                         </Checkbox.Content>
                       </Checkbox>
                     </div>
-                    <div className="col-span-2">预览</div>
-                    <div className="col-span-3">标题</div>
-                    <div className="col-span-3">拍摄日期</div>
-                    <div className="col-span-1">状态</div>
-                    <div className="col-span-2 flex justify-end">操作</div>
+                    <div className={PHOTO_COL.preview}>预览</div>
+                    <div className={PHOTO_COL.title}>标题</div>
+                    <div className={PHOTO_COL.date}>拍摄日期</div>
+                    <div className={PHOTO_COL.status}>状态</div>
+                    <div className={PHOTO_COL.actions}>操作</div>
                   </div>
 
                   {filteredPhotos.map((photo) => (
                     <div
                       key={photo.id}
-                      className={`grid grid-cols-12 gap-4 border-b border-border-subtle p-4 items-center transition-colors ${
+                      className={`flex items-center gap-4 border-b border-border-subtle p-4 transition-colors ${
                         selected.has(photo.id) ? "bg-accent-soft/50" : "hover:bg-accent-soft/20"
                       }`}
                     >
-                      <div className="col-span-1">
+                      <div className={PHOTO_COL.check}>
                         <Checkbox isSelected={selected.has(photo.id)} onChange={() => toggleSelect(photo.id)}>
                           <Checkbox.Content>
                             <Checkbox.Control>
@@ -1578,15 +1849,15 @@ export default function AdminPage() {
                           </Checkbox.Content>
                         </Checkbox>
                       </div>
-                      <div className="col-span-2">
+                      <div className={PHOTO_COL.preview}>
                         <a href={`/photo/${photo.id}`} className="w-16 h-16 bg-surface-container overflow-hidden border border-border-subtle block rounded-lg">
                           <img src={adminPhotoUrl(photo.id)} alt={photo.title} className="w-full h-full object-cover" />
                         </a>
                       </div>
-                      <div className="col-span-3 text-body-md text-on-surface truncate">
+                      <div className={`${PHOTO_COL.title} text-body-md text-on-surface truncate`}>
                         {photo.title || "无标题"}
                       </div>
-                      <div className="col-span-3 text-metadata-sm text-on-surface-variant">
+                      <div className={`${PHOTO_COL.date} text-metadata-sm text-on-surface-variant`}>
                         {formatDate(photo.shoot_time) || "—"}
                         <div className="mt-1">
                           <Chip size="sm" variant="soft">
@@ -1594,14 +1865,14 @@ export default function AdminPage() {
                           </Chip>
                         </div>
                       </div>
-                      <div className="col-span-1">
+                      <div className={PHOTO_COL.status}>
                         <button onClick={() => handleTogglePublish(photo)} className="rounded-none">
                           <Chip size="sm" color={photo.is_published ? "success" : "default"} variant="soft">
                             <Chip.Label>{photo.is_published ? "已发布" : "草稿"}</Chip.Label>
                           </Chip>
                         </button>
                       </div>
-                      <div className="col-span-2 flex justify-end gap-2">
+                      <div className={PHOTO_COL.actions}>
                         <Button isIconOnly size="sm" variant="ghost" onPress={() => startEdit(photo)} aria-label="编辑">
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </Button>
@@ -1675,7 +1946,7 @@ export default function AdminPage() {
 
           {/* Albums */}
           {activeTab === "albums" && (
-          <div className="pt-8">
+          <div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <h2 className="text-headline-lg text-primary">相册</h2>
               <Button onPress={() => openAlbumEditor()}>
@@ -1738,7 +2009,7 @@ export default function AdminPage() {
 
           {/* Blog */}
           {activeTab === "blog" && (
-          <div className="pt-8">
+          <div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <h2 className="text-headline-lg text-primary">笔记管理</h2>
               <Button onPress={() => openArticleEditor()}>
@@ -1754,34 +2025,34 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="flex flex-col border border-border-subtle rounded-lg overflow-hidden">
-                <div className="grid grid-cols-12 gap-4 border-b border-border-subtle p-4 text-label-caps text-outline bg-surface-bright">
-                  <div className="col-span-4">标题</div>
-                  <div className="col-span-3">别名</div>
-                  <div className="col-span-2">状态</div>
-                  <div className="col-span-3 flex justify-end">操作</div>
+                <div className="flex items-center gap-4 border-b border-border-subtle p-4 text-label-caps text-outline bg-surface-bright">
+                  <div className={BLOG_COL.title}>标题</div>
+                  <div className={BLOG_COL.slug}>别名</div>
+                  <div className={BLOG_COL.status}>状态</div>
+                  <div className={BLOG_COL.actions}>操作</div>
                 </div>
                 {articles.map((article) => (
                   <div
                     key={article.id}
-                    className="grid grid-cols-12 gap-4 border-b border-border-subtle p-4 items-center hover:bg-accent-soft/20 transition-colors"
+                    className="flex items-center gap-4 border-b border-border-subtle p-4 hover:bg-accent-soft/20 transition-colors"
                   >
-                    <div className="col-span-4 min-w-0">
+                    <div className={BLOG_COL.title}>
                       <div className="text-body-md text-on-surface truncate font-medium">{article.title || "无标题"}</div>
                       <div className="text-metadata-sm text-outline mt-0.5">
                         {new Date(article.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })} · {article.views} 次浏览
                       </div>
                     </div>
-                    <div className="col-span-3 text-metadata-sm text-on-surface-variant truncate">
+                    <div className={`${BLOG_COL.slug} text-metadata-sm text-on-surface-variant truncate`}>
                       /blog/{article.slug}
                     </div>
-                    <div className="col-span-2">
+                    <div className={BLOG_COL.status}>
                       <button onClick={() => handleToggleArticlePublish(article)} className="rounded-none">
                         <Chip size="sm" color={article.is_published ? "success" : "default"} variant="soft">
                           <Chip.Label>{article.is_published ? "已发布" : "草稿"}</Chip.Label>
                         </Chip>
                       </button>
                     </div>
-                    <div className="col-span-3 flex justify-end gap-2">
+                    <div className={BLOG_COL.actions}>
                       <Button isIconOnly size="sm" variant="ghost" onPress={() => openArticleEditor(article)} aria-label="编辑">
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                       </Button>
@@ -1809,7 +2080,7 @@ export default function AdminPage() {
 
           {/* Analytics */}
           {activeTab === "analytics" && (
-          <div className="pt-8">
+          <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-headline-lg text-primary">访问分析</h2>
               <Button size="sm" variant="tertiary" onPress={loadAnalytics}>
@@ -1903,7 +2174,7 @@ export default function AdminPage() {
 
           {/* Services */}
           {activeTab === "services" && (
-          <div className="pt-8">
+          <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-headline-lg text-primary">服务健康检测</h2>
               <Button size="sm" variant="tertiary" isPending={servicesLoading} onPress={loadServices}>
@@ -1974,7 +2245,7 @@ export default function AdminPage() {
 
           {/* Users */}
           {activeTab === "users" && (
-          <div className="pt-8">
+          <div>
             <h2 className="text-headline-lg text-primary mb-2">管理员</h2>
             <p className="text-metadata-sm text-outline uppercase mb-6">用户自行注册后，在此授权管理员权限</p>
 
@@ -2030,7 +2301,37 @@ export default function AdminPage() {
             </Card>
           </div>
           )}
-      </main>
+          </div>
+        </main>
+      </div>
+
+      {/* 移动端功能导航抽屉 */}
+      <Drawer.Backdrop
+        isOpen={navDrawerState.isOpen}
+        onOpenChange={navDrawerState.setOpen}
+      >
+        <Drawer.Content placement="left">
+          <Drawer.Dialog>
+            <Drawer.CloseTrigger />
+            <Drawer.Header>
+              <Drawer.Heading className="text-label-caps text-on-surface-variant">
+                功能导航
+              </Drawer.Heading>
+            </Drawer.Header>
+            <Drawer.Body className="pt-2 px-3">
+              <NavList
+                activeTab={activeTab}
+                onSelect={handleTabSwitch}
+                moreExpanded={moreExpanded}
+                onToggleMore={toggleMore}
+                groupSuffix="drawer"
+                collapsed={false}
+                onExpandSidebar={expandSidebar}
+              />
+            </Drawer.Body>
+          </Drawer.Dialog>
+        </Drawer.Content>
+      </Drawer.Backdrop>
 
       {/* Album Edit Modal */}
       {albumModal && (
@@ -2217,8 +2518,6 @@ export default function AdminPage() {
           </Modal.Container>
         </Modal.Backdrop>
       )}
-
-      <Footer />
     </div>
   );
 }
