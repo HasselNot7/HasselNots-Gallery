@@ -336,6 +336,8 @@ function NavRow({
   indent = false,
   collapsed = false,
   onSelect,
+  ariaExpanded,
+  ariaControls,
 }: {
   icon: string;
   label: string;
@@ -343,11 +345,15 @@ function NavRow({
   indent?: boolean;
   collapsed?: boolean;
   onSelect: () => void;
+  ariaExpanded?: boolean;
+  ariaControls?: string;
 }) {
   return (
     <button
       onClick={onSelect}
       aria-current={active ? "page" : undefined}
+      aria-expanded={ariaExpanded}
+      aria-controls={ariaControls}
       title={collapsed ? label : undefined}
       className={navRowClass(active, indent, collapsed)}
     >
@@ -385,7 +391,6 @@ function NavList({
   onToggleMore,
   groupSuffix,
   collapsed = false,
-  onExpandSidebar,
 }: {
   activeTab: TabId;
   onSelect: (id: TabId) => void;
@@ -393,12 +398,12 @@ function NavList({
   onToggleMore: () => void;
   groupSuffix: string;
   collapsed?: boolean;
-  onExpandSidebar: () => void;
 }) {
   const moreGroupActive = MORE_TABS.some((t) => t.id === activeTab);
   const groupId = `admin-nav-more-${groupSuffix}`;
-  // 折叠态下分组没有可点的披露控件，强制视为展开以免留下点不动的死角
-  const showMoreItems = collapsed || moreExpanded;
+  // 分组展开与否只由 moreExpanded 决定：折叠态同样可独立展开/收起，
+  // 两种侧栏宽度共用同一份持久化状态。
+  const showMoreItems = moreExpanded;
 
   return (
     <ul className="flex flex-col gap-1">
@@ -419,14 +424,17 @@ function NavList({
           <div aria-hidden="true" className="my-2 mx-auto w-6 border-t border-border-subtle" />
         )}
         <button
-          onClick={collapsed ? onExpandSidebar : onToggleMore}
-          aria-label={collapsed ? "展开侧栏" : undefined}
-          aria-expanded={collapsed ? undefined : moreExpanded}
-          aria-controls={collapsed ? undefined : groupId}
+          onClick={onToggleMore}
+          aria-label={collapsed ? "更多功能" : undefined}
           title={collapsed ? "更多功能" : undefined}
+          aria-expanded={moreExpanded}
+          aria-controls={groupId}
           className={navRowClass(moreGroupActive, false, collapsed)}
         >
-          <span className="material-symbols-outlined text-[22px]">more_horiz</span>
+          {/* 折叠态放不下 chevron，改用图标本身表达开/关 */}
+          <span className="material-symbols-outlined text-[22px]">
+            {collapsed && moreExpanded ? "expand_less" : "more_horiz"}
+          </span>
           <span className={collapsed ? "sr-only" : "flex-1 text-left"}>更多功能</span>
           {!collapsed && (
             <span
@@ -556,7 +564,6 @@ export default function AdminPage() {
   );
   const toggleMore = () => prefMoreExpanded.write(!moreExpanded);
   const toggleNavCollapsed = () => prefNavCollapsed.write(!navCollapsed);
-  const expandSidebar = () => prefNavCollapsed.write(false);
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [me, setMe] = useState<AdminUser | null>(null);
@@ -1393,19 +1400,6 @@ export default function AdminPage() {
             navCollapsed ? "lg:w-[68px]" : "lg:w-60"
           }`}
         >
-          {/* 折叠开关压在侧栏右分割线上；作为 aside 直接子元素，不随 nav 滚动 */}
-          <button
-            onClick={toggleNavCollapsed}
-            aria-label={navCollapsed ? "展开侧栏" : "收起侧栏"}
-            title={navCollapsed ? "展开侧栏" : "收起侧栏"}
-            aria-expanded={!navCollapsed}
-            aria-controls="admin-sidebar"
-            className="hidden lg:flex absolute -right-3 top-6 z-20 h-6 w-6 rounded-full items-center justify-center bg-surface border border-border-subtle text-on-surface-variant shadow-sm hover:text-primary hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            <span className="material-symbols-outlined text-[16px]">
-              {navCollapsed ? "chevron_right" : "chevron_left"}
-            </span>
-          </button>
           <nav aria-label="后台功能" className="flex-1 min-h-0 overflow-y-auto px-2 py-4">
             <NavList
               activeTab={activeTab}
@@ -1414,10 +1408,17 @@ export default function AdminPage() {
               onToggleMore={toggleMore}
               groupSuffix="sidebar"
               collapsed={navCollapsed}
-              onExpandSidebar={expandSidebar}
             />
           </nav>
           <div className="shrink-0 border-t border-border-subtle px-2 py-3">
+            <NavRow
+              icon={navCollapsed ? "keyboard_double_arrow_right" : "keyboard_double_arrow_left"}
+              label={navCollapsed ? "展开侧栏" : "收起侧栏"}
+              collapsed={navCollapsed}
+              onSelect={toggleNavCollapsed}
+              ariaExpanded={!navCollapsed}
+              ariaControls="admin-sidebar"
+            />
             <NavRow
               icon="logout"
               label="登出"
@@ -2326,7 +2327,6 @@ export default function AdminPage() {
                 onToggleMore={toggleMore}
                 groupSuffix="drawer"
                 collapsed={false}
-                onExpandSidebar={expandSidebar}
               />
             </Drawer.Body>
           </Drawer.Dialog>
