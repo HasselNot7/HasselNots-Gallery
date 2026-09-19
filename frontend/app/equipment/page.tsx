@@ -2,6 +2,7 @@ import { fetchEquipmentStats, EquipmentStats } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import EquipmentStatsView from "@/components/EquipmentStatsView";
+import CountUp from "@/components/reactbits/CountUp";
 
 const MONO = "'JetBrains Mono', 'Noto Serif SC', monospace";
 
@@ -36,7 +37,7 @@ export default async function EquipmentPage() {
             器材
           </h1>
           <span className="text-metadata-sm text-outline" style={{ fontFamily: MONO }}>
-            {stats.total_photos} 张照片 · EXIF 统计
+            <CountUp to={stats.total_photos} duration={1.2} className="tabular-nums" /> 张照片 · EXIF 统计
           </span>
         </div>
 

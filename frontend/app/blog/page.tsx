@@ -1,6 +1,7 @@
 import { fetchArticles } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Reveal from "@/components/reactbits/Reveal";
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
@@ -39,35 +40,36 @@ export default async function BlogPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-8">
-            {articles.map((a) => (
-              <a
-                key={a.id}
-                href={`/blog/${a.slug}`}
-                className="group border border-border-subtle p-6 md:p-8 bg-surface hover:border-primary/40 transition-colors duration-300"
-              >
-                <div className="flex items-center justify-between mb-3 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                  <span>{formatDate(a.created_at)}</span>
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">visibility</span>
-                    {a.views}
-                  </span>
-                </div>
-                <h2 className="text-headline-lg text-primary mb-2 group-hover:text-primary-container transition-colors" style={{ fontFamily: "var(--font-display)" }}>
-                  {a.title}
-                </h2>
-                {a.excerpt && (
-                  <p className="text-body-md text-on-surface-variant mb-4">{a.excerpt}</p>
-                )}
-                {a.tags && (
-                  <div className="flex flex-wrap gap-2">
-                    {a.tags.split(",").filter(Boolean).map((t) => (
-                      <span key={t} className="px-2 py-0.5 bg-mint-accent/20 border border-mint-accent text-label-caps text-primary rounded-md">
-                        {t.trim()}
-                      </span>
-                    ))}
+            {articles.map((a, i) => (
+              <Reveal key={a.id} delay={(i % 4) * 70}>
+                <a
+                  href={`/blog/${a.slug}`}
+                  className="group block border border-border-subtle p-6 md:p-8 bg-surface hover:border-primary/40 transition-colors duration-300"
+                >
+                  <div className="flex items-center justify-between mb-3 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+                    <span>{formatDate(a.created_at)}</span>
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">visibility</span>
+                      {a.views}
+                    </span>
                   </div>
-                )}
-              </a>
+                  <h2 className="text-headline-lg text-primary mb-2 group-hover:text-primary-container transition-colors" style={{ fontFamily: "var(--font-display)" }}>
+                    {a.title}
+                  </h2>
+                  {a.excerpt && (
+                    <p className="text-body-md text-on-surface-variant mb-4">{a.excerpt}</p>
+                  )}
+                  {a.tags && (
+                    <div className="flex flex-wrap gap-2">
+                      {a.tags.split(",").filter(Boolean).map((t) => (
+                        <span key={t} className="px-2 py-0.5 bg-mint-accent/20 border border-mint-accent text-label-caps text-primary rounded-md">
+                          {t.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </a>
+              </Reveal>
             ))}
           </div>
         )}

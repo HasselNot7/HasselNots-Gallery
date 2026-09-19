@@ -2,6 +2,7 @@
 
 import { ProgressBar } from "@heroui/react";
 import { EquipmentStat } from "@/lib/api-server";
+import CountUp from "@/components/reactbits/CountUp";
 
 const MONO = "'JetBrains Mono', 'Noto Serif SC', monospace";
 
@@ -30,7 +31,7 @@ function StatBars({ items }: { items: EquipmentStat[] }) {
             className="w-10 text-right text-metadata-sm text-outline shrink-0"
             style={{ fontFamily: MONO }}
           >
-            {item.count}
+            <CountUp to={item.count} duration={1.2} className="tabular-nums" />
           </span>
         </div>
       ))}

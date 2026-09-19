@@ -15,6 +15,7 @@
     "@react-aria/utils": "^3.34.1",
     "@react-leaflet/core": "^3.0.0",
     "leaflet": "^1.9.4",
+    "motion": "^13.4.0",
     "next": "16.3.0",
     "piexifjs": "^1.0.6",
     "react": "19.2.8",

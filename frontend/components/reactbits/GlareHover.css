@@ -1,0 +1,45 @@
+/* Source: React Bits (MIT) — src/content/Animations/GlareHover/GlareHover.css
+ * 精简：原版把 width/height/background/border/display:grid 焊死在容器上，
+ * 这里只保留掠光本身，容器改为绝对定位的覆盖层，尺寸跟随父级。 */
+
+.glare-hover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.glare-hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    var(--gh-angle),
+    hsla(0, 0%, 0%, 0) 60%,
+    var(--gh-rgba) 70%,
+    hsla(0, 0%, 0%, 0),
+    hsla(0, 0%, 0%, 0) 100%
+  );
+  background-size:
+    var(--gh-size) var(--gh-size),
+    100% 100%;
+  background-repeat: no-repeat;
+  background-position:
+    -100% -100%,
+    0 0;
+  transition: var(--gh-duration) ease;
+}
+
+/* 触发器沿用卡片现有的 group，掠光跟随整卡 hover 而不是覆盖层自身 */
+.group:hover .glare-hover::before {
+  background-position:
+    100% 100%,
+    0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glare-hover::before {
+    display: none;
+  }
+}

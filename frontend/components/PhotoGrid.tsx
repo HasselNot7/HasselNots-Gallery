@@ -1,6 +1,8 @@
 "use client";
 
 import { Photo, getPhotoImageUrl } from "@/lib/api-server";
+import Reveal from "@/components/reactbits/Reveal";
+import GlareHover from "@/components/reactbits/GlareHover";
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
@@ -40,31 +42,37 @@ export default function PhotoGrid({ photos }: { photos: Photo[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
       {photos.map((photo, idx) => (
-        <a
+        <Reveal
           key={photo.id}
-          href={`/photo/${photo.id}`}
-          className={`col-span-1 ${getSpan(idx)} ${getOffset(idx)} group relative overflow-hidden border border-border-subtle bg-surface`}
+          delay={(idx % 3) * 80}
+          className={`col-span-1 ${getSpan(idx)} ${getOffset(idx)}`}
         >
-          <div className={`${getAspect(idx)} w-full bg-surface-dim relative overflow-hidden`}>
-            <img
-              src={getPhotoImageUrl(photo.id, true)}
-              alt={photo.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-out"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-primary/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
-              <span className="text-label-caps text-white">CAPTURE DATE</span>
-              <span className="text-metadata-sm text-mint-accent">
-                {formatDate(photo.shoot_time)}
-                {photo.shoot_time && ` // ${formatTime(photo.shoot_time)}`}
-              </span>
-              <div className="mt-4 border-t border-white/20 pt-4 flex justify-between items-center">
-                <span className="text-headline-mobile text-white">{photo.title || "Untitled"}</span>
-                <span className="material-symbols-outlined text-white">arrow_outward</span>
+          <a
+            href={`/photo/${photo.id}`}
+            className="group relative block overflow-hidden border border-border-subtle bg-surface"
+          >
+            <div className={`${getAspect(idx)} w-full bg-surface-dim relative overflow-hidden`}>
+              <img
+                src={getPhotoImageUrl(photo.id, true)}
+                alt={photo.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-out"
+                loading="lazy"
+              />
+              <GlareHover />
+              <div className="absolute inset-0 z-[2] bg-primary/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
+                <span className="text-label-caps text-white">CAPTURE DATE</span>
+                <span className="text-metadata-sm text-mint-accent">
+                  {formatDate(photo.shoot_time)}
+                  {photo.shoot_time && ` // ${formatTime(photo.shoot_time)}`}
+                </span>
+                <div className="mt-4 border-t border-white/20 pt-4 flex justify-between items-center">
+                  <span className="text-headline-mobile text-white">{photo.title || "Untitled"}</span>
+                  <span className="material-symbols-outlined text-white">arrow_outward</span>
+                </div>
               </div>
             </div>
-          </div>
-        </a>
+          </a>
+        </Reveal>
       ))}
     </div>
   );

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Spinner } from "@heroui/react";
 import { Photo, getPhotoImageUrl } from "@/lib/api-server";
 import Lightbox from "@/components/Lightbox";
+import Reveal from "@/components/reactbits/Reveal";
 
 const PAGE_SIZE = 24;
 
@@ -317,7 +318,12 @@ export default function GallerySection({
                   const columns: Photo[][] = Array.from({ length: colCount }, () => []);
                   photos.forEach((p, i) => columns[i % colCount].push(p));
                   return columns.map((col, c) => (
-                    <div key={c} className="flex flex-col gap-6 min-w-0">
+                    <Reveal
+                      key={c}
+                      delay={(c % 3) * 80}
+                      amount={0}
+                      className="flex flex-col gap-6 min-w-0"
+                    >
                       {col.map((photo) => {
                         const idx = photos.indexOf(photo);
                         const year = yearOf(photo);
@@ -357,7 +363,7 @@ export default function GallerySection({
                           </button>
                         );
                       })}
-                    </div>
+                    </Reveal>
                   ));
                 })()}
               </div>

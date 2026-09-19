@@ -1,0 +1,31 @@
+/* 入场揭示：本项目自写（React Bits 的 FadeContent 依赖 gsap，未采用）。
+ * 只有 data-reveal="out" 会隐藏，而 "out" 只可能由 JS 在确认元素位于首屏折线
+ * 之下后写入 —— 因此 SSR HTML、无 JS、水合失败等场景下内容一律直接可见。 */
+
+.rb-reveal {
+  transition:
+    opacity 0.6s ease-out var(--rb-reveal-delay, 0ms),
+    transform 0.6s ease-out var(--rb-reveal-delay, 0ms),
+    filter 0.6s ease-out var(--rb-reveal-delay, 0ms);
+}
+
+.rb-reveal[data-reveal="out"] {
+  opacity: 0;
+  transform: translateY(var(--rb-reveal-y, 16px));
+}
+
+.rb-reveal[data-reveal="out"][data-blur="1"] {
+  filter: blur(6px);
+}
+
+.rb-reveal[data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rb-reveal {
+    transition: none;
+  }
+}
