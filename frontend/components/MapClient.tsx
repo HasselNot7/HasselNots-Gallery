@@ -165,16 +165,17 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
       {/* 地名搜索框 */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[600] w-64 max-w-[80%]">
         <SearchField
+          fullWidth
           value={query}
           onChange={(v) => {
             handleSearch(v);
             setShowResults(true);
           }}
-          className="w-full"
         >
           <SearchField.Group>
             <SearchField.SearchIcon />
             <SearchField.Input
+              className="min-w-0"
               placeholder="搜索地点…"
               onFocus={() => setShowResults(true)}
               onBlur={() => setTimeout(() => setShowResults(false), 200)}
