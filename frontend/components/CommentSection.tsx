@@ -90,7 +90,7 @@ export default function CommentSection({
 
   return (
     <div className="mt-12 border-t border-border-subtle pt-8">
-      <h2 className="text-headline-lg text-primary mb-6" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>{title}</h2>
+      <h2 className="text-headline-mobile text-primary mb-6" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>{title}</h2>
 
       {loading ? (
         <p className="text-metadata-sm text-outline">加载评论中...</p>

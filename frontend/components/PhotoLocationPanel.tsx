@@ -128,7 +128,7 @@ export default function PhotoLocationPanel({
   return (
     <div className="mt-16">
       <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
-        <h2 className="text-headline-lg text-primary" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>拍摄地点</h2>
+        <h2 className="text-headline-mobile text-primary" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>拍摄地点</h2>
         <div className="flex items-center gap-3">
           {name && (
             <span className="text-label-caps text-on-surface-variant flex items-center gap-1">
