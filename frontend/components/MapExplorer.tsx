@@ -214,7 +214,9 @@ export default function MapExplorer({
                   <span className="text-metadata-sm text-outline font-mono">{locations.length}</span>
                 </div>
                 {locations.length === 0 ? (
-                  <p className="text-metadata-sm text-outline">该年份下没有带坐标的照片</p>
+                  <p className="text-metadata-sm text-outline">
+                    {markers.length === 0 ? "暂无带坐标的照片" : "该年份下没有带坐标的照片"}
+                  </p>
                 ) : (
                   <ul className="flex flex-col gap-5" onKeyDown={onKeyDown}>
                     {locations.map((loc) => {
