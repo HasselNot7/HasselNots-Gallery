@@ -1,7 +1,7 @@
 import { fetchGeotaggedPhotos, fetchSettings, getPhotoImageUrl, hudDecorationsEnabled, Photo, SiteSettings } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import MapClient from "@/components/MapClient";
+import MapExplorer from "@/components/MapExplorer";
 import { yearColor, yearsForLegend } from "@/lib/mapYears";
 
 export default async function MapPage() {
@@ -48,44 +48,9 @@ export default async function MapPage() {
   // 页面所有 HUD 装饰共用同一个开合判断
   const showHud = hudDecorationsEnabled(settings);
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      {/* 导航栏 + 主体占满一屏，页脚留在文档流里；这样地图区高度自动跟随头部实际高度，
-          不再需要 calc(100vh - 手凑常数) */}
-      <div className="flex flex-col lg:h-dvh">
-        <Navbar />
-
-        <main className="flex-1 flex flex-col min-h-0">
-        {/* Header Section with grid overlay */}
-        <section className="relative px-4 md:px-grid-margin pt-5 md:pt-6 pb-3 border-b border-primary/15 w-full bg-primary-fixed/5">
-          <div className="absolute inset-0 pointer-events-none" style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(20,20,20,0.05) 1px, transparent 1px)
-            `,
-            backgroundSize: "40px 40px",
-            opacity: 0.2,
-          }} />
-
-          <div className="relative z-10">
-            <h1 className="text-2xl md:text-display-lg text-primary mb-2 md:mb-3 uppercase" style={{ fontFamily: "var(--font-display)" }}>影像足迹</h1>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-metadata-sm text-on-surface-variant">
-              <span className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px] text-primary">location_on</span>
-                {Object.keys(locations).length} 地点
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px] text-primary">photo_camera</span>
-                {markers.length} 照片
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* Map Container */}
-        <div className="border-y border-primary/15 relative lg:flex lg:flex-1 lg:flex-col lg:min-h-0">
-          <div className="flex flex-col lg:flex-row lg:flex-1 lg:min-h-0">
-            <div className="relative h-[400px] lg:h-full lg:flex-1 lg:min-h-0">
+  // 装饰节点留在服务端拼装，由 MapExplorer 放回它原来的 DOM 位置
+  const mapUnderlay = (
+    <>
               {/* Grid overlay on map */}
               <div className="absolute inset-0 z-[5] pointer-events-none" style={{
                 backgroundImage: `
@@ -163,8 +128,11 @@ export default async function MapPage() {
                 </>
               )}
 
-              <MapClient markers={markers} center={defaultCenter} />
+    </>
+  );
 
+  const mapOverlay = (
+    <>
               {/* 年份图例 */}
               {legendYears.length > 0 && (
                 <div className="absolute bottom-3 left-3 z-[600] bg-surface/90 backdrop-blur border border-border-subtle rounded-md px-3 py-2 shadow-md">
@@ -184,8 +152,11 @@ export default async function MapPage() {
                   </div>
                 </div>
               )}
-            </div>
-            <aside className="w-full h-[300px] lg:h-full lg:w-80 lg:min-h-0 glass-panel overflow-y-auto relative">
+    </>
+  );
+
+  const asideDecor = (
+    <>
               {showHud && (
                 <>
                   {/* Vertical tick marks on the left edge of aside */}
@@ -197,50 +168,53 @@ export default async function MapPage() {
                   <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-primary/40 pointer-events-none" />
                 </>
               )}
-              <div className="p-4 md:p-6">
-                <h2 className="text-headline-mobile font-bold uppercase text-primary tracking-widest border-b border-primary/15 pb-2 mb-4">
-                  地点
-                </h2>
-                {Object.values(locations).length === 0 ? (
-                  <p className="text-metadata-sm text-outline">
-                    暂无带坐标的照片
-                  </p>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    {Object.values(locations).map((loc, i) => (
-                      <div key={i} className="border-b border-primary/10 pb-4 last:border-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="material-symbols-outlined text-[16px] text-primary shrink-0">location_on</span>
-                          <span className="text-metadata-sm text-on-surface break-words">
-                            {loc.name}
-                          </span>
-                        </div>
-                        <div className="text-metadata-sm font-medium text-primary mb-2" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                          {loc.count} 张
-                        </div>
-                        <div className="grid grid-cols-3 gap-1">
-                          {(loc.count > 3 ? loc.photos.slice(0, 2) : loc.photos).map((p) => (
-                            <a
-                              key={p.id}
-                              href={`/photo/${p.id}`}
-                              className="w-auto h-16 border border-primary/15 overflow-hidden hover:border-primary transition-colors"
-                            >
-                              <img src={p.thumbnail} alt={p.title} className="w-full h-full object-cover" />
-                            </a>
-                          ))}
-                          {loc.count > 3 && (
-                            <span className="w-auto h-16 bg-surface-dim flex items-center justify-center text-metadata-sm text-on-surface-variant font-mono">
-                              +{loc.count - 2}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </aside>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* 导航栏 + 主体占满一屏，页脚留在文档流里；这样地图区高度自动跟随头部实际高度，
+          不再需要 calc(100vh - 手凑常数) */}
+      <div className="flex flex-col lg:h-dvh">
+        <Navbar />
+
+        <main className="flex-1 flex flex-col min-h-0">
+        {/* Header Section with grid overlay */}
+        <section className="relative px-4 md:px-grid-margin pt-5 md:pt-6 pb-3 border-b border-primary/15 w-full bg-primary-fixed/5">
+          <div className="absolute inset-0 pointer-events-none" style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(20,20,20,0.05) 1px, transparent 1px)
+            `,
+            backgroundSize: "40px 40px",
+            opacity: 0.2,
+          }} />
+
+          <div className="relative z-10">
+            <h1 className="text-2xl md:text-display-lg text-primary mb-2 md:mb-3 uppercase" style={{ fontFamily: "var(--font-display)" }}>影像足迹</h1>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-metadata-sm text-on-surface-variant">
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-primary">location_on</span>
+                {Object.keys(locations).length} 地点
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-primary">photo_camera</span>
+                {markers.length} 照片
+              </span>
+            </div>
           </div>
+        </section>
+
+        {/* Map Container */}
+        <div className="border-y border-primary/15 relative lg:flex lg:flex-1 lg:flex-col lg:min-h-0">
+          <MapExplorer
+            markers={markers}
+            center={defaultCenter}
+            locations={Object.values(locations)}
+            mapUnderlay={mapUnderlay}
+            mapOverlay={mapOverlay}
+            asideDecor={asideDecor}
+          />
         </div>
 
         <div className="px-4 md:px-grid-margin py-4 border-x border-primary/15 w-full flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-metadata-sm">

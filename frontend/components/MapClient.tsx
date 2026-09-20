@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Marker } from "leaflet";
 import { SearchField, Spinner } from "@heroui/react";
 import { attachLayerSwitcher } from "@/lib/mapLayers";
 import { yearColor, yearOf } from "@/lib/mapYears";
 import { searchPlaces, GeoResult } from "@/lib/geocode";
 
-interface MapMarker {
+export interface MapMarker {
   id: number;
   latitude: number;
   longitude: number;
@@ -14,16 +15,110 @@ interface MapMarker {
   thumbnail: string;
   camera: string;
   shoot_time?: string;
+  location?: string;
 }
 
-export default function MapClient({ markers, center }: { markers: MapMarker[]; center: [number, number] }) {
+/** 标记的强调等级：选中 > 悬停 > 常态 */
+type Emphasis = "active" | "hover" | "none";
+
+/** 建好后登记一次，之后只换 icon / 调层级，不重建标记 */
+type RegisteredMarker = { marker: Marker; color: string; count: number; emphasis: Emphasis };
+
+export interface FocusRequest {
+  name: string;
+  seq: number;
+}
+
+export default function MapClient({
+  markers,
+  center,
+  activeLocation,
+  hoveredLocation,
+  focusRequest,
+  onSelectLocation,
+}: {
+  markers: MapMarker[];
+  center: [number, number];
+  activeLocation?: string | null;
+  hoveredLocation?: string | null;
+  focusRequest?: FocusRequest | null;
+  onSelectLocation?: (location: string) => void;
+}) {
   const mapRef = useRef<any>(null);
+  const LRef = useRef<typeof import("leaflet") | null>(null);
+  // 地点名 -> 该地点的标记（同一地点可能有多枚同坐标标记）
+  const markersByName = useRef<Map<string, RegisteredMarker[]>>(new Map());
+  const activeRef = useRef<string | null>(null);
+  const hoverRef = useRef<string | null>(null);
+  // onSelectLocation 每次渲染同步，避免标记回调拿到旧闭包
+  const selectRef = useRef(onSelectLocation);
+  useEffect(() => {
+    selectRef.current = onSelectLocation;
+  });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeoResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /**
+   * 标记外观。emphasis 为 "none" 时逐字保持重写前的样式（详情页单点地图只用这一档），
+   * 选中/悬停只是把圆点放大、描边加粗并叠一圈光晕。
+   */
+  const iconSpec = (
+    color: string,
+    count: number,
+    emphasis: Emphasis
+  ): { className: string; html: string; iconSize: [number, number]; iconAnchor: [number, number] } => {
+    const grown = emphasis !== "none";
+    const size = (count > 1 ? 22 : 12) + (emphasis === "active" ? 8 : emphasis === "hover" ? 4 : 0);
+    const ring = "#f8faf8";
+    const border = grown ? 3 : 2;
+    const halo =
+      emphasis === "active" ? ",0 0 0 4px rgba(20,20,20,0.22)" : emphasis === "hover" ? ",0 0 0 3px rgba(20,20,20,0.12)" : "";
+    const html =
+      count > 1
+        ? `<div style="width:${size}px;height:${size}px;background:${color};color:#fff;border-radius:50%;border:${border}px solid ${ring};box-shadow:0 2px 4px rgba(0,0,0,0.25)${halo};cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:${grown ? 13 : 11}px;font-weight:700;">${count}</div>`
+        : `<div style="width:${size}px;height:${size}px;background:${color};border-radius:50%;border:${border}px solid ${ring};box-shadow:0 2px 4px rgba(0,0,0,0.2)${halo};cursor:pointer;"></div>`;
+    return { className: "custom-marker", html, iconSize: [size, size], iconAnchor: [size / 2, size / 2] };
+  };
+
+  // 只改 icon 与层级，不重建标记；重复调用时按已记录的状态跳过无变化的标记
+  const applyEmphasis = useCallback(() => {
+    const L = LRef.current;
+    if (!L) return;
+    markersByName.current.forEach((group, name) => {
+      const state: Emphasis = name === activeRef.current ? "active" : name === hoverRef.current ? "hover" : "none";
+      group.forEach((entry) => {
+        if (entry.emphasis !== state) {
+          entry.emphasis = state;
+          entry.marker.setIcon(L.divIcon(iconSpec(entry.color, entry.count, state)));
+        }
+        entry.marker.setZIndexOffset(state === "active" ? 1000 : state === "hover" ? 600 : 0);
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    activeRef.current = activeLocation ?? null;
+    applyEmphasis();
+  }, [activeLocation, applyEmphasis]);
+
+  useEffect(() => {
+    hoverRef.current = hoveredLocation ?? null;
+    applyEmphasis();
+  }, [hoveredLocation, applyEmphasis]);
+
+  // 列表点击 -> 地图飞过去（seq 变化即重新触发，重复点同一项也有效）
+  useEffect(() => {
+    if (!focusRequest) return;
+    const map = mapRef.current;
+    const group = markersByName.current.get(focusRequest.name);
+    if (!map || !group?.length) return;
+    const { lat, lng } = group[0].marker.getLatLng();
+    map.flyTo([lat, lng], Math.max(map.getZoom(), 9), { duration: 0.9 });
+  }, [focusRequest]);
 
   const handleSearch = (q: string) => {
     setQuery(q);
@@ -78,6 +173,8 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
 
       map = L.map("leaflet-map").setView(center, markers.length === 1 ? 12 : 5);
       mapRef.current = map;
+      LRef.current = L;
+      markersByName.current = new Map();
       attachLayerSwitcher(map, L, 5);
 
       const bounds: [number, number][] = [];
@@ -103,19 +200,16 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
           if (y !== null && (year === null || y > year)) year = y;
         });
         const color = year !== null ? yearColor(year) : "#141414";
-        const ring = "#f8faf8";
+        const name = group[0].location;
 
-        const icon = L.divIcon({
-          className: "custom-marker",
-          html:
-            count > 1
-              ? `<div style="width:22px;height:22px;background:${color};color:#fff;border-radius:50%;border:2px solid ${ring};box-shadow:0 2px 4px rgba(0,0,0,0.25);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;">${count}</div>`
-              : `<div style="width:12px;height:12px;background:${color};border-radius:50%;border:2px solid ${ring};box-shadow:0 2px 4px rgba(0,0,0,0.2);cursor:pointer;"></div>`,
-          iconSize: count > 1 ? [22, 22] : [12, 12],
-          iconAnchor: count > 1 ? [11, 11] : [6, 6],
-        });
-
-        const marker = L.marker([lat, lng], { icon }).addTo(map);
+        const marker = L.marker([lat, lng], { icon: L.divIcon(iconSpec(color, count, "none")) }).addTo(map);
+        if (name) {
+          const entry = { marker, color, count, emphasis: "none" as Emphasis };
+          const group = markersByName.current.get(name);
+          if (group) group.push(entry);
+          else markersByName.current.set(name, [entry]);
+          marker.on("click", () => selectRef.current?.(name));
+        }
 
         const photosHtml = group
           .map(
@@ -147,6 +241,9 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
 
       if (bounds.length > 1) map.fitBounds(bounds, { padding: [50, 50] });
 
+      // 地图重建后立刻补一次强调态（选中可能早于 Leaflet 加载完成）
+      applyEmphasis();
+
       // Ensure correct sizing after mount (mobile layouts, late CSS, etc.)
       setTimeout(() => {
         if (map) map.invalidateSize();
@@ -156,8 +253,10 @@ export default function MapClient({ markers, center }: { markers: MapMarker[]; c
     return () => {
       if (map) map.remove();
       if (mapRef.current === map) mapRef.current = null;
+      LRef.current = null;
+      markersByName.current.clear();
     };
-  }, [markers, center]);
+  }, [markers, center, applyEmphasis]);
 
   return (
     <div className="relative w-full h-full">
