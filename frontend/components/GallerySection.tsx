@@ -342,6 +342,20 @@ export default function GallerySection({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // 移动端月份条：激活项会随滚动联动移到可视区外，把它滚回中间
+  const monthBarRef = useRef<HTMLDivElement>(null);
+  const monthBtnRefs = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => {
+    const bar = monthBarRef.current;
+    const el = monthBtnRefs.current.get(activeYear);
+    if (!bar || !el) return;
+    const br = bar.getBoundingClientRect();
+    const er = el.getBoundingClientRect();
+    const delta = er.left + er.width / 2 - (br.left + br.width / 2);
+    const max = bar.scrollWidth - bar.clientWidth;
+    bar.scrollTo({ left: Math.max(0, Math.min(bar.scrollLeft + delta, max)), behavior: "smooth" });
+  }, [activeYear]);
+
   return (
     <>
       <div className="flex items-center justify-end mb-6">
@@ -358,13 +372,18 @@ export default function GallerySection({
           {/* 移动端：横向月份快捷条 */}
           {years.length > 0 && (
             <div className="md:hidden -mx-4 mb-4 border-y border-primary/10">
-              <div className="flex items-stretch overflow-x-auto px-2" style={{ scrollbarWidth: "none" }}>
+              <div ref={monthBarRef} className="flex items-stretch overflow-x-auto px-2" style={{ scrollbarWidth: "none" }}>
                 {years.map((y) => {
                   const isActive = activeYear === y;
                   return (
                     <button
                       key={y}
+                      ref={(el) => {
+                        if (el) monthBtnRefs.current.set(y, el);
+                        else monthBtnRefs.current.delete(y);
+                      }}
                       onClick={() => jumpToYear(y)}
+                      aria-current={isActive ? "date" : undefined}
                       className="relative flex flex-col items-center flex-shrink-0 px-4 py-3"
                       style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
                     >
