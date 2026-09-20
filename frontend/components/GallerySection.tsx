@@ -359,7 +359,7 @@ export default function GallerySection({
   return (
     <>
       <div className="flex items-center justify-end mb-6">
-        <span className="text-label-caps text-outline">SORTED BY SHOOT DATE</span>
+        <span className="text-label-caps text-outline" style={{ fontFamily: "var(--font-sigma)", fontWeight: 500 }}>SORTED BY SHOOT DATE</span>
       </div>
 
       <div className="flex flex-col md:flex-row md:gap-12 md:items-start">
