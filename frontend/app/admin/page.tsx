@@ -25,6 +25,7 @@ import {
 } from "@heroui/react";
 import {
   Photo,
+  Album,
   getPhotoImageUrl,
   getToken,
   clearToken,
@@ -35,6 +36,7 @@ import {
   grantAdmin,
   AdminUser,
 } from "@/lib/api";
+import type { Article } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 
 const API_BASE = "";
@@ -79,7 +81,18 @@ function extractExifSegment(arrayBuffer: ArrayBuffer): string {
   return "";
 }
 
-function buildExifJson(dict: any): Record<string, unknown> {
+/** 后端把人类可读的原因塞在 error.message 的 detail 字段里，取不出来时回退到兜底文案 */
+function apiErrorMessage(err: unknown, fallback: string) {
+  const msg = err instanceof Error ? err.message : "";
+  return msg.replace(/^.*"detail":"([^"]+)".*$/, "$1") || fallback;
+}
+
+/** piexif 运行时用数字 tag 作 IFD 的键，而 @types/piexifjs 声明的是具名键，
+ *  所以入口收成 unknown、内部按实际形状收敛，不再整颗 dict 用 any。 */
+type ExifGroups = Record<string, Record<number, unknown>>;
+
+function buildExifJson(input: unknown): Record<string, unknown> {
+  const dict = (input ?? {}) as ExifGroups;
   const out: Record<string, unknown> = {};
   const t0 = dict["0th"] || {};
   const ex = dict["Exif"] || {};
@@ -238,6 +251,35 @@ type TabId =
   | "users";
 
 type NavItem = { id: TabId; label: string; icon: string };
+
+/* 后台各面板从 /api 拿到的形状。此前一律用 any，渲染处只能再逐个 (x: any) 标注。 */
+interface ServiceStatus {
+  name: string;
+  url: string;
+  ok: boolean | null;
+  latency_ms: number | null;
+  detail: string;
+  checking?: boolean;
+}
+
+interface ServicesReport {
+  services: ServiceStatus[];
+  ok_count: number;
+  total: number;
+  checked_at: string;
+}
+
+interface AnalyticsReport {
+  today_pv: number;
+  today_uv: number;
+  week_pv: number;
+  total_pv: number;
+  total_uv: number;
+  daily: { date: string; pv: number }[];
+  top_pages: { path: string; count: number }[];
+  top_photos: { id: number; title: string; views: number }[];
+  top_articles: { slug: string; title: string; views: number }[];
+}
 
 const PRIMARY_TABS: NavItem[] = [
   { id: "settings", label: "站点设置", icon: "settings" },
@@ -510,6 +552,8 @@ export default function AdminPage() {
     key: "show_hero_decorations" | "show_hero_shader" | "show_water_ripple",
     v: boolean,
   ) => setSettings((s) => ({ ...s, [key]: v ? "true" : "false" }));
+  const setSettingsField = (key: keyof typeof settings, value: string) =>
+    setSettings((s) => ({ ...s, [key]: value }));
   const [iconUploading, setIconUploading] = useState(false);
   const iconInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -523,8 +567,8 @@ export default function AdminPage() {
     },
   });
 
-  const [articles, setArticles] = useState<any[]>([]);
-  const [articleModal, setArticleModal] = useState<null | { editing: boolean; article?: any }>(null);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [articleModal, setArticleModal] = useState<null | { editing: boolean; article?: Article }>(null);
   const [articleForm, setArticleForm] = useState<Record<string, string>>({
     slug: "",
     title: "",
@@ -541,8 +585,8 @@ export default function AdminPage() {
     },
   });
 
-  const [albums, setAlbums] = useState<any[]>([]);
-  const [albumModal, setAlbumModal] = useState<null | { editing: boolean; album?: any }>(null);
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [albumModal, setAlbumModal] = useState<null | { editing: boolean; album?: Album }>(null);
   const [albumForm, setAlbumForm] = useState<Record<string, string>>({
     slug: "",
     title: "",
@@ -579,9 +623,9 @@ export default function AdminPage() {
   const [userSaving, setUserSaving] = useState(false);
   const [userError, setUserError] = useState("");
 
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsReport | null>(null);
 
-  const [services, setServices] = useState<any>(null);
+  const [services, setServices] = useState<ServicesReport | null>(null);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [fullCheckDone, setFullCheckDone] = useState(false);
 
@@ -608,7 +652,7 @@ export default function AdminPage() {
     { name: "Material Symbols CDN", url: "fonts.googleapis.com" },
   ];
 
-  const displayServices = services
+  const displayServices: ServiceStatus[] = services
     ? services.services
     : SERVICE_DEFS.map((d) => ({ ...d, ok: null, latency_ms: null, detail: "" }));
 
@@ -668,8 +712,8 @@ export default function AdminPage() {
       setNewPassword("");
       await loadUsers();
       toast.success("管理员已创建");
-    } catch (err: any) {
-      setUserError(err?.message?.replace(/^.*"detail":"([^"]+)".*$/, "$1") || "创建失败");
+    } catch (err) {
+      setUserError(apiErrorMessage(err, "创建失败"));
     } finally {
       setUserSaving(false);
     }
@@ -680,8 +724,8 @@ export default function AdminPage() {
       await deleteUser(id);
       await loadUsers();
       toast.success("账号已删除");
-    } catch (err: any) {
-      setUserError(err?.message?.replace(/^.*"detail":"([^"]+)".*$/, "$1") || "删除失败");
+    } catch (err) {
+      setUserError(apiErrorMessage(err, "删除失败"));
     }
   };
 
@@ -690,8 +734,8 @@ export default function AdminPage() {
       await grantAdmin(id);
       await loadUsers();
       toast.success("已授权管理员权限");
-    } catch (err: any) {
-      setUserError(err?.message?.replace(/^.*"detail":"([^"]+)".*$/, "$1") || "授权失败");
+    } catch (err) {
+      setUserError(apiErrorMessage(err, "授权失败"));
     }
   };
 
@@ -746,11 +790,11 @@ export default function AdminPage() {
   };
 
   const checkSingleService = async (name: string) => {
-    setServices((prev: any) => {
-      const base = prev
+    setServices((prev) => {
+      const base: ServiceStatus[] = prev
         ? prev.services
         : SERVICE_DEFS.map((d) => ({ ...d, ok: null, latency_ms: null, detail: "" }));
-      const services = base.map((s: any) =>
+      const services = base.map((s) =>
         s.name === name ? { ...s, checking: true } : s
       );
       return prev
@@ -764,15 +808,15 @@ export default function AdminPage() {
       );
       if (res.ok) {
         const one = await res.json();
-        setServices((prev: any) => {
+        setServices((prev) => {
           if (!prev) return prev;
-          const services = prev.services.map((s: any) =>
+          const services = prev.services.map((s) =>
             s.name === name ? { ...one, checking: false } : s
           );
           return {
             ...prev,
             services,
-            ok_count: services.filter((s: any) => s.ok).length,
+            ok_count: services.filter((s) => s.ok).length,
           };
         });
       }
@@ -1136,7 +1180,7 @@ export default function AdminPage() {
     }
   };
 
-  const openArticleEditor = (article?: any) => {
+  const openArticleEditor = (article?: Article) => {
     setArticleModal({ editing: !!article, article });
     setArticleForm({
       slug: article?.slug || "",
@@ -1186,7 +1230,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleToggleArticlePublish = async (article: any) => {
+  const handleToggleArticlePublish = async (article: Article) => {
     try {
       await fetch(`${API_BASE}/api/articles/${article.slug}`, {
         method: "PATCH",
@@ -1215,7 +1259,7 @@ export default function AdminPage() {
     }
   };
 
-  const openAlbumEditor = (album?: any) => {
+  const openAlbumEditor = (album?: Album) => {
     setAlbumModal({ editing: !!album, album });
     setAlbumForm({
       slug: album?.slug || "",
@@ -1592,14 +1636,14 @@ export default function AdminPage() {
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
-                            value={(settings as any)[field.key]}
-                            onChange={(e) => setSettings({ ...settings, [field.key]: e.target.value } as any)}
+                            value={settings[field.key]}
+                            onChange={(e) => setSettingsField(field.key, e.target.value)}
                             className="w-10 h-9 border border-border-subtle rounded-md bg-surface cursor-pointer"
                           />
                           <input
                             type="text"
-                            value={(settings as any)[field.key]}
-                            onChange={(e) => setSettings({ ...settings, [field.key]: e.target.value } as any)}
+                            value={settings[field.key]}
+                            onChange={(e) => setSettingsField(field.key, e.target.value)}
                             className="flex-1 border border-border-subtle p-2 text-metadata-sm bg-surface focus:outline-none focus:border-primary"
                           />
                         </div>
@@ -1651,7 +1695,7 @@ export default function AdminPage() {
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl">
-                    {[
+                    {([
                       { key: "bg_color1", label: "颜色 1" },
                       { key: "bg_color2", label: "颜色 2" },
                       { key: "bg_color3", label: "颜色 3" },
@@ -1659,17 +1703,18 @@ export default function AdminPage() {
                       { key: "bg_color5", label: "颜色 5" },
                       { key: "bg_color6", label: "颜色 6" },
                       { key: "bg_base", label: "底色" },
-                    ].map((field) => (
+                    ] as const
+                    ).map((field) => (
                       <div key={field.key} className="flex items-center gap-2 border border-border-subtle p-2 bg-surface rounded-lg">
                         <input
                           type="color"
-                          value={(settings as any)[field.key] || "#000000"}
-                          onChange={(e) => setSettings({ ...settings, [field.key]: e.target.value } as any)}
+                          value={settings[field.key] || "#000000"}
+                          onChange={(e) => setSettingsField(field.key, e.target.value)}
                           className="w-8 h-8 cursor-pointer border-0 bg-transparent p-0"
                         />
                         <div className="min-w-0">
                           <div className="text-label-caps text-outline">{field.label}</div>
-                          <div className="text-metadata-sm text-on-surface-variant uppercase">{(settings as any)[field.key] || ""}</div>
+                          <div className="text-metadata-sm text-on-surface-variant uppercase">{settings[field.key] || ""}</div>
                         </div>
                       </div>
                     ))}
@@ -2172,8 +2217,8 @@ export default function AdminPage() {
                 <div>
                   <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">最近 7 天</h3>
                   <div className="flex items-end gap-2 h-32">
-                    {analytics.daily.map((d: any) => {
-                      const max = Math.max(...analytics.daily.map((x: any) => x.pv), 1);
+                    {analytics.daily.map((d) => {
+                      const max = Math.max(...analytics.daily.map((x) => x.pv), 1);
                       return (
                         <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
                           <span className="text-metadata-sm text-on-surface-variant">{d.pv}</span>
@@ -2193,7 +2238,7 @@ export default function AdminPage() {
                     <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">热门页面（7 天）</h3>
                     <div className="flex flex-col gap-2">
                       {analytics.top_pages.length === 0 && <p className="text-metadata-sm text-outline">暂无数据</p>}
-                      {analytics.top_pages.map((p: any) => (
+                      {analytics.top_pages.map((p) => (
                         <div key={p.path} className="flex items-center justify-between text-metadata-sm">
                           <span className="text-on-surface truncate">{p.path}</span>
                           <span className="text-primary">{p.count}</span>
@@ -2205,7 +2250,7 @@ export default function AdminPage() {
                     <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">热门照片</h3>
                     <div className="flex flex-col gap-2">
                       {analytics.top_photos.length === 0 && <p className="text-metadata-sm text-outline">暂无数据</p>}
-                      {analytics.top_photos.map((p: any) => (
+                      {analytics.top_photos.map((p) => (
                         <a key={p.id} href={`/photo/${p.id}`} className="flex items-center justify-between text-metadata-sm hover:text-primary transition-colors">
                           <span className="text-on-surface truncate">{p.title}</span>
                           <span className="text-primary ml-2">{p.views}</span>
@@ -2217,7 +2262,7 @@ export default function AdminPage() {
                     <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">热门文章</h3>
                     <div className="flex flex-col gap-2">
                       {analytics.top_articles.length === 0 && <p className="text-metadata-sm text-outline">暂无数据</p>}
-                      {analytics.top_articles.map((a: any) => (
+                      {analytics.top_articles.map((a) => (
                         <a key={a.slug} href={`/blog/${a.slug}`} className="flex items-center justify-between text-metadata-sm hover:text-primary transition-colors">
                           <span className="text-on-surface truncate">{a.title}</span>
                           <span className="text-primary ml-2">{a.views}</span>
@@ -2262,7 +2307,7 @@ export default function AdminPage() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {displayServices.map((s: any) => (
+              {displayServices.map((s) => (
                 <Card
                   key={s.name}
                   className={`p-4 gap-1.5 ${s.ok === false ? "border-[var(--danger)]/50 bg-danger-soft/20" : ""}`}
@@ -2418,7 +2463,7 @@ export default function AdminPage() {
                   <Select.Popover>
                     <ListBox>
                       {albumModal?.album?.cover_photo_id &&
-                        !photos.some((p) => p.album_id === albumModal.album.id && p.id === albumModal.album.cover_photo_id) && (
+                        !photos.some((p) => p.album_id === albumModal?.album?.id && p.id === albumModal?.album?.cover_photo_id) && (
                           <ListBox.Item id={String(albumModal.album.cover_photo_id)} textValue="当前封面">
                             #{albumModal.album.cover_photo_id} — 当前封面
                             <ListBox.ItemIndicator />
