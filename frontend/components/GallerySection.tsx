@@ -11,9 +11,7 @@ const PAGE_SIZE = 24;
 function DraggableTimeline({ entries, active, onChange }: { entries: string[]; active: string; onChange: (y: string) => void }) {
   const [dragging, setDragging] = useState(false);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const yearRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [barPos, setBarPos] = useState<{ top: number; height: number } | null>(null);
   const [cursorY, setCursorY] = useState<number | null>(null);
 
   const groups = useMemo(() => {
@@ -22,23 +20,6 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
   }, [entries]);
 
   const activeYear = active.slice(0, 4);
-  const activeIdx = groups.findIndex((g) => g.year === activeYear);
-
-  // 量出激活年份标签的位置，驱动左缘指示条的滑动
-  useEffect(() => {
-    const measure = () => {
-      const container = containerRef.current;
-      const yearEl = yearRefs.current[activeIdx];
-      if (!container || !yearEl) return;
-      const cr = container.getBoundingClientRect();
-      const yr = yearEl.getBoundingClientRect();
-      setBarPos({ top: yr.top - cr.top + 2, height: yr.height - 4 });
-    };
-    measure();
-    document.fonts?.ready.then(measure).catch(() => {});
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [groups, activeIdx]);
 
   // 拖拽只按 Y 吸附到「年份」是刻意的粗粒度：同一年的月份排在同一水平行内，
   // 共享同一段 Y 区间，纵向坐标无法在它们之间区分；月份级选择留给点击。
@@ -84,7 +65,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
   };
 
   return (
-    <div ref={containerRef} className="relative mb-8 w-72 select-none pl-6">
+    <div ref={containerRef} className="relative mb-8 w-60 select-none pl-4">
       {/* 底衬面板：压住穿过数字的水波纹；无 backdrop-blur（背景层已有一层） */}
       <div
         aria-hidden
@@ -105,17 +86,6 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
         </span>
       </div>
 
-      {/* 左缘滑动指示条 */}
-      <span
-        aria-hidden
-        className="absolute left-0 z-10 w-[3px] rounded-full bg-primary transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none"
-        style={{
-          top: barPos?.top ?? 0,
-          height: barPos?.height ?? 0,
-          opacity: barPos ? 1 : 0,
-        }}
-      />
-
       {/* 拖拽游标：跟随指针，松手后消失、激活态吸附到最近年份 */}
       {dragging && cursorY !== null && (
         <span
@@ -125,9 +95,9 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
         />
       )}
 
-      {/* Drag hit area：只盖指示条窄条，z-20 保证压在年份列表之上 */}
+      {/* Drag hit area：与左内边距等宽，压在年份列表之上但不吞按钮点击 */}
       <div
-        className="absolute left-0 top-0 bottom-0 z-20 w-5 touch-none cursor-pointer"
+        className="absolute left-0 top-0 bottom-0 z-20 w-4 touch-none cursor-pointer"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={stopDragging}
@@ -149,9 +119,6 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
             >
               {/* Year label + month count */}
               <button
-                ref={(el) => {
-                  yearRefs.current[gi] = el;
-                }}
                 onClick={() => g.months[0] && onChange(g.months[0])}
                 aria-current={isActiveYear ? "true" : undefined}
                 className="flex items-baseline gap-2 text-left"
@@ -176,10 +143,10 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
                 </span>
               </button>
 
-              {/* Months；激活切换时重挂载以播放交错入场 */}
+              {/* Months：固定 4 列，多出换行；激活切换时重挂载以播放交错入场 */}
               <div
                 key={isActiveYear ? `${g.year}-on` : `${g.year}-off`}
-                className={`flex flex-wrap items-baseline transition-all duration-300 ${
+                className={`grid grid-cols-4 transition-all duration-300 ${
                   isActiveYear ? "mt-3 gap-x-1 gap-y-1.5" : "mt-2 gap-x-2.5 gap-y-1"
                 }`}
                 style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
@@ -303,8 +270,12 @@ export default function GallerySection({
   }, []);
 
   const jumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 程序化跳转期间抑制滚动联动，避免激活态沿滚动路径乱跳；滚动静默后恢复
+  const spyHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spyHoldRef = useRef(false);
   const jumpToYear = useCallback((year: string) => {
     setActiveYear(year);
+    spyHoldRef.current = true;
     if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
     jumpTimerRef.current = setTimeout(async () => {
       const target = () =>
@@ -315,6 +286,7 @@ export default function GallerySection({
         if (!ok) break;
         el = target();
       }
+      spyHoldRef.current = true;
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
   }, [hasMore, loadMore]);
@@ -322,6 +294,7 @@ export default function GallerySection({
   useEffect(() => {
     return () => {
       if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
+      if (spyHoldTimerRef.current) clearTimeout(spyHoldTimerRef.current);
     };
   }, []);
 
@@ -346,6 +319,14 @@ export default function GallerySection({
       ticking = true;
       requestAnimationFrame(() => {
         ticking = false;
+        if (spyHoldRef.current) {
+          // 程序化滚动进行中：保持目标年月，滚动静默 400ms 后恢复联动
+          if (spyHoldTimerRef.current) clearTimeout(spyHoldTimerRef.current);
+          spyHoldTimerRef.current = setTimeout(() => {
+            spyHoldRef.current = false;
+          }, 400);
+          return;
+        }
         const grid = gridRef.current;
         if (!grid) return;
         for (const el of grid.querySelectorAll("[data-year]")) {
