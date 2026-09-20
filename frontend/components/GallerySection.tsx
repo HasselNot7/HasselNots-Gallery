@@ -65,7 +65,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
   };
 
   return (
-    <div ref={containerRef} className="relative mb-8 w-60 select-none pl-4">
+    <div ref={containerRef} className="relative mb-8 w-56 select-none pl-4">
       {/* 底衬面板：压住穿过数字的水波纹；无 backdrop-blur（背景层已有一层） */}
       <div
         aria-hidden
