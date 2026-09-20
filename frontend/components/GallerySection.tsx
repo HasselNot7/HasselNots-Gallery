@@ -84,7 +84,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
   };
 
   return (
-    <div ref={containerRef} className="relative mb-8 select-none pl-6">
+    <div ref={containerRef} className="relative mb-8 w-72 select-none pl-6">
       {/* 底衬面板：压住穿过数字的水波纹；无 backdrop-blur（背景层已有一层） */}
       <div
         aria-hidden
@@ -337,6 +337,29 @@ export default function GallerySection({
     io.observe(el);
     return () => io.disconnect();
   }, [loadMore]);
+
+  // 滚动监听：时间线跟随浏览位置，取阈值线以下第一张照片的月份（DOM 序即日期降序）
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const grid = gridRef.current;
+        if (!grid) return;
+        for (const el of grid.querySelectorAll("[data-year]")) {
+          if (el.getBoundingClientRect().bottom > 180) {
+            const y = el.getAttribute("data-year");
+            if (y) setActiveYear((prev) => (prev === y ? prev : y));
+            break;
+          }
+        }
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <>
