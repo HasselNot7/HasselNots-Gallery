@@ -176,6 +176,11 @@ class SettingsOut(BaseModel):
     hero_title: str = "Precision Capture.\nTimeless Frames."
     hero_description: str = "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe."
     site_tagline: str = "Precision photography portfolio. Every frame tells a story."
+    site_name: str = "Art"
+    hero_side_label: str = "Collection"
+    hero_side_brand: str = "HasselNot"
+    footer_title: str = "HASSELNOT'S GALLERY"
+    footer_copyright: str = "© {year} HASSELNOT'S GALLERY. All rights reserved."
     hero_icon: str = "photo_camera"
     hero_icon_url: str = ""
     bg_color1: str = "#141414"
@@ -203,6 +208,11 @@ class SettingsUpdate(BaseModel):
     hero_title: Optional[str] = None
     hero_description: Optional[str] = None
     site_tagline: Optional[str] = None
+    site_name: Optional[str] = None
+    hero_side_label: Optional[str] = None
+    hero_side_brand: Optional[str] = None
+    footer_title: Optional[str] = None
+    footer_copyright: Optional[str] = None
     hero_icon: Optional[str] = None
     hero_icon_url: Optional[str] = None
     bg_color1: Optional[str] = None

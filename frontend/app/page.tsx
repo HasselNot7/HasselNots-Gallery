@@ -19,6 +19,8 @@ export default async function HomePage() {
         heroDescription={settings?.hero_description}
         heroIcon={settings?.hero_icon}
         heroIconUrl={settings?.hero_icon_url}
+        sideLabel={settings?.hero_side_label}
+        sideBrand={settings?.hero_side_brand}
         showDecorations={hudDecorationsEnabled(settings)}
         showShader={isOn(settings?.show_hero_shader)}
         shaderColors={{

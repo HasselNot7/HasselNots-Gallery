@@ -182,6 +182,11 @@ export interface SiteSettings {
   hero_title: string;
   hero_description: string;
   site_tagline: string;
+  site_name: string;
+  hero_side_label: string;
+  hero_side_brand: string;
+  footer_title: string;
+  footer_copyright: string;
   hero_icon: string;
   hero_icon_url: string;
   bg_color1: string;
@@ -223,6 +228,11 @@ export async function fetchSettings(): Promise<SiteSettings> {
       hero_title: "Precision Capture.\nTimeless Frames.",
       hero_description: "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe.",
       site_tagline: "Precision photography portfolio. Every frame tells a story.",
+      site_name: "Art",
+      hero_side_label: "Collection",
+      hero_side_brand: "HasselNot",
+      footer_title: "HASSELNOT'S GALLERY",
+      footer_copyright: "© {year} HASSELNOT'S GALLERY. All rights reserved.",
       hero_icon: "photo_camera",
       hero_icon_url: "",
       bg_color1: "#141414",

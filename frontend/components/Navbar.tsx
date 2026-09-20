@@ -12,6 +12,7 @@ import {
   getAuthServerSnapshot,
   clearToken,
 } from "@/lib/api";
+import { useSiteConfig } from "@/lib/site-config";
 
 const links = [
   { href: "/", label: "首页" },
@@ -27,6 +28,7 @@ const navFontStyle = { fontFamily: "'Noto Serif SC', serif", fontWeight: 600 };
 export default function Navbar({ leadingSlot }: { leadingSlot?: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { site_name } = useSiteConfig();
   const authed = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getAuthServerSnapshot);
   const drawerState = useOverlayState();
 
@@ -53,7 +55,7 @@ export default function Navbar({ leadingSlot }: { leadingSlot?: ReactNode }) {
               className="flex-1 flex items-center justify-center text-xl md:text-2xl tracking-[-0.01em] text-primary leading-none whitespace-nowrap"
               style={{ fontFamily: "var(--font-sigma)" }}
             >
-              Art
+              {site_name}
             </Link>
             <div className="w-px self-stretch bg-primary/20" />
           </div>

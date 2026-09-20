@@ -8,6 +8,8 @@ export default function HeroSection({
   heroIcon = "photo_camera",
   heroIconUrl = "",
   shaderColors,
+  sideLabel,
+  sideBrand,
   showDecorations = true,
   showShader = true,
 }: {
@@ -15,6 +17,8 @@ export default function HeroSection({
   heroDescription?: string;
   heroIcon?: string;
   heroIconUrl?: string;
+  sideLabel?: string;
+  sideBrand?: string;
   shaderColors?: {
     color1?: string;
     color2?: string;
@@ -33,6 +37,9 @@ export default function HeroSection({
   showShader?: boolean;
 }) {
   const titleLines = heroTitle.split("\n");
+  // 后台把字段清空时回退到原字面量，避免竖栏留白
+  const sideLabelText = sideLabel?.trim() ? sideLabel : "Collection";
+  const sideBrandText = sideBrand?.trim() ? sideBrand : "HasselNot";
 
   return (
     <main className="relative h-[calc(100svh+120px)] w-full bg-primary-fixed/10 border-b border-primary/20">
@@ -48,13 +55,13 @@ export default function HeroSection({
             opacity: 0.2,
           }} />
           <div className="relative z-10 text-metadata-sm tracking-widest uppercase transform rotate-180 border-l border-primary-fixed/30 pl-2 whitespace-nowrap hidden sm:block" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-            Collection
+            {sideLabelText}
           </div>
           <div className="relative z-10 text-metadata-sm tracking-widest transform rotate-180 opacity-70 hidden sm:block" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {new Date().toLocaleDateString("en-GB")}
           </div>
           <div className="relative z-10 text-lg md:text-3xl tracking-tighter transform rotate-180 whitespace-nowrap" style={{ writingMode: "vertical-rl", fontFamily: "'Hanken Grotesk', sans-serif" }}>
-            HasselNot
+            {sideBrandText}
           </div>
         </aside>
 

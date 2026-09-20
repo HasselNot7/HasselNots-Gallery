@@ -41,6 +41,15 @@ import Navbar from "@/components/Navbar";
 
 const API_BASE = "";
 
+// 与 backend/routes/settings.py 的 DEFAULTS 逐字一致，供表单初值与「重置」复用
+const BRAND_DEFAULTS = {
+  site_name: "Art",
+  hero_side_label: "Collection",
+  hero_side_brand: "HasselNot",
+  footer_title: "HASSELNOT'S GALLERY",
+  footer_copyright: "© {year} HASSELNOT'S GALLERY. All rights reserved.",
+};
+
 function adminPhotoUrl(id: number, thumb = true): string {
   const token = getToken();
   return getPhotoImageUrl(id, thumb, token ?? undefined);
@@ -525,6 +534,7 @@ export default function AdminPage() {
     hero_title: "",
     hero_description: "",
     site_tagline: "",
+    ...BRAND_DEFAULTS,
     water_ink1: "#171717",
     water_ink2: "#0a0a0a",
     water_ink_top: "0.15",
@@ -854,7 +864,7 @@ export default function AdminPage() {
       const res = await fetch(`${API_BASE}/api/settings`);
       if (res.ok) {
         const data = await res.json();
-        setSettings({ hero_title: "", hero_description: "", site_tagline: "", water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0", hero_gradient_size: "0.85", hero_gradient_count: "12.0", hero_speed: "1.1", hero_color1_weight: "1.0", hero_color2_weight: "1.3", hero_icon: "photo_camera", hero_icon_url: "", show_hero_decorations: "true", show_hero_shader: "true", show_water_ripple: "true", ...data });
+        setSettings({ hero_title: "", hero_description: "", site_tagline: "", ...BRAND_DEFAULTS, water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0", hero_gradient_size: "0.85", hero_gradient_count: "12.0", hero_speed: "1.1", hero_color1_weight: "1.0", hero_color2_weight: "1.3", hero_icon: "photo_camera", hero_icon_url: "", show_hero_decorations: "true", show_hero_shader: "true", show_water_ripple: "true", ...data });
       }
     } catch {
       // ignore
@@ -1557,6 +1567,54 @@ export default function AdminPage() {
                     rows={2}
                     placeholder="精准摄影作品集。每一帧都述说一个故事。"
                   />
+                </div>
+
+                <div className="border-t border-border-subtle pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-label-caps text-outline">品牌与文案</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onPress={() => setSettings({ ...settings, ...BRAND_DEFAULTS })}
+                    >
+                      重置
+                    </Button>
+                  </div>
+                  <p className="text-metadata-sm text-outline mb-3 max-w-3xl">
+                    导航栏与页脚的这几处文字在显示时会被强制大写，因此输入时的大小写不影响最终呈现。
+                  </p>
+                  <div className="max-w-3xl space-y-5">
+                    <LabeledInput
+                      label="站点名称（导航栏）"
+                      value={settings.site_name}
+                      onChange={(v) => setSettingsField("site_name", v)}
+                      placeholder={BRAND_DEFAULTS.site_name}
+                    />
+                    <LabeledInput
+                      label="左侧竖栏标签"
+                      value={settings.hero_side_label}
+                      onChange={(v) => setSettingsField("hero_side_label", v)}
+                      placeholder={BRAND_DEFAULTS.hero_side_label}
+                    />
+                    <LabeledInput
+                      label="左侧竖栏署名"
+                      value={settings.hero_side_brand}
+                      onChange={(v) => setSettingsField("hero_side_brand", v)}
+                      placeholder={BRAND_DEFAULTS.hero_side_brand}
+                    />
+                    <LabeledInput
+                      label="页脚标题"
+                      value={settings.footer_title}
+                      onChange={(v) => setSettingsField("footer_title", v)}
+                      placeholder={BRAND_DEFAULTS.footer_title}
+                    />
+                    <LabeledInput
+                      label="页脚版权行（{year} 会自动替换为当前年份）"
+                      value={settings.footer_copyright}
+                      onChange={(v) => setSettingsField("footer_copyright", v)}
+                      placeholder={BRAND_DEFAULTS.footer_copyright}
+                    />
+                  </div>
                 </div>
 
                 <div className="border-t border-border-subtle pt-5">
