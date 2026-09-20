@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, Fragment } from "react";
 import { Spinner } from "@heroui/react";
 import { Photo, getPhotoImageUrl } from "@/lib/api-server";
 import Lightbox from "@/components/Lightbox";
@@ -369,44 +369,44 @@ export default function GallerySection({
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* 移动端：横向月份快捷条 */}
+          {/* 移动端：横向月份胶囊条，年份只在变化处出现一次 */}
           {years.length > 0 && (
             <div className="md:hidden -mx-4 mb-4 border-y border-primary/10">
-              <div ref={monthBarRef} className="flex items-stretch overflow-x-auto px-2" style={{ scrollbarWidth: "none" }}>
-                {years.map((y) => {
+              <div ref={monthBarRef} className="flex items-center gap-0.5 overflow-x-auto px-2" style={{ scrollbarWidth: "none" }}>
+                {years.map((y, i) => {
                   const isActive = activeYear === y;
+                  const showYear = i === 0 || years[i - 1].slice(0, 4) !== y.slice(0, 4);
                   return (
-                    <button
-                      key={y}
-                      ref={(el) => {
-                        if (el) monthBtnRefs.current.set(y, el);
-                        else monthBtnRefs.current.delete(y);
-                      }}
-                      onClick={() => jumpToYear(y)}
-                      aria-current={isActive ? "date" : undefined}
-                      className="relative flex flex-col items-center flex-shrink-0 px-4 py-3"
-                      style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
-                    >
-                      <span
-                        className={`text-sm leading-none tracking-wider transition-colors ${
-                          isActive ? "text-primary font-bold" : "text-outline"
-                        }`}
+                    <Fragment key={y}>
+                      {showYear && (
+                        <span
+                          className="flex-shrink-0 pl-2 pr-1 text-[9px] tracking-[0.2em] text-outline"
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                        >
+                          {y.slice(0, 4)}
+                        </span>
+                      )}
+                      <button
+                        ref={(el) => {
+                          if (el) monthBtnRefs.current.set(y, el);
+                          else monthBtnRefs.current.delete(y);
+                        }}
+                        onClick={() => jumpToYear(y)}
+                        aria-current={isActive ? "date" : undefined}
+                        className="group relative flex h-11 min-w-11 flex-shrink-0 items-center justify-center"
                       >
-                        {y.slice(5, 7)}
-                      </span>
-                      <span
-                        className={`mt-1.5 text-[9px] leading-none transition-colors ${
-                          isActive ? "text-primary/70" : "text-outline/60"
-                        }`}
-                      >
-                        {y.slice(0, 4)}
-                      </span>
-                      <span
-                        className={`absolute left-3 right-3 bottom-0 h-[2px] rounded-full transition-all duration-300 ${
-                          isActive ? "bg-mint-accent opacity-100" : "opacity-0"
-                        }`}
-                      />
-                    </button>
+                        <span
+                          className={`rounded-full leading-none tabular-nums tracking-widest transition-all duration-200 ${
+                            isActive
+                              ? "bg-primary px-3 py-1.5 text-[11px] font-bold text-white shadow-[0_3px_10px_rgba(20,20,20,0.25)]"
+                              : "px-3 py-1.5 text-[11px] text-on-surface-variant group-active:bg-primary/[0.07] group-active:text-primary"
+                          }`}
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                        >
+                          {y.slice(5, 7)}
+                        </span>
+                      </button>
+                    </Fragment>
                   );
                 })}
               </div>
