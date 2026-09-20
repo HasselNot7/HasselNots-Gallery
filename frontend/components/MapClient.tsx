@@ -42,6 +42,7 @@ export default function MapClient({
   activeLocation,
   hoveredLocation,
   focusRequest,
+  keyboardEnabled = true,
   onSelectLocation,
 }: {
   markers: MapMarker[];
@@ -49,6 +50,8 @@ export default function MapClient({
   activeLocation?: string | null;
   hoveredLocation?: string | null;
   focusRequest?: FocusRequest | null;
+  /** 灯箱等有全屏键盘监听的浮层打开时置 false，避免方向键同时平移地图 */
+  keyboardEnabled?: boolean;
   /** 传地点名 = 选中该地点；传 null = 清除选中（点击跨地点聚合体时用） */
   onSelectLocation?: (location: string | null) => void;
 }) {
@@ -65,6 +68,18 @@ export default function MapClient({
   useEffect(() => {
     selectRef.current = onSelectLocation;
   });
+  const keyboardRef = useRef(keyboardEnabled);
+  // Leaflet 的 Keyboard 处理器同时吃 方向键 与 +/-，浮层打开期间要让给它
+  const applyKeyboard = useCallback(() => {
+    const map = mapRef.current;
+    if (!map?.keyboard) return;
+    if (keyboardRef.current) map.keyboard.enable();
+    else map.keyboard.disable();
+  }, []);
+  useEffect(() => {
+    keyboardRef.current = keyboardEnabled;
+    applyKeyboard();
+  }, [keyboardEnabled, applyKeyboard]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeoResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -304,6 +319,9 @@ export default function MapClient({
 
       map.on("zoomend", render);
 
+      // 地图建好后补一次键盘设置（键盘默认开着，而浮层可能已经先打开了）
+      applyKeyboard();
+
       if (bounds.length > 1) map.fitBounds(bounds, { padding: [50, 50] });
 
       // 建完立刻按最终 zoom 画一次（fitBounds 之后再由 zoomend 重算）
@@ -321,7 +339,7 @@ export default function MapClient({
       LRef.current = null;
       markersByName.current.clear();
     };
-  }, [markers, center, applyEmphasis]);
+  }, [markers, center, applyEmphasis, applyKeyboard]);
 
   return (
     <div className="relative w-full h-full">

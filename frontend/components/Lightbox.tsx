@@ -4,7 +4,7 @@ import { useEffect, useCallback, useRef } from "react";
 import { Button, Modal, useOverlayState } from "@heroui/react";
 import { getPhotoImageUrl } from "@/lib/api-server";
 
-interface LightboxPhoto {
+export interface LightboxPhoto {
   id: number;
   title: string;
   shoot_time: string | null;

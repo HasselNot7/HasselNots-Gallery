@@ -33,17 +33,9 @@ export default async function MapPage() {
 
   const legendYears = yearsForLegend(markers);
 
-  const locations = markers.reduce<
-    Record<string, { photos: typeof markers; count: number; lat: number; lng: number; name: string }>
-  >((acc, m) => {
-    const key = m.location;
-    if (!acc[key]) {
-      acc[key] = { photos: [], count: 0, lat: m.latitude, lng: m.longitude, name: key };
-    }
-    acc[key].photos.push(m);
-    acc[key].count++;
-    return acc;
-  }, {});
+  // 地点分组已整体移到 MapExplorer（从 markers 派生）；头部这一格只需要个数，
+  // 与 MapExplorer 用同一个 key 语义（地点名），因此两处结果必然一致
+  const locationCount = new Set(markers.map((m) => m.location)).size;
 
   // 页面所有 HUD 装饰共用同一个开合判断
   const showHud = hudDecorationsEnabled(settings);
@@ -195,7 +187,7 @@ export default async function MapPage() {
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-metadata-sm text-on-surface-variant">
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-primary">location_on</span>
-                {Object.keys(locations).length} 地点
+                {locationCount} 地点
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-primary">photo_camera</span>
@@ -210,7 +202,6 @@ export default async function MapPage() {
           <MapExplorer
             markers={markers}
             center={defaultCenter}
-            locations={Object.values(locations)}
             mapUnderlay={mapUnderlay}
             mapOverlay={mapOverlay}
             asideDecor={asideDecor}
