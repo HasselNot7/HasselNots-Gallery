@@ -1577,8 +1577,8 @@ export default function AdminPage() {
                       [
                         {
                           key: "show_hero_decorations",
-                          label: "显示 Hero 装饰元素",
-                          desc: "首页的 HUD 准星、刻度尺、测量线与右侧装饰竖栏。网格底纹、左侧品牌竖栏与标题本体不受此开关影响。",
+                          label: "显示 HUD 装饰元素",
+                          desc: "同时作用于首页 Hero、图库页与地图页的准星、刻度尺、测量线、坐标读数与右侧装饰竖栏。网格底纹、左侧品牌竖栏与标题本体不受此开关影响。",
                         },
                         {
                           key: "show_hero_shader",

@@ -208,6 +208,11 @@ export interface SiteSettings {
 /** 装饰性动效开关：只有显式 "false" 才算关，字段缺失/空串/旧数据一律退化为开 */
 export const isOn = (v?: string) => v !== "false";
 
+/** HUD 工业风装饰的唯一开关（首页 Hero、图库页、地图页共用），取不到设置时按「开」处理 */
+export function hudDecorationsEnabled(s?: SiteSettings | null): boolean {
+  return isOn(s?.show_hero_decorations);
+}
+
 export async function fetchSettings(): Promise<SiteSettings> {
   try {
     const res = await fetch(`${API_BASE}/api/settings`, { cache: "no-store" });

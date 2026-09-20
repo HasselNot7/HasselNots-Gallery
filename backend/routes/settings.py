@@ -32,6 +32,7 @@ DEFAULTS = {
     "hero_speed": "1.1",
     "hero_color1_weight": "1.0",
     "hero_color2_weight": "1.3",
+    # 全站 HUD 装饰总开关（首页 Hero、/gallery、/map），键名保留 hero 前缀以兼容既有 KV 数据
     "show_hero_decorations": "true",
     "show_hero_shader": "true",
     "show_water_ripple": "true",

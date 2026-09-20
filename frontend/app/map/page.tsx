@@ -1,4 +1,4 @@
-import { fetchGeotaggedPhotos, getPhotoImageUrl, Photo } from "@/lib/api-server";
+import { fetchGeotaggedPhotos, fetchSettings, getPhotoImageUrl, hudDecorationsEnabled, Photo, SiteSettings } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MapClient from "@/components/MapClient";
@@ -6,8 +6,11 @@ import { yearColor, yearsForLegend } from "@/lib/mapYears";
 
 export default async function MapPage() {
   let photos: Photo[] = [];
+  // 取不到设置时保持 null，hudDecorationsEnabled 会把它退化为「显示装饰」
+  let settings: SiteSettings | null = null;
   try {
     photos = await fetchGeotaggedPhotos();
+    settings = await fetchSettings();
   } catch {
     // backend unavailable
   }
@@ -91,67 +94,72 @@ export default async function MapPage() {
                 opacity: 0.4,
               }} />
 
-              {/* Top-left crosshair mark */}
-              <div className="absolute top-3 left-3 w-8 h-8 z-20 pointer-events-none">
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary/50" />
-                <div className="absolute -top-0.5 -left-0.5 w-2 h-2 border-t-2 border-l-2 border-primary/70" />
-              </div>
-
-              {/* Bottom-right crosshair mark */}
-              <div className="absolute bottom-3 right-3 w-8 h-8 z-20 pointer-events-none">
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/50" />
-                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 border-b-2 border-r-2 border-primary/70" />
-              </div>
-
-              {/* Center crosshair */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 z-10 pointer-events-none opacity-40">
-                <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-primary/40 border-l border-dashed border-primary/30" />
-                <div className="absolute top-1/2 left-0 w-full h-px -translate-y-1/2 bg-primary/40 border-t border-dashed border-primary/30" />
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 border border-primary/60 rotate-45 bg-transparent" />
-              </div>
-
-              {/* Left middle: vertical ruler ticks */}
-              <div className="absolute left-0 top-1/3 z-20 pointer-events-none flex flex-col items-start gap-1.5">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <div key={i} className="flex items-center gap-1">
-                    <div className={`w-4 h-px ${i % 2 === 0 ? "bg-primary/50" : "bg-primary/25"}`} />
-                    {i % 2 === 0 && <span className="text-[8px] text-primary/60 font-mono">{i * 100}</span>}
+              {/* HUD decorations (grid overlay above stays — it's page texture, not HUD) */}
+              {hudDecorationsEnabled(settings) && (
+                <>
+                  {/* Top-left crosshair mark */}
+                  <div className="absolute top-3 left-3 w-8 h-8 z-20 pointer-events-none">
+                    <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary/50" />
+                    <div className="absolute -top-0.5 -left-0.5 w-2 h-2 border-t-2 border-l-2 border-primary/70" />
                   </div>
-                ))}
-              </div>
 
-              {/* Right middle: horizontal ruler ticks */}
-              <div className="absolute top-1/2 right-0 z-20 pointer-events-none hidden md:flex items-center gap-1.5">
-                {Array.from({ length: 7 }, (_, i) => (
-                  <div key={i} className="flex flex-col items-end gap-1">
-                    <div className={`h-px ${i % 3 === 0 ? "w-4 bg-primary/50" : "w-2 bg-primary/25"}`} />
-                    {i % 3 === 0 && <span className="text-[8px] text-primary/60 font-mono">{i * 200}</span>}
+                  {/* Bottom-right crosshair mark */}
+                  <div className="absolute bottom-3 right-3 w-8 h-8 z-20 pointer-events-none">
+                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/50" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 border-b-2 border-r-2 border-primary/70" />
                   </div>
-                ))}
-              </div>
 
-              {/* Top middle: measurement line with label */}
-              <div className="absolute top-6 left-1/4 right-1/4 z-20 pointer-events-none hidden lg:flex items-center gap-2">
-                <span className="material-symbols-outlined text-[12px] text-primary/60">west</span>
-                <div className="flex-1 h-px bg-primary/40 border-t border-dashed border-primary/30 relative">
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[8px] text-primary/60 font-mono whitespace-nowrap">MAP-004 // 12.8KM</span>
-                </div>
-                <span className="material-symbols-outlined text-[12px] text-primary/60">east</span>
-              </div>
+                  {/* Center crosshair */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 z-10 pointer-events-none opacity-40">
+                    <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-primary/40 border-l border-dashed border-primary/30" />
+                    <div className="absolute top-1/2 left-0 w-full h-px -translate-y-1/2 bg-primary/40 border-t border-dashed border-primary/30" />
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 border border-primary/60 rotate-45 bg-transparent" />
+                  </div>
 
-              {/* Coordinate readout (top left) */}
-              <div className="absolute top-3 right-10 z-20 pointer-events-none hidden lg:block text-right text-[9px] text-primary/60 font-mono leading-4">
-                <div>LAT: 35.6762</div>
-                <div>LNG: 139.6503</div>
-                <div>ALT: 42M</div>
-              </div>
+                  {/* Left middle: vertical ruler ticks */}
+                  <div className="absolute left-0 top-1/3 z-20 pointer-events-none flex flex-col items-start gap-1.5">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <div key={i} className="flex items-center gap-1">
+                        <div className={`w-4 h-px ${i % 2 === 0 ? "bg-primary/50" : "bg-primary/25"}`} />
+                        {i % 2 === 0 && <span className="text-[8px] text-primary/60 font-mono">{i * 100}</span>}
+                      </div>
+                    ))}
+                  </div>
 
-              {/* Bottom left: small dotted connector with node */}
-              <div className="absolute bottom-6 left-6 z-20 pointer-events-none hidden md:flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary-fixed border border-primary" />
-                <span className="w-16 border-t border-dashed border-primary/30" />
-                <span className="w-2 h-2 rounded-full border border-primary/50" />
-              </div>
+                  {/* Right middle: horizontal ruler ticks */}
+                  <div className="absolute top-1/2 right-0 z-20 pointer-events-none hidden md:flex items-center gap-1.5">
+                    {Array.from({ length: 7 }, (_, i) => (
+                      <div key={i} className="flex flex-col items-end gap-1">
+                        <div className={`h-px ${i % 3 === 0 ? "w-4 bg-primary/50" : "w-2 bg-primary/25"}`} />
+                        {i % 3 === 0 && <span className="text-[8px] text-primary/60 font-mono">{i * 200}</span>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Top middle: measurement line with label */}
+                  <div className="absolute top-6 left-1/4 right-1/4 z-20 pointer-events-none hidden lg:flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[12px] text-primary/60">west</span>
+                    <div className="flex-1 h-px bg-primary/40 border-t border-dashed border-primary/30 relative">
+                      <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[8px] text-primary/60 font-mono whitespace-nowrap">MAP-004 // 12.8KM</span>
+                    </div>
+                    <span className="material-symbols-outlined text-[12px] text-primary/60">east</span>
+                  </div>
+
+                  {/* Coordinate readout (top left) */}
+                  <div className="absolute top-3 right-10 z-20 pointer-events-none hidden lg:block text-right text-[9px] text-primary/60 font-mono leading-4">
+                    <div>LAT: 35.6762</div>
+                    <div>LNG: 139.6503</div>
+                    <div>ALT: 42M</div>
+                  </div>
+
+                  {/* Bottom left: small dotted connector with node */}
+                  <div className="absolute bottom-6 left-6 z-20 pointer-events-none hidden md:flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-primary-fixed border border-primary" />
+                    <span className="w-16 border-t border-dashed border-primary/30" />
+                    <span className="w-2 h-2 rounded-full border border-primary/50" />
+                  </div>
+                </>
+              )}
 
               <MapClient markers={markers} center={defaultCenter} />
 
