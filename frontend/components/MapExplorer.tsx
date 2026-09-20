@@ -244,13 +244,9 @@ export default function MapExplorer({
                               onBlur={() => setHovered((h) => (h === loc.name ? null : h))}
                               className={rowButtonClass(isActive)}
                             >
-                              {/* 图标不参与基线对齐：material symbols 与正文的基线度量不同。
-                                  fontSize 走内联，因为 Google 图标字体的未分层 font-size:24px
-                                  优先于 Tailwind 的 @layer utilities，text-[14px] 压不住 */}
-                              <span
-                                className="material-symbols-outlined shrink-0 self-center text-primary"
-                                style={{ fontSize: 14, lineHeight: 1 }}
-                              >
+                              {/* 图标不参与基线对齐：material symbols 与正文的基线度量不同，
+                                  self-center 让字身盒对正文字行盒，无需像素补偿 */}
+                              <span className="material-symbols-outlined shrink-0 self-center text-[14px] text-primary">
                                 location_on
                               </span>
                               <span className="min-w-0 break-words text-metadata-sm transition-colors duration-500 ease-out group-hover:text-primary">
