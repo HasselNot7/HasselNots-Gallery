@@ -83,9 +83,6 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
     setCursorY(null);
   };
 
-  const firstYear = groups[groups.length - 1]?.year;
-  const lastYear = groups[0]?.year;
-
   return (
     <div ref={containerRef} className="relative mb-8 select-none pl-6">
       {/* 底衬面板：压住穿过数字的水波纹；无 backdrop-blur（背景层已有一层） */}
@@ -137,17 +134,6 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
         onPointerLeave={stopDragging}
         onPointerCancel={stopDragging}
       />
-
-      {/* Header */}
-      <div className="relative mb-6 flex items-center gap-3">
-        <span className="text-[9px] font-bold uppercase tracking-[0.35em] text-primary/70">Archive</span>
-        <span className="h-px flex-1 bg-gradient-to-r from-primary/25 to-transparent" />
-        {firstYear && lastYear && (
-          <span className="text-[9px] tracking-[0.15em] text-outline" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            {firstYear}—{lastYear}
-          </span>
-        )}
-      </div>
 
       {/* pb-14 给水印留出专属空白区 */}
       <div className="relative flex flex-col gap-7 pb-14">
