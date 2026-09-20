@@ -178,6 +178,12 @@ export default function HeroSection({
                 ))}
               </h1>
             </div>
+
+            {heroDescription.trim() !== "" && (
+              <p className="relative mt-4 md:mt-5 max-w-2xl text-center text-body-md text-primary/70 line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
+                {heroDescription}
+              </p>
+            )}
           </div>
         </section>
 
