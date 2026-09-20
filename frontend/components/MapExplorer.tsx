@@ -53,8 +53,10 @@ export default function MapExplorer({
     }
   };
 
-  // 地图 -> 列表：只切选中态，不反向移动地图视野
-  const selectFromMap = (name: string) => setActive((prev) => (prev === name ? null : name));
+  // 地图 -> 列表：只切选中态，不反向移动地图视野。
+  // name 为 null 表示点击了跨地点的聚合体：视野已离开原选中地点，直接清除选中。
+  const selectFromMap = (name: string | null) =>
+    setActive((prev) => (name === null || prev === name ? null : name));
 
   useEffect(() => {
     if (active) rows.current[active]?.scrollIntoView({ block: "nearest" });

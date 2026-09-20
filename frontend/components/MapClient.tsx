@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Marker } from "leaflet";
 import { SearchField, Spinner } from "@heroui/react";
 import { attachLayerSwitcher } from "@/lib/mapLayers";
+import { clusterBasePoints, type BasePoint, type Cluster } from "@/lib/mapCluster";
 import { yearColor, yearOf } from "@/lib/mapYears";
 import { searchPlaces, GeoResult } from "@/lib/geocode";
 
@@ -21,8 +22,14 @@ export interface MapMarker {
 /** 标记的强调等级：选中 > 悬停 > 常态 */
 type Emphasis = "active" | "hover" | "none";
 
-/** 建好后登记一次，之后只换 icon / 调层级，不重建标记 */
-type RegisteredMarker = { marker: Marker; color: string; count: number; emphasis: Emphasis };
+/** 一个可渲染标记（可能是若干同坐标分组按当前 zoom 合并出来的簇） */
+type RegisteredMarker = {
+  marker: Marker;
+  color: string;
+  count: number;
+  names: string[];
+  emphasis: Emphasis;
+};
 
 export interface FocusRequest {
   name: string;
@@ -42,12 +49,15 @@ export default function MapClient({
   activeLocation?: string | null;
   hoveredLocation?: string | null;
   focusRequest?: FocusRequest | null;
-  onSelectLocation?: (location: string) => void;
+  /** 传地点名 = 选中该地点；传 null = 清除选中（点击跨地点聚合体时用） */
+  onSelectLocation?: (location: string | null) => void;
 }) {
   const mapRef = useRef<any>(null);
   const LRef = useRef<typeof import("leaflet") | null>(null);
-  // 地点名 -> 该地点的标记（同一地点可能有多枚同坐标标记）
+  // 地点名 -> 该地点当前可见的标记（跨地点的簇会同时登记在它包含的每个地点名下）
   const markersByName = useRef<Map<string, RegisteredMarker[]>>(new Map());
+  // 地点名 -> 该地点所有照片的加权中心，flyTo 用它，避免受聚合形态影响
+  const centroidByName = useRef<Map<string, [number, number]>>(new Map());
   const activeRef = useRef<string | null>(null);
   const hoverRef = useRef<string | null>(null);
   // onSelectLocation 每次渲染同步，避免标记回调拿到旧闭包
@@ -88,9 +98,14 @@ export default function MapClient({
   const applyEmphasis = useCallback(() => {
     const L = LRef.current;
     if (!L) return;
-    markersByName.current.forEach((group, name) => {
-      const state: Emphasis = name === activeRef.current ? "active" : name === hoverRef.current ? "hover" : "none";
+    const seen = new Set<RegisteredMarker>();
+    markersByName.current.forEach((group) => {
       group.forEach((entry) => {
+        if (seen.has(entry)) return;
+        seen.add(entry);
+        // 跨地点的簇只要包含目标地点就给反馈；它本身不会被「选中」，见点击规则
+        const hit = (name: string | null) => (name ? entry.names.includes(name) : false);
+        const state: Emphasis = hit(activeRef.current) ? "active" : hit(hoverRef.current) ? "hover" : "none";
         if (entry.emphasis !== state) {
           entry.emphasis = state;
           entry.marker.setIcon(L.divIcon(iconSpec(entry.color, entry.count, state)));
@@ -114,10 +129,9 @@ export default function MapClient({
   useEffect(() => {
     if (!focusRequest) return;
     const map = mapRef.current;
-    const group = markersByName.current.get(focusRequest.name);
-    if (!map || !group?.length) return;
-    const { lat, lng } = group[0].marker.getLatLng();
-    map.flyTo([lat, lng], Math.max(map.getZoom(), 9), { duration: 0.9 });
+    const at = centroidByName.current.get(focusRequest.name);
+    if (!map || !at) return;
+    map.flyTo(at, Math.max(map.getZoom(), 9), { duration: 0.9 });
   }, [focusRequest]);
 
   const handleSearch = (q: string) => {
@@ -187,31 +201,44 @@ export default function MapClient({
         groups.get(key)!.push(m);
       });
 
+      // 基础点：按坐标分组的结果，是聚合的最小单位
+      const basePoints: BasePoint<MapMarker>[] = [];
+      const centroid = new Map<string, { lat: number; lng: number; n: number }>();
       groups.forEach((group) => {
         const lat = group[0].latitude;
         const lng = group[0].longitude;
         bounds.push([lat, lng]);
 
-        const count = group.length;
         // 取组内最新拍摄年份作为标记颜色
         let year: number | null = null;
         group.forEach((m) => {
           const y = yearOf(m.shoot_time);
           if (y !== null && (year === null || y > year)) year = y;
         });
-        const color = year !== null ? yearColor(year) : "#141414";
-        const name = group[0].location;
+        const name = group[0].location ?? null;
+        basePoints.push({
+          lat,
+          lng,
+          count: group.length,
+          color: year !== null ? yearColor(year) : "#141414",
+          name,
+          photos: group,
+        });
 
-        const marker = L.marker([lat, lng], { icon: L.divIcon(iconSpec(color, count, "none")) }).addTo(map);
         if (name) {
-          const entry = { marker, color, count, emphasis: "none" as Emphasis };
-          const group = markersByName.current.get(name);
-          if (group) group.push(entry);
-          else markersByName.current.set(name, [entry]);
-          marker.on("click", () => selectRef.current?.(name));
+          const acc = centroid.get(name) ?? { lat: 0, lng: 0, n: 0 };
+          acc.lat += lat * group.length;
+          acc.lng += lng * group.length;
+          acc.n += group.length;
+          centroid.set(name, acc);
         }
+      });
+      centroidByName.current = new Map(
+        Array.from(centroid, ([name, c]) => [name, [c.lat / c.n, c.lng / c.n]] as [string, [number, number]])
+      );
 
-        const photosHtml = group
+      const popupHtml = (c: Cluster<MapMarker>) => {
+        const photosHtml = c.photos
           .map(
             (m) => `
             <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #eef1ee;align-items:center;">
@@ -225,24 +252,62 @@ export default function MapClient({
             </div>`
           )
           .join("");
-
-        marker.bindPopup(
-          `<div style="font-family:Inter,sans-serif;max-width:240px;">
+        return `<div style="font-family:Inter,sans-serif;max-width:240px;">
             <div style="display:flex;align-items:center;gap:6px;padding:8px 0 4px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#727973;letter-spacing:0.05em;text-transform:uppercase;">
               <span style="width:6px;height:6px;border-radius:50%;background:#141414;display:inline-block;"></span>
-              ${count} photo${count > 1 ? "s" : ""} at this location
+              ${c.count} photo${c.count > 1 ? "s" : ""} at this location
             </div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#727973;padding-bottom:4px;">${lat.toFixed(4)}, ${lng.toFixed(4)}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#727973;padding-bottom:4px;">${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}</div>
             ${photosHtml}
-          </div>`,
-          { maxWidth: 260, maxHeight: 320 }
-        );
-      });
+          </div>`;
+      };
+
+      /**
+       * 按当前 zoom 重画标记。聚合只是视觉合并、不代表数据合并，因此点击分两种：
+       * - 簇内所有点同属一个 location_name -> 等价于点击该地点：选中 + 列表联动 + 弹照片
+       * - 簇跨多个 location_name -> 只放大到簇范围（至少一级），并清除选中与强调态，
+       *   因为视野已经离开原选中地点，列表再高亮它会造成 UI 与视野错位
+       * 重建一律走 markersByName 注册表（不另起 layerGroup），否则 zoomend 之后
+       * applyEmphasis() 会操作已销毁的 marker 而静默失效。
+       */
+      const render = () => {
+        markersByName.current.forEach((list) => list.forEach((e) => map.removeLayer(e.marker)));
+        markersByName.current = new Map();
+
+        const zoom = map.getZoom();
+        clusterBasePoints((la, ln, z) => map.project([la, ln], z), basePoints, zoom).forEach((c) => {
+          const marker = L.marker([c.lat, c.lng], { icon: L.divIcon(iconSpec(c.color, c.count, "none")) }).addTo(map);
+          const entry: RegisteredMarker = { marker, color: c.color, count: c.count, names: c.names, emphasis: "none" };
+          c.names.forEach((n) => {
+            const list = markersByName.current.get(n);
+            if (list) list.push(entry);
+            else markersByName.current.set(n, [entry]);
+          });
+
+          if (c.names.length <= 1) {
+            marker.bindPopup(popupHtml(c), { maxWidth: 260, maxHeight: 320 });
+            if (c.names.length === 1) marker.on("click", () => selectRef.current?.(c.names[0]));
+          } else {
+            marker.on("click", () => {
+              selectRef.current?.(null);
+              const b = L.latLngBounds(c.photos.map((p) => [p.latitude, p.longitude] as [number, number]));
+              // 至少放大一级；上限 +3 级，避免退化边界（同坐标多地点）一步跳到最大缩放
+              const fit = map.getBoundsZoom(b);
+              const target = Math.min(zoom + 3, map.getMaxZoom(), Math.max(zoom + 1, fit));
+              map.flyTo(b.getCenter(), target, { duration: 0.8 });
+            });
+          }
+        });
+
+        applyEmphasis();
+      };
+
+      map.on("zoomend", render);
 
       if (bounds.length > 1) map.fitBounds(bounds, { padding: [50, 50] });
 
-      // 地图重建后立刻补一次强调态（选中可能早于 Leaflet 加载完成）
-      applyEmphasis();
+      // 建完立刻按最终 zoom 画一次（fitBounds 之后再由 zoomend 重算）
+      render();
 
       // Ensure correct sizing after mount (mobile layouts, late CSS, etc.)
       setTimeout(() => {
