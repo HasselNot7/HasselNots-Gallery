@@ -369,49 +369,6 @@ export default function GallerySection({
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* 移动端：横向月份胶囊条，年份只在变化处出现一次 */}
-          {years.length > 0 && (
-            <div className="md:hidden -mx-4 mb-4 border-y border-primary/10">
-              <div ref={monthBarRef} className="flex items-center gap-0.5 overflow-x-auto px-2" style={{ scrollbarWidth: "none" }}>
-                {years.map((y, i) => {
-                  const isActive = activeYear === y;
-                  const showYear = i === 0 || years[i - 1].slice(0, 4) !== y.slice(0, 4);
-                  return (
-                    <Fragment key={y}>
-                      {showYear && (
-                        <span
-                          className="flex-shrink-0 pl-2 pr-1 text-[9px] tracking-[0.2em] text-outline"
-                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                        >
-                          {y.slice(0, 4)}
-                        </span>
-                      )}
-                      <button
-                        ref={(el) => {
-                          if (el) monthBtnRefs.current.set(y, el);
-                          else monthBtnRefs.current.delete(y);
-                        }}
-                        onClick={() => jumpToYear(y)}
-                        aria-current={isActive ? "date" : undefined}
-                        className="group relative flex h-11 min-w-11 flex-shrink-0 items-center justify-center"
-                      >
-                        <span
-                          className={`rounded-full leading-none tabular-nums tracking-widest transition-all duration-200 ${
-                            isActive
-                              ? "bg-primary px-3 py-1.5 text-[11px] font-bold text-white shadow-[0_3px_10px_rgba(20,20,20,0.25)]"
-                              : "px-3 py-1.5 text-[11px] text-on-surface-variant group-active:bg-primary/[0.07] group-active:text-primary"
-                          }`}
-                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                        >
-                          {y.slice(5, 7)}
-                        </span>
-                      </button>
-                    </Fragment>
-                  );
-                })}
-              </div>
-            </div>
-          )}
           {photos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 text-on-surface-variant">
               <span className="material-symbols-outlined text-6xl mb-4">photo_library</span>
@@ -485,6 +442,50 @@ export default function GallerySection({
                 </span>
               </div>
             </>
+          )}
+
+          {/* 移动端：底部浮动月份条，滚到页脚时随列尾自然释放，不遮挡 footer */}
+          {years.length > 0 && (
+            <div className="md:hidden sticky bottom-0 z-30 -mx-4 mt-6 border-t border-primary/10 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_20px_rgba(20,20,20,0.06)]">
+              <div ref={monthBarRef} className="flex items-center gap-0.5 overflow-x-auto px-2" style={{ scrollbarWidth: "none" }}>
+                {years.map((y, i) => {
+                  const isActive = activeYear === y;
+                  const showYear = i === 0 || years[i - 1].slice(0, 4) !== y.slice(0, 4);
+                  return (
+                    <Fragment key={y}>
+                      {showYear && (
+                        <span
+                          className="flex-shrink-0 pl-2 pr-1 text-[9px] tracking-[0.2em] text-outline"
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                        >
+                          {y.slice(0, 4)}
+                        </span>
+                      )}
+                      <button
+                        ref={(el) => {
+                          if (el) monthBtnRefs.current.set(y, el);
+                          else monthBtnRefs.current.delete(y);
+                        }}
+                        onClick={() => jumpToYear(y)}
+                        aria-current={isActive ? "date" : undefined}
+                        className="group relative flex h-11 min-w-11 flex-shrink-0 items-center justify-center"
+                      >
+                        <span
+                          className={`rounded-full leading-none tabular-nums tracking-widest transition-all duration-200 ${
+                            isActive
+                              ? "bg-primary px-3 py-1.5 text-[11px] font-bold text-white shadow-[0_3px_10px_rgba(20,20,20,0.25)]"
+                              : "px-3 py-1.5 text-[11px] text-on-surface-variant group-active:bg-primary/[0.07] group-active:text-primary"
+                          }`}
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                        >
+                          {y.slice(5, 7)}
+                        </span>
+                      </button>
+                    </Fragment>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
       </div>
