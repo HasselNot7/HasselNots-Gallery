@@ -11,6 +11,10 @@ const PAGE_SIZE = 24;
 function DraggableTimeline({ entries, active, onChange }: { entries: string[]; active: string; onChange: (y: string) => void }) {
   const [dragging, setDragging] = useState(false);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const nodeRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [linePos, setLinePos] = useState<{ top: number; height: number } | null>(null);
+  const [cursorY, setCursorY] = useState<number | null>(null);
 
   const groups = useMemo(() => {
     const years = [...new Set(entries.map((e) => e.slice(0, 4)))];
@@ -19,6 +23,30 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
 
   const activeYear = active.slice(0, 4);
 
+  // 量出首尾圆点的中心，让导引线精确起于第一个圆点、止于最后一个圆点
+  useEffect(() => {
+    const measure = () => {
+      const container = containerRef.current;
+      const first = nodeRefs.current[0];
+      const last = nodeRefs.current[groups.length - 1];
+      if (!container || !first || !last) return;
+      const cr = container.getBoundingClientRect();
+      const centerY = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return r.top - cr.top + r.height / 2;
+      };
+      const f = centerY(first);
+      const l = centerY(last);
+      setLinePos({ top: f, height: Math.max(l - f, 0) });
+    };
+    measure();
+    document.fonts?.ready.then(measure).catch(() => {});
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [groups]);
+
+  // 拖拽只按 Y 吸附到「年份」是刻意的粗粒度：同一年的月份排在同一水平行内，
+  // 共享同一段 Y 区间，纵向坐标无法在它们之间区分；月份级选择留给点击。
   const valueFromY = useCallback(
     (clientY: number) => {
       let bestIdx = -1;
@@ -37,26 +65,61 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
     [groups, active]
   );
 
+  const cursorFromEvent = (clientY: number) => {
+    const cr = containerRef.current?.getBoundingClientRect();
+    return cr ? clientY - cr.top : 0;
+  };
+
   const handlePointerDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
     setDragging(true);
+    setCursorY(cursorFromEvent(e.clientY));
     onChange(valueFromY(e.clientY));
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragging) return;
+    setCursorY(cursorFromEvent(e.clientY));
     onChange(valueFromY(e.clientY));
   };
 
-  const stopDragging = () => setDragging(false);
+  const stopDragging = () => {
+    setDragging(false);
+    setCursorY(null);
+  };
 
   return (
-    <div className="relative mb-8 select-none">
-      {/* Vertical guide line */}
-      <div className="absolute left-[5px] top-3 bottom-3 w-px bg-gradient-to-b from-primary/20 via-primary/10 to-primary/20 pointer-events-none" />
-
-      {/* Drag hit area over the line */}
+    <div ref={containerRef} className="relative mb-8 select-none">
+      {/* 极淡竖向底衬，压住穿过数字的水波纹；左缘 mask 羽化、右缘渐变透明，无硬边 */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-8 touch-none cursor-pointer"
+        aria-hidden
+        className="pointer-events-none absolute -top-4 -bottom-4 -left-6 w-[calc(100%+88px)] bg-gradient-to-r from-white/75 via-white/40 to-transparent"
+        style={{
+          maskImage: "linear-gradient(to right, transparent, black 28px)",
+          WebkitMaskImage: "linear-gradient(to right, transparent, black 28px)",
+        }}
+      />
+
+      {/* Vertical guide line：起止对齐首尾圆点中心 */}
+      {linePos && (
+        <div
+          className="absolute left-[5px] w-px bg-gradient-to-b from-primary/20 via-primary/10 to-primary/20 pointer-events-none"
+          style={{ top: linePos.top, height: linePos.height }}
+        />
+      )}
+
+      {/* 拖拽游标：跟随指针，松手后消失、激活态吸附到最近年份 */}
+      {dragging && cursorY !== null && (
+        <span
+          aria-hidden
+          className="absolute left-0 z-20 h-[2px] w-[14px] -translate-y-1/2 rounded-full bg-primary pointer-events-none"
+          style={{ top: cursorY }}
+        />
+      )}
+
+      {/* Drag hit area：只盖住导引线与圆点的窄条，不吞年份按钮点击；z-20 保证压在整个年份列表之上 */}
+      <div
+        className="absolute left-0 top-0 bottom-0 z-20 w-5 touch-none cursor-pointer"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={stopDragging}
@@ -64,7 +127,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
         onPointerCancel={stopDragging}
       />
 
-      <div className="flex flex-col gap-9">
+      <div className="flex flex-col gap-7">
         {groups.map((g, gi) => {
           const isActiveYear = g.year === activeYear;
           return (
@@ -76,7 +139,12 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
               className="relative flex items-start gap-4"
             >
               {/* Node dot on the line */}
-              <span className="relative z-10 mt-2 flex h-3 w-3 flex-shrink-0 items-center justify-center">
+              <span
+                ref={(el) => {
+                  nodeRefs.current[gi] = el;
+                }}
+                className="relative z-10 mt-2 flex h-3 w-3 flex-shrink-0 items-center justify-center"
+              >
                 <span
                   className="rounded-full transition-all duration-300"
                   style={{
@@ -84,6 +152,7 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
                     height: isActiveYear ? 8 : 5,
                     background: isActiveYear ? "#141414" : "#ffffff",
                     border: "1px solid rgba(20,20,20,0.4)",
+                    boxShadow: isActiveYear ? "0 0 0 3px rgba(20,20,20,0.10)" : "none",
                   }}
                 />
               </span>
@@ -92,10 +161,11 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
                 {/* Year label */}
                 <button
                   onClick={() => g.months[0] && onChange(g.months[0])}
-                  className={`block text-left text-xl font-bold leading-none tracking-tight transition-colors ${
-                    isActiveYear ? "text-primary" : "text-primary/45 hover:text-primary/80"
+                  aria-current={isActiveYear ? "true" : undefined}
+                  className={`block text-left text-xl font-medium leading-none tracking-tight transition-colors ${
+                    isActiveYear ? "text-primary" : "text-primary/60 hover:text-primary"
                   }`}
-                  style={{ fontFamily: "'Sigma Serif', 'Noto Serif SC', serif" }}
+                  style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', serif" }}
                 >
                   {g.year}
                 </button>
@@ -111,8 +181,9 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
                       <button
                         key={m}
                         onClick={() => onChange(m)}
+                        aria-current={isActive ? "date" : undefined}
                         className={`relative pb-1 text-[11px] leading-none tracking-wider transition-colors ${
-                          isActive ? "text-primary font-bold" : "text-outline hover:text-primary"
+                          isActive ? "text-primary font-bold" : "text-on-surface-variant hover:text-primary"
                         }`}
                       >
                         {m.slice(5)}
@@ -261,7 +332,7 @@ export default function GallerySection({
         <span className="text-label-caps text-outline">SORTED BY SHOOT DATE</span>
       </div>
 
-      <div className="flex flex-col md:flex-row md:gap-8 md:items-start">
+      <div className="flex flex-col md:flex-row md:gap-12 md:items-start">
         {/* 桌面端：左侧竖向时间线 */}
         <div className="hidden md:block flex-shrink-0 md:sticky md:top-28 md:pt-2">
           <DraggableTimeline entries={years} active={activeYear} onChange={jumpToYear} />
