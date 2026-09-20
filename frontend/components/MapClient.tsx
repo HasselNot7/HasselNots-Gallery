@@ -196,9 +196,12 @@ export default function MapClient({
 
   useEffect(() => {
     let map: any;
+    let disposed = false;
     import("leaflet").then(({ default: L }) => {
       const mapContainer = document.getElementById("leaflet-map");
-      if (!mapContainer || (mapContainer as any)._leaflet_id) return;
+      // StrictMode 会先跑一次 cleanup 再跑第二次 effect，而首次的 map 是异步建的：
+      // 没有 disposed 就会留下一个「卸载时无人可拆」的地图，之后 _leaflet_id 挡住所有重建
+      if (disposed || !mapContainer || (mapContainer as any)._leaflet_id) return;
 
       map = L.map("leaflet-map").setView(center, markers.length === 1 ? 12 : 5);
       mapRef.current = map;
@@ -334,8 +337,10 @@ export default function MapClient({
     });
 
     return () => {
+      disposed = true;
       if (map) map.remove();
-      if (mapRef.current === map) mapRef.current = null;
+      else if (mapRef.current) mapRef.current.remove();
+      if (mapRef.current) mapRef.current = null;
       LRef.current = null;
       markersByName.current.clear();
     };

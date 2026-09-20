@@ -2,7 +2,6 @@ import { fetchGeotaggedPhotos, fetchSettings, getPhotoImageUrl, hudDecorationsEn
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MapExplorer from "@/components/MapExplorer";
-import { yearColor, yearsForLegend } from "@/lib/mapYears";
 
 export default async function MapPage() {
   let photos: Photo[] = [];
@@ -31,17 +30,13 @@ export default async function MapPage() {
   const defaultCenter: [number, number] =
     markers.length > 0 ? [markers[0].latitude, markers[0].longitude] : [35.6762, 139.6503];
 
-  const legendYears = yearsForLegend(markers);
-
-  // 地点分组已整体移到 MapExplorer（从 markers 派生）；头部这一格只需要个数，
-  // 与 MapExplorer 用同一个 key 语义（地点名），因此两处结果必然一致
-  const locationCount = new Set(markers.map((m) => m.location)).size;
-
-  // 页面所有 HUD 装饰共用同一个开合判断
+  // 页面所有 HUD 装饰共用同一个开合判断。
+  // 会随年份筛选变化的数字（地点数、照片数、底部计数）一律由 MapExplorer 派生，
+  // 服务端不再计算，否则筛选后头部与列表会各说各话。
   const showHud = hudDecorationsEnabled(settings);
 
   // 装饰节点留在服务端拼装，由 MapExplorer 放回它原来的 DOM 位置
-  const mapUnderlay = (
+  const mapDecorations = (
     <>
               {/* Grid overlay on map */}
               <div className="absolute inset-0 z-[5] pointer-events-none" style={{
@@ -123,30 +118,6 @@ export default async function MapPage() {
     </>
   );
 
-  const mapOverlay = (
-    <>
-              {/* 年份图例 */}
-              {legendYears.length > 0 && (
-                <div className="absolute bottom-3 left-3 z-[600] bg-surface/90 backdrop-blur border border-border-subtle rounded-md px-3 py-2 shadow-md">
-                  <div className="text-[9px] text-outline uppercase tracking-widest mb-1.5" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                    按年份
-                  </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1">
-                    {legendYears.map((y) => (
-                      <span key={y} className="flex items-center gap-1.5 text-metadata-sm text-on-surface-variant">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full border border-white/60"
-                          style={{ background: yearColor(y) }}
-                        />
-                        {y}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-    </>
-  );
-
   const asideDecor = (
     <>
               {showHud && (
@@ -171,54 +142,14 @@ export default async function MapPage() {
         <Navbar />
 
         <main className="flex-1 flex flex-col min-h-0">
-        {/* Header Section with grid overlay */}
-        <section className="relative px-4 md:px-grid-margin pt-5 md:pt-6 pb-3 border-b border-primary/15 w-full bg-primary-fixed/5">
-          <div className="absolute inset-0 pointer-events-none" style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(20,20,20,0.05) 1px, transparent 1px)
-            `,
-            backgroundSize: "40px 40px",
-            opacity: 0.2,
-          }} />
-
-          <div className="relative z-10">
-            <h1 className="text-2xl md:text-display-lg text-primary mb-2 md:mb-3 uppercase" style={{ fontFamily: "var(--font-display)" }}>影像足迹</h1>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-metadata-sm text-on-surface-variant">
-              <span className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px] text-primary">location_on</span>
-                {locationCount} 地点
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px] text-primary">photo_camera</span>
-                {markers.length} 照片
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* Map Container */}
-        <div className="border-y border-primary/15 relative lg:flex lg:flex-1 lg:flex-col lg:min-h-0">
           <MapExplorer
             markers={markers}
             center={defaultCenter}
-            mapUnderlay={mapUnderlay}
-            mapOverlay={mapOverlay}
+            mapDecorations={mapDecorations}
             asideDecor={asideDecor}
+            showHud={showHud}
           />
-        </div>
-
-        <div className="px-4 md:px-grid-margin py-4 border-x border-primary/15 w-full flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-metadata-sm">
-          <span className="text-on-surface-variant flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full border border-primary/50" />
-            <span className="w-4 border-t border-dashed border-primary/25" />
-            {markers.length} 张带坐标的照片
-          </span>
-          {showHud && (
-            <span className="w-1.5 h-1.5 rounded-full bg-mint-accent border border-primary animate-pulse" />
-          )}
-        </div>
-      </main>
+        </main>
       </div>
 
       <Footer />
