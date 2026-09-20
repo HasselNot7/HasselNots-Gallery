@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useState, useRef, useSyncExternalStore } from "react";
+import {
+  type ComponentProps,
+  type HTMLAttributes,
+  type ReactElement,
+  type RefCallback,
+  useEffect,
+  useState,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import piexif from "piexifjs";
@@ -15,11 +24,13 @@ import {
   ListBox,
   Modal,
   Select,
+  Skeleton,
   Slider,
   Switch,
   TextField,
   TextArea,
   Toast,
+  Tooltip,
   toast,
   useOverlayState,
 } from "@heroui/react";
@@ -353,6 +364,46 @@ const navRowClass = (active: boolean, indent = false, collapsed = false) =>
       : "text-on-surface-variant font-normal hover:bg-primary/5 hover:text-primary",
   ].join(" ");
 
+// 鼠标自上而下扫过整列时，0 延迟会让每行都闪一下；400ms 接近原生 title 的手感
+const NAV_TOOLTIP_DELAY = 400;
+
+/**
+ * Tooltip.Trigger 通过 render 交还给触发元素的属性：与标签名无关的交互属性
+ * （role / tabIndex / hover & focus 处理器 / aria-describedby）加一个合并后的 callback ref。
+ */
+type NavTriggerProps = HTMLAttributes<HTMLElement> & { ref?: RefCallback<HTMLElement> };
+
+/**
+ * 折叠态侧栏的悬停提示。
+ *
+ * 始终渲染这层包裹、只用 isDisabled 决定提示有无：若按 collapsed 条件性增删包裹层，
+ * 展开/折叠切换会让按钮重挂载、键盘焦点丢失。
+ *
+ * 用 render 把触发属性直接给到 <button>/<Link> 本身：Tooltip.Trigger 默认渲染
+ * div[role=button][tabindex=0]，既多出一个 tab 停靠点，也打断 flex/w-full 布局。
+ */
+function NavTip({
+  label,
+  disabled,
+  render,
+}: {
+  label: string;
+  disabled: boolean;
+  render: (props: NavTriggerProps) => ReactElement;
+}) {
+  // Trigger 的泛型只会按它默认的 div 推断，而回传的 props 与宿主标签无关，这里收口一次
+  const triggerRender = render as unknown as (props: ComponentProps<"div">) => ReactElement;
+  return (
+    <Tooltip delay={NAV_TOOLTIP_DELAY} isDisabled={disabled}>
+      <Tooltip.Trigger render={triggerRender} />
+      <Tooltip.Content showArrow placement="right">
+        <Tooltip.Arrow />
+        <p>{label}</p>
+      </Tooltip.Content>
+    </Tooltip>
+  );
+}
+
 function NavRowContent({
   icon,
   label,
@@ -391,16 +442,22 @@ function NavRow({
   ariaControls?: string;
 }) {
   return (
-    <button
-      onClick={onSelect}
-      aria-current={active ? "page" : undefined}
-      aria-expanded={ariaExpanded}
-      aria-controls={ariaControls}
-      title={collapsed ? label : undefined}
-      className={navRowClass(active, indent, collapsed)}
-    >
-      <NavRowContent icon={icon} label={label} collapsed={collapsed} />
-    </button>
+    <NavTip
+      label={label}
+      disabled={!collapsed}
+      render={(triggerProps) => (
+        <button
+          {...triggerProps}
+          onClick={onSelect}
+          aria-current={active ? "page" : undefined}
+          aria-expanded={ariaExpanded}
+          aria-controls={ariaControls}
+          className={navRowClass(active, indent, collapsed)}
+        >
+          <NavRowContent icon={icon} label={label} collapsed={collapsed} />
+        </button>
+      )}
+    />
   );
 }
 
@@ -416,13 +473,20 @@ function NavRowLink({
   collapsed?: boolean;
 }) {
   return (
-    <Link
-      href={href}
-      title={collapsed ? label : undefined}
-      className={navRowClass(false, false, collapsed)}
-    >
-      <NavRowContent icon={icon} label={label} collapsed={collapsed} />
-    </Link>
+    <NavTip
+      label={label}
+      disabled={!collapsed}
+      render={(triggerProps) => (
+        <Link
+          {...triggerProps}
+          role="link"
+          href={href}
+          className={navRowClass(false, false, collapsed)}
+        >
+          <NavRowContent icon={icon} label={label} collapsed={collapsed} />
+        </Link>
+      )}
+    />
   );
 }
 
@@ -465,30 +529,36 @@ function NavList({
         {collapsed && (
           <div aria-hidden="true" className="my-2 mx-auto w-6 border-t border-border-subtle" />
         )}
-        <button
-          onClick={onToggleMore}
-          aria-label={collapsed ? "更多功能" : undefined}
-          title={collapsed ? "更多功能" : undefined}
-          aria-expanded={moreExpanded}
-          aria-controls={groupId}
-          className={navRowClass(moreGroupActive, false, collapsed)}
-        >
-          {/* 折叠态放不下 chevron，改用图标本身表达开/关 */}
-          <span className="material-symbols-outlined text-[22px]">
-            {collapsed && moreExpanded ? "expand_less" : "more_horiz"}
-          </span>
-          <span className={collapsed ? "sr-only" : "flex-1 text-left"}>更多功能</span>
-          {!collapsed && (
-            <span
-              aria-hidden="true"
-              className={`material-symbols-outlined text-[18px] motion-safe:transition-transform motion-safe:duration-200 ${
-                moreExpanded ? "rotate-[270deg]" : "rotate-[90deg]"
-              }`}
+        <NavTip
+          label="更多功能"
+          disabled={!collapsed}
+          render={(triggerProps) => (
+            <button
+              {...triggerProps}
+              onClick={onToggleMore}
+              aria-label={collapsed ? "更多功能" : undefined}
+              aria-expanded={moreExpanded}
+              aria-controls={groupId}
+              className={navRowClass(moreGroupActive, false, collapsed)}
             >
-              chevron_right
-            </span>
+              {/* 折叠态放不下 chevron，改用图标本身表达开/关 */}
+              <span className="material-symbols-outlined text-[22px]">
+                {collapsed && moreExpanded ? "expand_less" : "more_horiz"}
+              </span>
+              <span className={collapsed ? "sr-only" : "flex-1 text-left"}>更多功能</span>
+              {!collapsed && (
+                <span
+                  aria-hidden="true"
+                  className={`material-symbols-outlined text-[18px] motion-safe:transition-transform motion-safe:duration-200 ${
+                    moreExpanded ? "rotate-[270deg]" : "rotate-[90deg]"
+                  }`}
+                >
+                  chevron_right
+                </span>
+              )}
+            </button>
           )}
-        </button>
+        />
 
         <ul id={groupId} className="flex flex-col gap-1" hidden={!showMoreItems}>
           {MORE_TABS.map((tab) => (
@@ -2244,9 +2314,42 @@ export default function AdminPage() {
             </div>
 
             {!analytics ? (
-              <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle rounded-lg text-on-surface-variant">
-                <span className="material-symbols-outlined text-6xl mb-4">monitoring</span>
-                <p className="text-metadata-sm text-outline uppercase">正在加载访问分析...</p>
+              /* 逐块照抄下方真实布局的行列与间距类，条高取文本行盒高度，故加载前后总高基本不变 */
+              <div role="status" aria-label="正在加载访问分析" className="relative flex flex-col gap-8">
+                {/* 绝对定位在标题行下方的 24px 空档里，可见但不额外撑高 */}
+                <p className="absolute top-[-24px] left-0 text-metadata-sm text-outline">
+                  正在加载访问分析...
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <Card key={i} className="p-4">
+                      <Skeleton className="h-[38.4px] w-3/5 rounded-lg" />
+                      <Skeleton className="h-2.5 w-2/5 rounded-md" />
+                    </Card>
+                  ))}
+                </div>
+
+                <div>
+                  <div className="border-b border-primary/15 pb-2 mb-3">
+                    <Skeleton className="h-2.5 w-24" />
+                  </div>
+                  <Skeleton className="h-32 w-full rounded-lg" />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i}>
+                      <div className="border-b border-primary/15 pb-2 mb-3">
+                        <Skeleton className="h-2.5 w-24" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {[0, 1, 2, 3].map((j) => (
+                          <Skeleton key={j} className="h-[16.8px] w-full" />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col gap-8">
