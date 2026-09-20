@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, Chip, SearchField, Spinner } from "@heroui/react";
 import Navbar from "@/components/Navbar";
@@ -28,43 +28,35 @@ interface SearchArticle {
 
 export default function SearchPage() {
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
-  const [photos, setPhotos] = useState<SearchPhoto[]>([]);
-  const [articles, setArticles] = useState<SearchArticle[]>([]);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [result, setResult] = useState<{
+    query: string;
+    photos: SearchPhoto[];
+    articles: SearchArticle[];
+  } | null>(null);
+
+  const query = q.trim();
+  // 结果只属于取出它时的那个查询：查询一变就视为未落地，
+  // 于是 loading / searched / 列表全变成派生值，effect 里不再同步 setState。
+  const current = result && result.query === query ? result : null;
+  const loading = query !== "" && current === null;
+  const searched = current !== null;
+  const photos = current?.photos ?? [];
+  const articles = current?.articles ?? [];
 
   useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
-    const query = q.trim();
-    if (!query) {
-      setPhotos([]);
-      setArticles([]);
-      setSearched(false);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    timer.current = setTimeout(async () => {
+    if (!query) return;
+    const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         if (!res.ok) throw new Error();
         const data = await res.json();
-        setPhotos(data.photos || []);
-        setArticles(data.articles || []);
-        setSearched(true);
+        setResult({ query, photos: data.photos || [], articles: data.articles || [] });
       } catch {
-        setPhotos([]);
-        setArticles([]);
-        setSearched(true);
-      } finally {
-        setLoading(false);
+        setResult({ query, photos: [], articles: [] });
       }
     }, 350);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [q]);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const total = photos.length + articles.length;
 

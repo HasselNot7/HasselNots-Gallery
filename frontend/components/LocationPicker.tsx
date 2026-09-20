@@ -18,6 +18,14 @@ export default function LocationPicker({
   const markerRef = useRef<any>(null);
   const [picked, setPicked] = useState<[number, number] | null>(initial);
 
+  // 地图只在挂载时按 initial 定位一次，之后 coords 变化不应重建地图，
+  // 所以这里刻意冻结成 ref；onPick 每次渲染同步，避免拖拽回调拿到旧闭包。
+  const initialRef = useRef(initial);
+  const onPickRef = useRef(onPick);
+  useEffect(() => {
+    onPickRef.current = onPick;
+  });
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeoResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -65,8 +73,8 @@ export default function LocationPicker({
     import("leaflet").then(({ default: L }) => {
       if (disposed || !containerRef.current) return;
       const el = containerRef.current;
-      const start: [number, number] = initial ?? [35.8617, 104.1954]; // China default
-      map = L.map(el).setView(start, initial ? 12 : 5);
+      const start: [number, number] = initialRef.current ?? [35.8617, 104.1954]; // China default
+      map = L.map(el).setView(start, initialRef.current ? 12 : 5);
       mapRef.current = map;
       attachLayerSwitcher(map, L, 5);
 
@@ -80,10 +88,10 @@ export default function LocationPicker({
       const update = (latlng: any) => {
         const c: [number, number] = [latlng.lat, latlng.lng];
         setPicked(c);
-        onPick(c);
+        onPickRef.current(c);
       };
 
-      markerRef.current = L.marker(initial ?? start, { icon, draggable: true }).addTo(map);
+      markerRef.current = L.marker(initialRef.current ?? start, { icon, draggable: true }).addTo(map);
       markerRef.current.on("dragend", (e: any) => update(e.target.getLatLng()));
       map.on("click", (e: any) => {
         markerRef.current.setLatLng(e.latlng);

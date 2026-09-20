@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { Button, Drawer } from "@heroui/react";
 import { useOverlayState } from "@heroui/react";
-import { isAuthenticated, clearToken } from "@/lib/api";
+import {
+  subscribeAuth,
+  getAuthSnapshot,
+  getAuthServerSnapshot,
+  clearToken,
+} from "@/lib/api";
 
 const links = [
   { href: "/", label: "首页" },
@@ -22,18 +27,17 @@ const navFontStyle = { fontFamily: "'Noto Serif SC', serif", fontWeight: 600 };
 export default function Navbar({ leadingSlot }: { leadingSlot?: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [authed, setAuthed] = useState(false);
+  const authed = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getAuthServerSnapshot);
   const drawerState = useOverlayState();
 
+  // 路由变化时收起移动端抽屉
   useEffect(() => {
-    setAuthed(isAuthenticated());
     drawerState.close();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   const handleLogout = () => {
     clearToken();
-    setAuthed(false);
     drawerState.close();
     router.push("/");
   };

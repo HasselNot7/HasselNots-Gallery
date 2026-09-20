@@ -159,15 +159,37 @@ export function getToken(): string | null {
 
 export function setToken(token: string) {
   localStorage.setItem("gallery_token", token);
+  notifyAuth();
 }
 
 export function clearToken() {
   localStorage.removeItem("gallery_token");
+  notifyAuth();
 }
 
 export function isAuthenticated(): boolean {
   return !!getToken();
 }
+
+/* 登录态订阅源：token 只存在 localStorage，靠这个 listener 集合通知各消费组件，
+ * 免得每个组件在 useEffect 里 setAuthed(isAuthenticated())（render 后同步 setState）。 */
+const authListeners = new Set<() => void>();
+
+function notifyAuth() {
+  authListeners.forEach((l) => l());
+}
+
+export function subscribeAuth(onChange: () => void) {
+  authListeners.add(onChange);
+  return () => {
+    authListeners.delete(onChange);
+  };
+}
+
+export const getAuthSnapshot = () => isAuthenticated();
+
+/** 服务端一律视为未登录：与 SSR 首帧一致，避免水合告警 */
+export const getAuthServerSnapshot = () => false;
 
 export async function verifyAuth(): Promise<boolean> {
   const token = getToken();

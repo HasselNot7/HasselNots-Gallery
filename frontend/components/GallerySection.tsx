@@ -181,14 +181,18 @@ export default function GallerySection({
   }, []);
   const gridRef = useRef<HTMLDivElement>(null);
   const photosRef = useRef(photos);
-  photosRef.current = photos;
 
   const years = allYears;
 
   const hasMore = photos.length < total;
   const hasMoreRef = useRef(hasMore);
-  hasMoreRef.current = hasMore;
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // 无限滚动的 IntersectionObserver 回调要读最新值，因此在提交后同步，而不是 render 期写 ref
+  useEffect(() => {
+    photosRef.current = photos;
+    hasMoreRef.current = hasMore;
+  });
 
   const loadingRef = useRef(false);
 

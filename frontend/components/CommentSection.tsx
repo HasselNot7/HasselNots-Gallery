@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Alert, Button, Card, Input, Label, TextArea, TextField } from "@heroui/react";
-import { isAuthenticated, getToken } from "@/lib/api";
+import {
+  getToken,
+  subscribeAuth,
+  getAuthSnapshot,
+  getAuthServerSnapshot,
+} from "@/lib/api";
 
 interface CommentItem {
   id: number;
@@ -28,10 +33,9 @@ export default function CommentSection({
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState("");
-  const [authed, setAuthed] = useState(false);
+  const authed = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getAuthServerSnapshot);
 
   useEffect(() => {
-    setAuthed(isAuthenticated());
     const qs = photoId ? `photo_id=${photoId}` : `article_id=${articleId}`;
     fetch(`/api/comments?${qs}`)
       .then((r) => r.json())

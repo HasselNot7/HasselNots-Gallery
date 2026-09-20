@@ -12,6 +12,12 @@ export interface RippleSettings {
 
 export default function WaterRippleBackground({ settings: s }: { settings: RippleSettings }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // WebGL 管线与模拟缓冲只在挂载时按当时的参数搭建：把调参补进依赖会整条重建，
+  // 代价远大于收益，所以经 ref 读取，前台靠刷新生效（与后台提示一致）。
+  const sRef = useRef(s);
+  useEffect(() => {
+    sRef.current = s;
+  });
 
   useEffect(() => {
     let renderer: any, scene: any, camera: any, clock: any;
@@ -25,7 +31,7 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
     const settings = {
       damping: 0.98,
       tension: 0.02,
-      rippleStrength: s.strength,
+      rippleStrength: sRef.current.strength,
       mouseIntensity: 0.3,
       clickIntensity: 2.0,
       rippleRadius: 20,
@@ -50,8 +56,8 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
     const gradientColors = {
       colorA1: [1.0, 1.0, 1.0],
       colorA2: [0.995, 0.994, 0.99],
-      colorB1: hexToRgb(s.ink1),
-      colorB2: hexToRgb(s.ink2),
+      colorB1: hexToRgb(sRef.current.ink1),
+      colorB2: hexToRgb(sRef.current.ink2),
     };
 
     function hexToRgb(hex: string): [number, number, number] {
@@ -162,7 +168,7 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
         rippleStrength: { value: settings.rippleStrength },
         resolution: { value: new THREE.Vector2(width, height) },
         time: { value: 0 },
-        uInkTop: { value: s.inkTop },
+        uInkTop: { value: sRef.current.inkTop },
         colorA1: { value: new THREE.Vector3(...gradientColors.colorA1) },
         colorA2: { value: new THREE.Vector3(...gradientColors.colorA2) },
         colorB1: { value: new THREE.Vector3(...gradientColors.colorB1) },

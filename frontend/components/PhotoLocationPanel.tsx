@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Button } from "@heroui/react";
-import { isAuthenticated, getToken } from "@/lib/api";
+import {
+  getToken,
+  subscribeAuth,
+  getAuthSnapshot,
+  getAuthServerSnapshot,
+} from "@/lib/api";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
   ssr: false,
@@ -46,7 +51,6 @@ export default function PhotoLocationPanel({
   camera: string;
 }) {
   const router = useRouter();
-  const [authed, setAuthed] = useState(false);
   const [editing, setEditing] = useState(false);
   const [coords, setCoords] = useState<[number, number] | null>(
     latitude != null && longitude != null ? [latitude, longitude] : null
@@ -55,10 +59,7 @@ export default function PhotoLocationPanel({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const pickerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setAuthed(isAuthenticated());
-  }, []);
+  const authed = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getAuthServerSnapshot);
 
   const hasLocation = coords != null;
   const hasOriginal = originalLatitude != null && originalLongitude != null;
