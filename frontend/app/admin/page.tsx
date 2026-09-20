@@ -36,19 +36,10 @@ import {
   grantAdmin,
   AdminUser,
 } from "@/lib/api";
-import type { Article } from "@/lib/api-server";
+import { DEFAULT_SETTINGS, type Article, type SiteSettings } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 
 const API_BASE = "";
-
-// 与 backend/routes/settings.py 的 DEFAULTS 逐字一致，供表单初值与「重置」复用
-const BRAND_DEFAULTS = {
-  site_name: "Art",
-  hero_side_label: "Collection",
-  hero_side_brand: "HasselNot",
-  footer_title: "HASSELNOT'S GALLERY",
-  footer_copyright: "© {year} HASSELNOT'S GALLERY. All rights reserved.",
-};
 
 function adminPhotoUrl(id: number, thumb = true): string {
   const token = getToken();
@@ -530,33 +521,7 @@ export default function AdminPage() {
   const [compressEnabled, setCompressEnabled] = useState(true);
   const [targetSizeMb, setTargetSizeMb] = useState(3.0);
 
-  const [settings, setSettings] = useState({
-    hero_title: "",
-    hero_description: "",
-    site_tagline: "",
-    ...BRAND_DEFAULTS,
-    water_ink1: "#171717",
-    water_ink2: "#0a0a0a",
-    water_ink_top: "0.15",
-    water_strength: "1.0",
-    hero_icon: "photo_camera",
-    hero_icon_url: "",
-    bg_color1: "#141414",
-    bg_color2: "#141414",
-    bg_color3: "#f5c9c0",
-    bg_color4: "#0a0e27",
-    bg_color5: "#ff9c8a",
-    bg_color6: "#1c1c1c",
-    bg_base: "#141414",
-    hero_gradient_size: "0.85",
-    hero_gradient_count: "12.0",
-    hero_speed: "1.1",
-    hero_color1_weight: "1.0",
-    hero_color2_weight: "1.3",
-    show_hero_decorations: "true",
-    show_hero_shader: "true",
-    show_water_ripple: "true",
-  });
+  const [settings, setSettings] = useState<SiteSettings>({ ...DEFAULT_SETTINGS });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const setToggle = (
     key: "show_hero_decorations" | "show_hero_shader" | "show_water_ripple",
@@ -864,7 +829,7 @@ export default function AdminPage() {
       const res = await fetch(`${API_BASE}/api/settings`);
       if (res.ok) {
         const data = await res.json();
-        setSettings({ hero_title: "", hero_description: "", site_tagline: "", ...BRAND_DEFAULTS, water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0", hero_gradient_size: "0.85", hero_gradient_count: "12.0", hero_speed: "1.1", hero_color1_weight: "1.0", hero_color2_weight: "1.3", hero_icon: "photo_camera", hero_icon_url: "", show_hero_decorations: "true", show_hero_shader: "true", show_water_ripple: "true", ...data });
+        setSettings({ ...DEFAULT_SETTINGS, ...data });
       }
     } catch {
       // ignore
@@ -1575,7 +1540,17 @@ export default function AdminPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onPress={() => setSettings({ ...settings, ...BRAND_DEFAULTS })}
+                      onPress={() =>
+                        setSettings({
+                          ...settings,
+                          site_title: DEFAULT_SETTINGS.site_title,
+                          site_name: DEFAULT_SETTINGS.site_name,
+                          hero_side_label: DEFAULT_SETTINGS.hero_side_label,
+                          hero_side_brand: DEFAULT_SETTINGS.hero_side_brand,
+                          footer_title: DEFAULT_SETTINGS.footer_title,
+                          footer_copyright: DEFAULT_SETTINGS.footer_copyright,
+                        })
+                      }
                     >
                       重置
                     </Button>
@@ -1585,34 +1560,40 @@ export default function AdminPage() {
                   </p>
                   <div className="max-w-3xl space-y-5">
                     <LabeledInput
+                      label="浏览器标签与搜索结果标题"
+                      value={settings.site_title}
+                      onChange={(v) => setSettingsField("site_title", v)}
+                      placeholder={DEFAULT_SETTINGS.site_title}
+                    />
+                    <LabeledInput
                       label="站点名称（导航栏）"
                       value={settings.site_name}
                       onChange={(v) => setSettingsField("site_name", v)}
-                      placeholder={BRAND_DEFAULTS.site_name}
+                      placeholder={DEFAULT_SETTINGS.site_name}
                     />
                     <LabeledInput
                       label="左侧竖栏标签"
                       value={settings.hero_side_label}
                       onChange={(v) => setSettingsField("hero_side_label", v)}
-                      placeholder={BRAND_DEFAULTS.hero_side_label}
+                      placeholder={DEFAULT_SETTINGS.hero_side_label}
                     />
                     <LabeledInput
                       label="左侧竖栏署名"
                       value={settings.hero_side_brand}
                       onChange={(v) => setSettingsField("hero_side_brand", v)}
-                      placeholder={BRAND_DEFAULTS.hero_side_brand}
+                      placeholder={DEFAULT_SETTINGS.hero_side_brand}
                     />
                     <LabeledInput
                       label="页脚标题"
                       value={settings.footer_title}
                       onChange={(v) => setSettingsField("footer_title", v)}
-                      placeholder={BRAND_DEFAULTS.footer_title}
+                      placeholder={DEFAULT_SETTINGS.footer_title}
                     />
                     <LabeledInput
                       label="页脚版权行（{year} 会自动替换为当前年份）"
                       value={settings.footer_copyright}
                       onChange={(v) => setSettingsField("footer_copyright", v)}
-                      placeholder={BRAND_DEFAULTS.footer_copyright}
+                      placeholder={DEFAULT_SETTINGS.footer_copyright}
                     />
                   </div>
                 </div>
@@ -1624,7 +1605,12 @@ export default function AdminPage() {
                       size="sm"
                       variant="ghost"
                       onPress={() =>
-                        setSettings({ ...settings, show_hero_decorations: "true", show_hero_shader: "true", show_water_ripple: "true" })
+                        setSettings({
+                          ...settings,
+                          show_hero_decorations: DEFAULT_SETTINGS.show_hero_decorations,
+                          show_hero_shader: DEFAULT_SETTINGS.show_hero_shader,
+                          show_water_ripple: DEFAULT_SETTINGS.show_water_ripple,
+                        })
                       }
                     >
                       重置
@@ -1676,7 +1662,14 @@ export default function AdminPage() {
                       size="sm"
                       variant="ghost"
                       onPress={() =>
-                        setSettings({ ...settings, water_ink1: "#171717", water_ink2: "#0a0a0a", water_ink_top: "0.15", water_strength: "1.0", show_water_ripple: "true" })
+                        setSettings({
+                          ...settings,
+                          water_ink1: DEFAULT_SETTINGS.water_ink1,
+                          water_ink2: DEFAULT_SETTINGS.water_ink2,
+                          water_ink_top: DEFAULT_SETTINGS.water_ink_top,
+                          water_strength: DEFAULT_SETTINGS.water_strength,
+                          show_water_ripple: DEFAULT_SETTINGS.show_water_ripple,
+                        })
                       }
                     >
                       重置

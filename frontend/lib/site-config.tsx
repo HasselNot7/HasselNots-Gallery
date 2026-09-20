@@ -1,24 +1,16 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
+import { DEFAULT_SETTINGS, type SiteSettings } from "@/lib/api-server";
 
-export interface SiteConfig {
-  site_name: string;
-  footer_title: string;
-  footer_copyright: string;
-  site_tagline: string;
-}
+export type SiteConfig = Pick<
+  SiteSettings,
+  "site_title" | "site_name" | "footer_title" | "footer_copyright" | "site_tagline"
+>;
 
-/** 后端不可用、或字段被清空时的兜底字面量，需与 backend/routes/settings.py 的 DEFAULTS 一致 */
-const FALLBACK: SiteConfig = {
-  site_name: "Art",
-  footer_title: "HASSELNOT'S GALLERY",
-  footer_copyright: "© {year} HASSELNOT'S GALLERY. All rights reserved.",
-  site_tagline: "Precision photography portfolio. Every frame tells a story.",
-};
+const SiteConfigContext = createContext<SiteConfig>(DEFAULT_SETTINGS);
 
-const SiteConfigContext = createContext<SiteConfig>(FALLBACK);
-
+/** 空串/纯空白一律回退默认值，避免后台清空字段后前台留白 */
 const textOr = (v: string | undefined, fallback: string) => (v && v.trim() !== "" ? v : fallback);
 
 export function SiteConfigProvider({
@@ -29,10 +21,11 @@ export function SiteConfigProvider({
   children: ReactNode;
 }) {
   const config: SiteConfig = {
-    site_name: textOr(value.site_name, FALLBACK.site_name),
-    footer_title: textOr(value.footer_title, FALLBACK.footer_title),
-    footer_copyright: textOr(value.footer_copyright, FALLBACK.footer_copyright),
-    site_tagline: textOr(value.site_tagline, FALLBACK.site_tagline),
+    site_title: textOr(value.site_title, DEFAULT_SETTINGS.site_title),
+    site_name: textOr(value.site_name, DEFAULT_SETTINGS.site_name),
+    footer_title: textOr(value.footer_title, DEFAULT_SETTINGS.footer_title),
+    footer_copyright: textOr(value.footer_copyright, DEFAULT_SETTINGS.footer_copyright),
+    site_tagline: textOr(value.site_tagline, DEFAULT_SETTINGS.site_tagline),
   };
   return <SiteConfigContext.Provider value={config}>{children}</SiteConfigContext.Provider>;
 }

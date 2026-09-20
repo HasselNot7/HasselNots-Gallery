@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import PageBackground from "@/components/PageBackground";
 import VisitTracker from "@/components/VisitTracker";
-import { fetchSettings, isOn } from "@/lib/api-server";
+import { DEFAULT_SETTINGS, fetchSettings, isOn } from "@/lib/api-server";
 import { SiteConfigProvider } from "@/lib/site-config";
 
 const sigmaSerif = localFont({
@@ -14,12 +14,13 @@ const sigmaSerif = localFont({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSettings();
+  const siteTitle = settings?.site_title?.trim() || DEFAULT_SETTINGS.site_title;
   return {
     title: {
-      default: "HasselNot's Gallery — Photography Portfolio",
-      template: "%s — HasselNot's Gallery",
+      default: siteTitle,
+      template: `%s — ${siteTitle}`,
     },
-    description: settings?.site_tagline || "Precision photography portfolio. Every frame tells a story.",
+    description: settings?.site_tagline?.trim() || DEFAULT_SETTINGS.site_tagline,
   };
 }
 

@@ -4,44 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from database import get_db
+from defaults import DEFAULTS
 from models import Setting
 from schemas import SettingsOut, SettingsUpdate
 from auth import require_admin
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
-
-DEFAULTS = {
-    "hero_title": "Precision Capture.\nTimeless Frames.",
-    "hero_description": "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe.",
-    "site_tagline": "Precision photography portfolio. Every frame tells a story.",
-    "site_name": "Art",
-    "hero_side_label": "Collection",
-    "hero_side_brand": "HasselNot",
-    "footer_title": "HASSELNOT'S GALLERY",
-    "footer_copyright": "© {year} HASSELNOT'S GALLERY. All rights reserved.",
-    "hero_icon": "photo_camera",
-    "hero_icon_url": "",
-    "bg_color1": "#141414",
-    "bg_color2": "#2b2b2b",
-    "bg_color3": "#3a3a3a",
-    "bg_color4": "#262626",
-    "bg_color5": "#4d4d4d",
-    "bg_color6": "#1c1c1c",
-    "bg_base": "#141414",
-    "water_ink1": "#171717",
-    "water_ink2": "#0a0a0a",
-    "water_ink_top": "0.15",
-    "water_strength": "1.0",
-    "hero_gradient_size": "0.85",
-    "hero_gradient_count": "12.0",
-    "hero_speed": "1.1",
-    "hero_color1_weight": "1.0",
-    "hero_color2_weight": "1.3",
-    # 全站 HUD 装饰总开关（首页 Hero、/gallery、/map），键名保留 hero 前缀以兼容既有 KV 数据
-    "show_hero_decorations": "true",
-    "show_hero_shader": "true",
-    "show_water_ripple": "true",
-}
 
 ICON_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "icon")
 ICON_URL_PATH = "/api/settings/icon"
