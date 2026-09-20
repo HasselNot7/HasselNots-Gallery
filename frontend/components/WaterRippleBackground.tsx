@@ -25,7 +25,7 @@ export default function WaterRippleBackground({ settings: s }: { settings: Rippl
     let waterTexture: any, backgroundMaterial: any;
     let autoDropsInterval: ReturnType<typeof setInterval> | null = null;
     let rafId = 0;
-    let lastMousePosition = { x: 0, y: 0 };
+    const lastMousePosition = { x: 0, y: 0 };
     let mouseThrottleTime = 0;
 
     const settings = {

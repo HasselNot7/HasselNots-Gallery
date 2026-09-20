@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useSyncExternalStore } from "react";
+import { useEffect, useState, useRef, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import piexif from "piexifjs";
@@ -638,7 +638,6 @@ export default function AdminPage() {
       loadAlbums();
       loadUsers();
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   const loadUsers = async () => {
@@ -944,7 +943,7 @@ export default function AdminPage() {
     file: File,
     targetMb: number
   ): Promise<{ file: File; exifBase64: string; exifJson: string }> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const targetBytes = Math.max(targetMb * 1024 * 1024, 1);
 
       if (file.size <= targetBytes) {

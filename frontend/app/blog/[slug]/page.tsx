@@ -1,4 +1,5 @@
 import { fetchArticle, getPhotoImageUrl } from "@/lib/api-server";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ViewCounter from "@/components/ViewCounter";
@@ -59,13 +60,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-3xl mx-auto w-full">
-        <a
+        <Link
           href="/blog"
           className="inline-flex items-center gap-2 text-label-caps text-on-surface-variant hover:text-primary transition-colors mb-8"
         >
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
           Back to Blog
-        </a>
+        </Link>
 
         <div className="mb-8">
           <h1 className="text-headline-lg md:text-display-lg text-primary mb-4" style={{ fontFamily: "var(--font-display)" }}>

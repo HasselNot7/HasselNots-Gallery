@@ -116,7 +116,6 @@ export default function SearchPage() {
                       href={`/photo/${p.id}`}
                       className="group relative aspect-square overflow-hidden border border-border-subtle bg-surface hover:border-primary/40 transition-colors rounded-lg"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={getPhotoImageUrl(p.id, true)}
                         alt={p.title}

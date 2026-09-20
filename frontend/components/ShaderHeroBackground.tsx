@@ -62,7 +62,6 @@ export default function ShaderHeroBackground({ colors }: { colors?: Partial<Shad
     let disposed = false;
     let renderer: any = null;
     let raf = 0;
-    let touchTexture: any = null;
     let clock: any = null;
     let scene: any = null;
     let camera: any = null;

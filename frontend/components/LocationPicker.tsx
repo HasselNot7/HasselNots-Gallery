@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SearchField, Spinner } from "@heroui/react";
-import { isAuthenticated, getToken } from "@/lib/api";
+
 import { attachLayerSwitcher } from "@/lib/mapLayers";
 import { searchPlaces, GeoResult } from "@/lib/geocode";
 

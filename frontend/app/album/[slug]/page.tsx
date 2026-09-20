@@ -1,4 +1,4 @@
-import { fetchAlbums, fetchAlbumPhotos, getPhotoImageUrl } from "@/lib/api-server";
+import { fetchAlbums, fetchAlbumPhotos } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AlbumGrid from "@/components/AlbumGrid";
