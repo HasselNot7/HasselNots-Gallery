@@ -72,7 +72,6 @@ gallery/
 │   │   ├── ViewCounter.tsx     # 浏览量（每次页面加载 +1，数字滚动）
 │   │   ├── VisitTracker.tsx    # 访问埋点（PV/UV 来源）
 │   │   ├── LoginForm.tsx       # 登录表单
-│   │   ├── MapView.tsx         # （无引用，待清理）
 │   │   └── reactbits/          # 复用动效片段
 │   │       ├── Reveal.tsx      # 进入视口时揭示（motion，不依赖 gsap）
 │   │       ├── GlareHover.tsx  # 悬停掠光覆盖层（纯 CSS 驱动）
@@ -206,7 +205,7 @@ gallery/
 | 样式 | Tailwind CSS v4（`@theme` 设计令牌，globals.css） |
 | 动效 | **motion**（`motion/react`）—— reactbits 的 `Reveal` / `CountUp` 使用；`GlareHover` 为纯 CSS |
 | WebGL 背景 | **three** —— 首页动态光斑（ShaderHeroBackground）与水墨波纹（WaterRippleBackground） |
-| 地图 | Leaflet 1.9（`dynamic import`，命令式 API + 自写底图切换器与像素网格聚合）。`react-leaflet` / `@react-leaflet/core` 仍在 `package.json` 但源码零引用，**待清理** |
+| 地图 | Leaflet 1.9 —— `MapClient` 用 `import("leaflet")` 命令式构建（自写底图切换器与像素网格聚合）。`@types/leaflet` 仅用于类型 |
 | 图标 | Material Symbols Outlined —— `@font-face` 写在 globals.css 的 `@layer base`（字体文件仍走 Google CDN），类规则入 base 层以便尺寸工具类生效 |
 | 字体 | Sigma Serif（本地 `next/font/local`）/ JetBrains Mono / Noto Serif SC / Hanken Grotesk / Inter（详见下节） |
 | EXIF | **piexifjs**（浏览器端压缩后回写 EXIF/GPS）+ piexif（后端注入与读取）+ Pillow（缩略图、EXIF 解析） |
