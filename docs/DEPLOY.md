@@ -1,6 +1,6 @@
 # 部署指南
 
-本文档描述如何把 Lens & Light 项目部署到一台新的服务器（以 Ubuntu 22.04/24.04 为例）。
+本文档描述如何把 HasselNot's Gallery 项目部署到一台新的服务器（以 Ubuntu 22.04/24.04 为例）。
 
 ## 部署物清单
 
@@ -53,7 +53,11 @@ R2_ACCOUNT_ID=你的Cloudflare账户ID（32位十六进制）
 R2_ACCESS_KEY_ID=xxx
 R2_SECRET_ACCESS_KEY=xxx
 R2_BUCKET=gallery
-R2_PUBLIC_URL=https://pub-xxxx.r2.dev
+
+# 图片公开访问端点。**推荐自定义域名**（见下方「图片端点：自定义域名 vs r2.dev」）：
+R2_PUBLIC_URL=https://cdn.example.com
+# 只有还没配域名时才用 r2.dev 子域（开发/验证足够，生产会慢一截）：
+# R2_PUBLIC_URL=https://pub-xxxx.r2.dev
 ```
 
 ## 3. 安装依赖
@@ -73,13 +77,21 @@ npm install
 
 ## 4. 启动（开发/验证）
 
+仓库根目录有三个脚本，**没有** `start-frontend.sh`：
+
 ```bash
-# 终端 1 — 后端 (127.0.0.1:8001)
+# 终端 1 — 后端 (127.0.0.1:8001)：source .venv → init_db.py 建表 → uvicorn
 ./start-backend.sh
 
-# 终端 2 — 前端 (127.0.0.1:3000)
-./start-frontend.sh
+# 终端 2 — 前端 (127.0.0.1:3000)，二选一：
+./start-frontend-dev.sh            # 开发模式：npm run dev（Turbopack 热更新）
+./start-frontend-prod.sh           # 生产模式：NODE_ENV=production + npm run start
+./start-frontend-prod.sh --build   # 先 npm run build 再启动（部署新代码后用这条）
 ```
+
+> 两个前端脚本的差别只在 `npm run dev`（Turbopack 按需编译）与 `npm run start`
+> （只跑 `npm run build` 产出的生产构建）之间：没有构建产物时 `next start` 会报
+> “Could not find a production build in the '.next' directory”，`--build` 就是替你补上构建这一步。
 
 验证：`curl http://127.0.0.1:8001/api/photos` 应返回照片列表（含 `r2://` 路径）。
 
@@ -167,15 +179,47 @@ sudo nginx -t && sudo systemctl reload nginx
   sudo certbot --nginx -d gallery.example.com
   ```
 
-## 7. 迁移后检查清单
+## 7. 图片端点：自定义域名 vs r2.dev
+
+`R2_PUBLIC_URL` 决定图片第二跳落在哪个端点，实测差异明显：
+
+| | `r2.dev` 子域 | 自定义域名（接入 Cloudflare） |
+|---|---|---|
+| 协议 | 只协商到 HTTP/1.1（同一主机并发连接上限 6） | HTTP/2 |
+| 边缘缓存 | 无：响应里既没有 `Cache-Control` 也没有 `cf-cache-status` | 有：可配 `Cache-Control`（作者实测 `max-age=14400`），命中时 `cf-cache-status: HIT` |
+| 适用场景 | 还没配域名时的开发/验证 | **生产推荐** |
+
+复现命令：
+
+```bash
+curl -s -o /dev/null -D- --http2 -w 'http_version=%{http_version}\n' \
+  "https://pub-xxxx.r2.dev/photos/thumb_<hash>.jpg"
+# 实测输出 http_version=1.1，且响应头无 Cache-Control / cf-cache-status
+```
+
+### 一条图片请求的真实开销
+
+后端 `/api/photos/<id>/{image,thumbnail}` 对远程对象只做 302，字节来自上面的公开端点，
+所以每张图是两跳（作者实测）：
+
+- 拿重定向：约 **0.6s**（走完整服务端链路；站点域名套 Cloudflare 时这一跳是
+  `cf-cache-status: DYNAMIC`，不被边缘缓存）
+- 从 CDN 取字节：约 **0.9s**
+- 12 张缩略图并发，首屏约 **1.83s**
+
+要继续提速，方向是**省掉 302 那一跳**：让前端直接引用图片域名
+（`R2_PUBLIC_URL/photos/thumb_<hash>.jpg`），后端只在需要鉴权或回退本地文件时才中转。
+
+## 8. 迁移后检查清单
 
 - [ ] `curl http://127.0.0.1:8001/api/photos` 返回 40 张照片
 - [ ] `curl -I http://127.0.0.1:3000/gallery` 返回 200
-- [ ] 浏览器打开照片详情页，图片从 `pub-xxxx.r2.dev` 加载（302 重定向正常）
-- [ ] 管理员登录（账号密码随数据库迁移，若忘记可重跑 `init_db.py` 或改库）
+- [ ] 浏览器打开照片详情页，图片经 302 从 `R2_PUBLIC_URL` 配置的端点加载（生产应为自定义域名）
+- [ ] 管理员登录（密码随数据库迁移，**不在仓库里**；忘记时只能改库，或删掉该用户行后带
+      `ADMIN_PASSWORD` 重跑 `init_db.py` —— 用户已存在时它不会重置密码）
 - [ ] 上传一张测试照片 → 本地压缩 → 原图+缩略图进入 R2 → 本地文件被删除
 
-## 8. 常见问题
+## 9. 常见问题
 
 | 问题 | 解决 |
 |---|---|

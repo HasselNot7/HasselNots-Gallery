@@ -11,8 +11,15 @@ const WaterRippleBackground = dynamic(() => import("@/components/WaterRippleBack
   ),
 });
 
-export default function PageBackground({ ripple }: { ripple?: RippleSettings }) {
+export default function PageBackground({
+  ripple,
+  enabled = true,
+}: {
+  ripple?: RippleSettings;
+  enabled?: boolean;
+}) {
   const pathname = usePathname();
+  if (!enabled) return null;
   if (
     pathname === "/" ||
     pathname === "/admin" ||

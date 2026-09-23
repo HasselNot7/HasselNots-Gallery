@@ -3,6 +3,7 @@ node_modules/
 .next/
 out/
 npm-debug.log*
+.agents/
 
 # Python / FastAPI
 __pycache__/
@@ -29,3 +30,5 @@ design-screens/
 
 # test dir
 test_file/
+opencode.json
+skills-lock.json

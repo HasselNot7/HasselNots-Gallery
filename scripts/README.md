@@ -1,6 +1,6 @@
 # 备份脚本使用说明
 
-`scripts/backup.sh`（实际逻辑在 `scripts/backup.py`）用于备份 Lens & Light 的核心数据：数据库、环境配置，并同步到 Cloudflare R2 私有桶实现异地冗余。
+`scripts/backup.sh`（实际逻辑在 `scripts/backup.py`）用于备份 HasselNot's Gallery 的核心数据：数据库、环境配置，并同步到 Cloudflare R2 私有桶实现异地冗余。
 
 ## 备份内容
 

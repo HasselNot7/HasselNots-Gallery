@@ -3,7 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import PageBackground from "@/components/PageBackground";
 import VisitTracker from "@/components/VisitTracker";
-import { fetchSettings } from "@/lib/api-server";
+import { DEFAULT_SETTINGS, fetchSettings, isOn } from "@/lib/api-server";
+import { SiteConfigProvider } from "@/lib/site-config";
 
 const sigmaSerif = localFont({
   src: "./fonts/SigmaSerif-Text.ttf",
@@ -13,12 +14,13 @@ const sigmaSerif = localFont({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSettings();
+  const siteTitle = settings?.site_title?.trim() || DEFAULT_SETTINGS.site_title;
   return {
     title: {
-      default: "HasselNot's Gallery — Photography Portfolio",
-      template: "%s — HasselNot's Gallery",
+      default: siteTitle,
+      template: `%s — ${siteTitle}`,
     },
-    description: settings?.site_tagline || "Precision photography portfolio. Every frame tells a story.",
+    description: settings?.site_tagline?.trim() || DEFAULT_SETTINGS.site_tagline,
   };
 }
 
@@ -32,17 +34,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   };
 
   return (
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="en" className={`h-full antialiased ${sigmaSerif.variable}`} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" />
+        <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet" />
       </head>
-      <body className={`min-h-full flex flex-col relative ${sigmaSerif.variable}`}>
-        <PageBackground ripple={ripple} />
+      <body className="min-h-full flex flex-col relative">
+        <PageBackground ripple={ripple} enabled={isOn(settings?.show_water_ripple)} />
         <VisitTracker />
-        <div className="relative z-10 flex flex-col flex-1">{children}</div>
+        <SiteConfigProvider value={settings}>
+          <div className="relative z-10 flex flex-col flex-1">{children}</div>
+        </SiteConfigProvider>
       </body>
     </html>
   );

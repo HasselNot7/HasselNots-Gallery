@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, Fragment } from "react";
+import { Spinner } from "@heroui/react";
 import { Photo, getPhotoImageUrl } from "@/lib/api-server";
 import Lightbox from "@/components/Lightbox";
+import Reveal from "@/components/reactbits/Reveal";
 
 const PAGE_SIZE = 24;
 
 function DraggableTimeline({ entries, active, onChange }: { entries: string[]; active: string; onChange: (y: string) => void }) {
   const [dragging, setDragging] = useState(false);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [cursorY, setCursorY] = useState<number | null>(null);
 
   const groups = useMemo(() => {
     const years = [...new Set(entries.map((e) => e.slice(0, 4)))];
@@ -17,6 +21,8 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
 
   const activeYear = active.slice(0, 4);
 
+  // 拖拽只按 Y 吸附到「年份」是刻意的粗粒度：同一年的月份排在同一水平行内，
+  // 共享同一段 Y 区间，纵向坐标无法在它们之间区分；月份级选择留给点击。
   const valueFromY = useCallback(
     (clientY: number) => {
       let bestIdx = -1;
@@ -35,26 +41,63 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
     [groups, active]
   );
 
+  const cursorFromEvent = (clientY: number) => {
+    const cr = containerRef.current?.getBoundingClientRect();
+    return cr ? clientY - cr.top : 0;
+  };
+
   const handlePointerDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
     setDragging(true);
+    setCursorY(cursorFromEvent(e.clientY));
     onChange(valueFromY(e.clientY));
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragging) return;
+    setCursorY(cursorFromEvent(e.clientY));
     onChange(valueFromY(e.clientY));
   };
 
-  const stopDragging = () => setDragging(false);
+  const stopDragging = () => {
+    setDragging(false);
+    setCursorY(null);
+  };
 
   return (
-    <div className="relative mb-8 select-none">
-      {/* Vertical guide line */}
-      <div className="absolute left-[5px] top-3 bottom-3 w-px bg-gradient-to-b from-primary/20 via-primary/10 to-primary/20 pointer-events-none" />
-
-      {/* Drag hit area over the line */}
+    <div ref={containerRef} className="relative mb-8 w-52 select-none pl-4">
+      {/* 底衬面板：压住穿过数字的水波纹；无 backdrop-blur（背景层已有一层） */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-8 touch-none cursor-pointer"
+        aria-hidden
+        className="pointer-events-none absolute -inset-x-3 -inset-y-5 overflow-hidden rounded-xl border border-primary/[0.07] bg-white/80 shadow-[0_8px_30px_rgba(20,20,20,0.06)]"
+      >
+        {/* 描边水印年份：放在列表底部预留的 pb-14 空白区，不与文字重叠 */}
+        <span
+          key={activeYear}
+          className="absolute bottom-1 right-2 leading-none font-medium text-transparent"
+          style={{
+            fontFamily: "var(--font-sigma), 'Noto Serif SC', serif",
+            fontSize: 56,
+            WebkitTextStroke: "1px rgba(20,20,20,0.10)",
+            animation: "tl-rise-in 500ms cubic-bezier(0.22,1,0.36,1) both",
+          }}
+        >
+          {activeYear}
+        </span>
+      </div>
+
+      {/* 拖拽游标：跟随指针，松手后消失、激活态吸附到最近年份 */}
+      {dragging && cursorY !== null && (
+        <span
+          aria-hidden
+          className="absolute left-0 z-20 h-[2px] w-[14px] -translate-y-1/2 rounded-full bg-primary pointer-events-none"
+          style={{ top: cursorY }}
+        />
+      )}
+
+      {/* Drag hit area：与左内边距等宽，压在年份列表之上但不吞按钮点击 */}
+      <div
+        className="absolute left-0 top-0 bottom-0 z-20 w-4 touch-none cursor-pointer"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={stopDragging}
@@ -62,7 +105,8 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
         onPointerCancel={stopDragging}
       />
 
-      <div className="flex flex-col gap-9">
+      {/* pb-14 给水印留出专属空白区 */}
+      <div className="relative flex flex-col gap-7 pb-14">
         {groups.map((g, gi) => {
           const isActiveYear = g.year === activeYear;
           return (
@@ -71,58 +115,66 @@ function DraggableTimeline({ entries, active, onChange }: { entries: string[]; a
               ref={(el) => {
                 rowRefs.current[gi] = el;
               }}
-              className="relative flex items-start gap-4"
+              className="group relative"
             >
-              {/* Node dot on the line */}
-              <span className="relative z-10 mt-2 flex h-3 w-3 flex-shrink-0 items-center justify-center">
+              {/* Year label + month count */}
+              <button
+                onClick={() => g.months[0] && onChange(g.months[0])}
+                aria-current={isActiveYear ? "true" : undefined}
+                className="flex items-baseline gap-2 text-left"
+                style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', serif" }}
+              >
                 <span
-                  className="rounded-full transition-all duration-300"
-                  style={{
-                    width: isActiveYear ? 8 : 5,
-                    height: isActiveYear ? 8 : 5,
-                    background: isActiveYear ? "#141414" : "#ffffff",
-                    border: "1px solid rgba(20,20,20,0.4)",
-                  }}
-                />
-              </span>
-
-              <div className="min-w-0 -mt-0.5">
-                {/* Year label */}
-                <button
-                  onClick={() => g.months[0] && onChange(g.months[0])}
-                  className={`block text-left text-xl font-bold leading-none tracking-tight transition-colors ${
-                    isActiveYear ? "text-primary" : "text-primary/45 hover:text-primary/80"
+                  className={`leading-none tracking-tight transition-all duration-300 ${
+                    isActiveYear
+                      ? "text-[30px] font-medium text-primary"
+                      : "text-lg text-primary/45 group-hover:translate-x-0.5 group-hover:text-primary"
                   }`}
-                  style={{ fontFamily: "'Sigma Serif', 'Noto Serif SC', serif" }}
                 >
                   {g.year}
-                </button>
-
-                {/* Months as a typographic row */}
-                <div
-                  className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-2"
-                  style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
+                </span>
+                <span
+                  className={`text-[9px] tracking-[0.2em] transition-opacity duration-300 ${
+                    isActiveYear ? "text-outline opacity-100" : "text-outline opacity-0 group-hover:opacity-70"
+                  }`}
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 >
-                  {g.months.map((m) => {
-                    const isActive = m === active;
-                    return (
-                      <button
-                        key={m}
-                        onClick={() => onChange(m)}
-                        className={`relative pb-1 text-[11px] leading-none tracking-wider transition-colors ${
-                          isActive ? "text-primary font-bold" : "text-outline hover:text-primary"
-                        }`}
-                      >
-                        {m.slice(5)}
-                        <span
-                          className={`absolute left-0 right-0 -bottom-0.5 h-[2px] rounded-full transition-all duration-300 ${
-                            isActive ? "bg-mint-accent opacity-100" : "bg-primary/40 opacity-0"
-                          }`}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
+                  ×{String(g.months.length).padStart(2, "0")}
+                </span>
+              </button>
+
+              {/* Months：固定 4 列，多出换行；激活切换时重挂载以播放交错入场 */}
+              <div
+                key={isActiveYear ? `${g.year}-on` : `${g.year}-off`}
+                className={`grid grid-cols-4 transition-all duration-300 ${
+                  isActiveYear ? "mt-3 gap-x-1 gap-y-1.5" : "mt-2 gap-x-2.5 gap-y-1"
+                }`}
+                style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
+              >
+                {g.months.map((m, mi) => {
+                  const isActive = m === active;
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => onChange(m)}
+                      aria-current={isActive ? "date" : undefined}
+                      style={
+                        isActiveYear
+                          ? { animation: `tl-rise-in 360ms ${mi * 30}ms cubic-bezier(0.22,1,0.36,1) both` }
+                          : undefined
+                      }
+                      className={`rounded-full leading-none tabular-nums transition-all duration-200 ${
+                        isActive
+                          ? "bg-primary px-2.5 py-[5px] text-[10px] font-bold tracking-widest text-white shadow-[0_3px_10px_rgba(20,20,20,0.25)]"
+                          : isActiveYear
+                            ? "px-2.5 py-[5px] text-[10px] tracking-widest text-on-surface-variant hover:bg-primary/[0.06] hover:text-primary"
+                            : "px-0 py-[2px] text-[9px] tracking-wider text-outline/70 hover:text-primary"
+                      }`}
+                    >
+                      {m.slice(5)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           );
@@ -179,14 +231,18 @@ export default function GallerySection({
   }, []);
   const gridRef = useRef<HTMLDivElement>(null);
   const photosRef = useRef(photos);
-  photosRef.current = photos;
 
   const years = allYears;
 
   const hasMore = photos.length < total;
   const hasMoreRef = useRef(hasMore);
-  hasMoreRef.current = hasMore;
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // 无限滚动的 IntersectionObserver 回调要读最新值，因此在提交后同步，而不是 render 期写 ref
+  useEffect(() => {
+    photosRef.current = photos;
+    hasMoreRef.current = hasMore;
+  });
 
   const loadingRef = useRef(false);
 
@@ -214,8 +270,12 @@ export default function GallerySection({
   }, []);
 
   const jumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 程序化跳转期间抑制滚动联动，避免激活态沿滚动路径乱跳；滚动静默后恢复
+  const spyHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spyHoldRef = useRef(false);
   const jumpToYear = useCallback((year: string) => {
     setActiveYear(year);
+    spyHoldRef.current = true;
     if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
     jumpTimerRef.current = setTimeout(async () => {
       const target = () =>
@@ -226,6 +286,7 @@ export default function GallerySection({
         if (!ok) break;
         el = target();
       }
+      spyHoldRef.current = true;
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
   }, [hasMore, loadMore]);
@@ -233,6 +294,7 @@ export default function GallerySection({
   useEffect(() => {
     return () => {
       if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
+      if (spyHoldTimerRef.current) clearTimeout(spyHoldTimerRef.current);
     };
   }, []);
 
@@ -249,57 +311,64 @@ export default function GallerySection({
     return () => io.disconnect();
   }, [loadMore]);
 
+  // 滚动监听：时间线跟随浏览位置，取阈值线以下第一张照片的月份（DOM 序即日期降序）
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        if (spyHoldRef.current) {
+          // 程序化滚动进行中：保持目标年月，滚动静默 400ms 后恢复联动
+          if (spyHoldTimerRef.current) clearTimeout(spyHoldTimerRef.current);
+          spyHoldTimerRef.current = setTimeout(() => {
+            spyHoldRef.current = false;
+          }, 400);
+          return;
+        }
+        const grid = gridRef.current;
+        if (!grid) return;
+        for (const el of grid.querySelectorAll("[data-year]")) {
+          if (el.getBoundingClientRect().bottom > 180) {
+            const y = el.getAttribute("data-year");
+            if (y) setActiveYear((prev) => (prev === y ? prev : y));
+            break;
+          }
+        }
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // 移动端月份条：激活项会随滚动联动移到可视区外，把它滚回中间
+  const monthBarRef = useRef<HTMLDivElement>(null);
+  const monthBtnRefs = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => {
+    const bar = monthBarRef.current;
+    const el = monthBtnRefs.current.get(activeYear);
+    if (!bar || !el) return;
+    const br = bar.getBoundingClientRect();
+    const er = el.getBoundingClientRect();
+    const delta = er.left + er.width / 2 - (br.left + br.width / 2);
+    const max = bar.scrollWidth - bar.clientWidth;
+    bar.scrollTo({ left: Math.max(0, Math.min(bar.scrollLeft + delta, max)), behavior: "smooth" });
+  }, [activeYear]);
+
   return (
     <>
       <div className="flex items-center justify-end mb-6">
-        <span className="text-label-caps text-outline">SORTED BY SHOOT DATE</span>
+        <span className="text-label-caps text-outline" style={{ fontFamily: "var(--font-sigma)", fontWeight: 500 }}>SORTED BY SHOOT DATE</span>
       </div>
 
-      <div className="flex flex-col md:flex-row md:gap-8 md:items-start">
+      <div className="flex flex-col md:flex-row md:gap-12 md:items-start">
         {/* 桌面端：左侧竖向时间线 */}
         <div className="hidden md:block flex-shrink-0 md:sticky md:top-28 md:pt-2">
           <DraggableTimeline entries={years} active={activeYear} onChange={jumpToYear} />
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* 移动端：横向月份快捷条 */}
-          {years.length > 0 && (
-            <div className="md:hidden -mx-4 mb-4 border-y border-primary/10">
-              <div className="flex items-stretch overflow-x-auto px-2" style={{ scrollbarWidth: "none" }}>
-                {years.map((y) => {
-                  const isActive = activeYear === y;
-                  return (
-                    <button
-                      key={y}
-                      onClick={() => jumpToYear(y)}
-                      className="relative flex flex-col items-center flex-shrink-0 px-4 py-3"
-                      style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}
-                    >
-                      <span
-                        className={`text-sm leading-none tracking-wider transition-colors ${
-                          isActive ? "text-primary font-bold" : "text-outline"
-                        }`}
-                      >
-                        {y.slice(5, 7)}
-                      </span>
-                      <span
-                        className={`mt-1.5 text-[9px] leading-none transition-colors ${
-                          isActive ? "text-primary/70" : "text-outline/60"
-                        }`}
-                      >
-                        {y.slice(0, 4)}
-                      </span>
-                      <span
-                        className={`absolute left-3 right-3 bottom-0 h-[2px] rounded-full transition-all duration-300 ${
-                          isActive ? "bg-mint-accent opacity-100" : "opacity-0"
-                        }`}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
           {photos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 text-on-surface-variant">
               <span className="material-symbols-outlined text-6xl mb-4">photo_library</span>
@@ -316,7 +385,12 @@ export default function GallerySection({
                   const columns: Photo[][] = Array.from({ length: colCount }, () => []);
                   photos.forEach((p, i) => columns[i % colCount].push(p));
                   return columns.map((col, c) => (
-                    <div key={c} className="flex flex-col gap-6 min-w-0">
+                    <Reveal
+                      key={c}
+                      delay={(c % 3) * 80}
+                      amount={0}
+                      className="flex flex-col gap-6 min-w-0"
+                    >
                       {col.map((photo) => {
                         const idx = photos.indexOf(photo);
                         const year = yearOf(photo);
@@ -356,17 +430,62 @@ export default function GallerySection({
                           </button>
                         );
                       })}
-                    </div>
+                    </Reveal>
                   ));
                 })()}
               </div>
 
-              <div ref={sentinelRef} className="flex justify-center mt-12 py-2">
+              <div ref={sentinelRef} className="flex items-center justify-center gap-2 mt-12 py-2">
+                {loadingMore && <Spinner size="sm" />}
                 <span className="text-label-caps text-outline">
-                  {loadingMore ? "Loading..." : hasMore ? "Scroll for more" : `All ${total} photos loaded`}
+                  {loadingMore ? "加载中..." : hasMore ? "继续滚动加载更多" : `已加载全部 ${total} 张`}
                 </span>
               </div>
             </>
+          )}
+
+          {/* 移动端：底部浮动月份条，滚到页脚时随列尾自然释放，不遮挡 footer */}
+          {years.length > 0 && (
+            <div className="md:hidden sticky bottom-0 z-30 -mx-4 mt-6 border-t border-primary/10 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_20px_rgba(20,20,20,0.06)]">
+              <div ref={monthBarRef} className="flex items-center gap-0.5 overflow-x-auto px-2" style={{ scrollbarWidth: "none" }}>
+                {years.map((y, i) => {
+                  const isActive = activeYear === y;
+                  const showYear = i === 0 || years[i - 1].slice(0, 4) !== y.slice(0, 4);
+                  return (
+                    <Fragment key={y}>
+                      {showYear && (
+                        <span
+                          className="flex-shrink-0 pl-2 pr-1 text-[9px] tracking-[0.2em] text-outline"
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                        >
+                          {y.slice(0, 4)}
+                        </span>
+                      )}
+                      <button
+                        ref={(el) => {
+                          if (el) monthBtnRefs.current.set(y, el);
+                          else monthBtnRefs.current.delete(y);
+                        }}
+                        onClick={() => jumpToYear(y)}
+                        aria-current={isActive ? "date" : undefined}
+                        className="group relative flex h-11 min-w-11 flex-shrink-0 items-center justify-center"
+                      >
+                        <span
+                          className={`rounded-full leading-none tabular-nums tracking-widest transition-all duration-200 ${
+                            isActive
+                              ? "bg-primary px-3 py-1.5 text-[11px] font-bold text-white shadow-[0_3px_10px_rgba(20,20,20,0.25)]"
+                              : "px-3 py-1.5 text-[11px] text-on-surface-variant group-active:bg-primary/[0.07] group-active:text-primary"
+                          }`}
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                        >
+                          {y.slice(5, 7)}
+                        </span>
+                      </button>
+                    </Fragment>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
       </div>

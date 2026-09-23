@@ -182,6 +182,12 @@ export interface SiteSettings {
   hero_title: string;
   hero_description: string;
   site_tagline: string;
+  site_title: string;
+  site_name: string;
+  hero_side_label: string;
+  hero_side_brand: string;
+  footer_title: string;
+  footer_copyright: string;
   hero_icon: string;
   hero_icon_url: string;
   bg_color1: string;
@@ -200,6 +206,54 @@ export interface SiteSettings {
   hero_speed: string;
   hero_color1_weight: string;
   hero_color2_weight: string;
+  show_hero_decorations: string;
+  show_hero_shader: string;
+  show_water_ripple: string;
+}
+
+/**
+ * 站点设置默认值的唯一前端来源，逐字对应 backend/defaults.py 的 DEFAULTS。
+ * 后端不可达时 fetchSettings 用它兜底，后台表单初值与「重置」也用它。
+ */
+export const DEFAULT_SETTINGS: SiteSettings = {
+  hero_title: "Precision Capture.\nTimeless Frames.",
+  hero_description: "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe.",
+  site_tagline: "Precision photography portfolio. Every frame tells a story.",
+  site_title: "HasselNot's Gallery",
+  site_name: "Art",
+  hero_side_label: "Collection",
+  hero_side_brand: "HasselNot",
+  footer_title: "HASSELNOT'S GALLERY",
+  footer_copyright: "© {year} HASSELNOT'S GALLERY. All rights reserved.",
+  hero_icon: "photo_camera",
+  hero_icon_url: "",
+  bg_color1: "#141414",
+  bg_color2: "#2b2b2b",
+  bg_color3: "#3a3a3a",
+  bg_color4: "#262626",
+  bg_color5: "#4d4d4d",
+  bg_color6: "#1c1c1c",
+  bg_base: "#141414",
+  water_ink1: "#171717",
+  water_ink2: "#0a0a0a",
+  water_ink_top: "0.15",
+  water_strength: "1.0",
+  hero_gradient_size: "0.85",
+  hero_gradient_count: "12.0",
+  hero_speed: "1.1",
+  hero_color1_weight: "1.0",
+  hero_color2_weight: "1.3",
+  show_hero_decorations: "true",
+  show_hero_shader: "true",
+  show_water_ripple: "true",
+};
+
+/** 装饰性动效开关：只有显式 "false" 才算关，字段缺失/空串/旧数据一律退化为开 */
+export const isOn = (v?: string) => v !== "false";
+
+/** HUD 工业风装饰的唯一开关（首页 Hero、图库页、地图页共用），取不到设置时按「开」处理 */
+export function hudDecorationsEnabled(s?: SiteSettings | null): boolean {
+  return isOn(s?.show_hero_decorations);
 }
 
 export async function fetchSettings(): Promise<SiteSettings> {
@@ -208,28 +262,6 @@ export async function fetchSettings(): Promise<SiteSettings> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   } catch {
-    return {
-      hero_title: "Precision Capture.\nTimeless Frames.",
-      hero_description: "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe.",
-      site_tagline: "Precision photography portfolio. Every frame tells a story.",
-      hero_icon: "photo_camera",
-      hero_icon_url: "",
-      bg_color1: "#141414",
-      bg_color2: "#141414",
-      bg_color3: "#f5c9c0",
-      bg_color4: "#0a0e27",
-      bg_color5: "#ff9c8a",
-      bg_color6: "#1c1c1c",
-      bg_base: "#141414",
-      water_ink1: "#171717",
-      water_ink2: "#0a0a0a",
-      water_ink_top: "0.15",
-      water_strength: "1.0",
-      hero_gradient_size: "0.85",
-      hero_gradient_count: "12.0",
-      hero_speed: "1.1",
-      hero_color1_weight: "1.0",
-      hero_color2_weight: "1.3",
-    };
+    return { ...DEFAULT_SETTINGS };
   }
 }

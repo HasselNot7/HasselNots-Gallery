@@ -1,4 +1,4 @@
-import { fetchSettings } from "@/lib/api-server";
+import { fetchSettings, hudDecorationsEnabled, isOn } from "@/lib/api-server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HeroSection from "@/components/HeroSection";
@@ -19,6 +19,10 @@ export default async function HomePage() {
         heroDescription={settings?.hero_description}
         heroIcon={settings?.hero_icon}
         heroIconUrl={settings?.hero_icon_url}
+        sideLabel={settings?.hero_side_label}
+        sideBrand={settings?.hero_side_brand}
+        showDecorations={hudDecorationsEnabled(settings)}
+        showShader={isOn(settings?.show_hero_shader)}
         shaderColors={{
           color1: settings?.bg_color1,
           color2: settings?.bg_color2,

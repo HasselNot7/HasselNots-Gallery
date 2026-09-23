@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from defaults import DEFAULTS
 from typing import Optional
 from datetime import datetime
 
@@ -173,33 +174,48 @@ class CommentCreate(BaseModel):
 
 
 class SettingsOut(BaseModel):
-    hero_title: str = "Precision Capture.\nTimeless Frames."
-    hero_description: str = "A curated collection of photographic works — each frame capturing the interplay of light, geometry, and fleeting moments across the globe."
-    site_tagline: str = "Precision photography portfolio. Every frame tells a story."
-    hero_icon: str = "photo_camera"
-    hero_icon_url: str = ""
-    bg_color1: str = "#141414"
-    bg_color2: str = "#2b2b2b"
-    bg_color3: str = "#3a3a3a"
-    bg_color4: str = "#262626"
-    bg_color5: str = "#4d4d4d"
-    bg_color6: str = "#1c1c1c"
-    bg_base: str = "#141414"
-    water_ink1: str = "#171717"
-    water_ink2: str = "#0a0a0a"
-    water_ink_top: str = "0.15"
-    water_strength: str = "1.0"
-    hero_gradient_size: str = "0.85"
-    hero_gradient_count: str = "12.0"
-    hero_speed: str = "1.1"
-    hero_color1_weight: str = "1.0"
-    hero_color2_weight: str = "1.3"
+    hero_title: str = Field(default=DEFAULTS["hero_title"])
+    hero_description: str = Field(default=DEFAULTS["hero_description"])
+    site_tagline: str = Field(default=DEFAULTS["site_tagline"])
+    site_title: str = Field(default=DEFAULTS["site_title"])
+    site_name: str = Field(default=DEFAULTS["site_name"])
+    hero_side_label: str = Field(default=DEFAULTS["hero_side_label"])
+    hero_side_brand: str = Field(default=DEFAULTS["hero_side_brand"])
+    footer_title: str = Field(default=DEFAULTS["footer_title"])
+    footer_copyright: str = Field(default=DEFAULTS["footer_copyright"])
+    hero_icon: str = Field(default=DEFAULTS["hero_icon"])
+    hero_icon_url: str = Field(default=DEFAULTS["hero_icon_url"])
+    bg_color1: str = Field(default=DEFAULTS["bg_color1"])
+    bg_color2: str = Field(default=DEFAULTS["bg_color2"])
+    bg_color3: str = Field(default=DEFAULTS["bg_color3"])
+    bg_color4: str = Field(default=DEFAULTS["bg_color4"])
+    bg_color5: str = Field(default=DEFAULTS["bg_color5"])
+    bg_color6: str = Field(default=DEFAULTS["bg_color6"])
+    bg_base: str = Field(default=DEFAULTS["bg_base"])
+    water_ink1: str = Field(default=DEFAULTS["water_ink1"])
+    water_ink2: str = Field(default=DEFAULTS["water_ink2"])
+    water_ink_top: str = Field(default=DEFAULTS["water_ink_top"])
+    water_strength: str = Field(default=DEFAULTS["water_strength"])
+    hero_gradient_size: str = Field(default=DEFAULTS["hero_gradient_size"])
+    hero_gradient_count: str = Field(default=DEFAULTS["hero_gradient_count"])
+    hero_speed: str = Field(default=DEFAULTS["hero_speed"])
+    hero_color1_weight: str = Field(default=DEFAULTS["hero_color1_weight"])
+    hero_color2_weight: str = Field(default=DEFAULTS["hero_color2_weight"])
+    show_hero_decorations: str = Field(default=DEFAULTS["show_hero_decorations"])
+    show_hero_shader: str = Field(default=DEFAULTS["show_hero_shader"])
+    show_water_ripple: str = Field(default=DEFAULTS["show_water_ripple"])
 
 
 class SettingsUpdate(BaseModel):
     hero_title: Optional[str] = None
     hero_description: Optional[str] = None
     site_tagline: Optional[str] = None
+    site_title: Optional[str] = None
+    site_name: Optional[str] = None
+    hero_side_label: Optional[str] = None
+    hero_side_brand: Optional[str] = None
+    footer_title: Optional[str] = None
+    footer_copyright: Optional[str] = None
     hero_icon: Optional[str] = None
     hero_icon_url: Optional[str] = None
     bg_color1: Optional[str] = None
@@ -218,3 +234,6 @@ class SettingsUpdate(BaseModel):
     hero_speed: Optional[str] = None
     hero_color1_weight: Optional[str] = None
     hero_color2_weight: Optional[str] = None
+    show_hero_decorations: Optional[str] = None
+    show_hero_shader: Optional[str] = None
+    show_water_ripple: Optional[str] = None

@@ -46,8 +46,14 @@ export default function ShaderHeroBackground({ colors }: { colors?: Partial<Shad
   const containerRef = useRef<HTMLDivElement>(null);
   const materialRef = useRef<any>(null);
   const [failed, setFailed] = useState(false);
-  const colorsRef = useRef<ShaderColors>({ ...DEFAULT_COLORS, ...colors });
-  colorsRef.current = { ...DEFAULT_COLORS, ...colors };
+  const resolvedColors = { ...DEFAULT_COLORS, ...colors };
+  const colorsRef = useRef<ShaderColors>(resolvedColors);
+
+  // 必须在读取 colorsRef 的 [colors] 副作用之前声明：同一次渲染里 effect 按声明顺序执行，
+  // 放后面会让 uniform 拿到上一帧的颜色。
+  useEffect(() => {
+    colorsRef.current = resolvedColors;
+  });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -56,7 +62,6 @@ export default function ShaderHeroBackground({ colors }: { colors?: Partial<Shad
     let disposed = false;
     let renderer: any = null;
     let raf = 0;
-    let touchTexture: any = null;
     let clock: any = null;
     let scene: any = null;
     let camera: any = null;
@@ -426,7 +431,7 @@ export default function ShaderHeroBackground({ colors }: { colors?: Partial<Shad
         <div
           className="absolute inset-0"
           style={{
-            background: `radial-gradient(circle at 30% 30%, ${colorsRef.current.color1}, transparent 60%), radial-gradient(circle at 70% 70%, ${colorsRef.current.color3}, transparent 60%), ${colorsRef.current.base}`,
+            background: `radial-gradient(circle at 30% 30%, ${resolvedColors.color1}, transparent 60%), radial-gradient(circle at 70% 70%, ${resolvedColors.color3}, transparent 60%), ${resolvedColors.base}`,
           }}
         />
       )}

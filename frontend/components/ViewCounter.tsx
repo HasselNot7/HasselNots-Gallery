@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import CountUp from "@/components/reactbits/CountUp";
 
 /**
  * Increments the view counter once per page load (client-side, after hydration)
@@ -32,7 +33,7 @@ export default function ViewCounter({
   return (
     <span className="inline-flex items-center gap-1">
       <span className="material-symbols-outlined text-[14px]">visibility</span>
-      {views}
+      <CountUp to={views} from={currentViews} duration={0.8} className="tabular-nums" />
     </span>
   );
 }
