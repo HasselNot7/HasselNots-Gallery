@@ -539,7 +539,10 @@ function NavList({
               aria-label={collapsed ? "更多功能" : undefined}
               aria-expanded={moreExpanded}
               aria-controls={groupId}
-              className={navRowClass(moreGroupActive, false, collapsed)}
+              /* 折叠态整列只剩图标，分组按钮再套选中底色会被读成「两个都被选中」；
+                 它是开合器（aria-expanded 表达状态），不承担选中。展开态有文字与
+                 缩进层级，保留分组高亮。 */
+              className={navRowClass(moreGroupActive && !collapsed, false, collapsed)}
             >
               {/* 折叠态放不下 chevron，改用图标本身表达开/关 */}
               <span className="material-symbols-outlined text-[22px]">
