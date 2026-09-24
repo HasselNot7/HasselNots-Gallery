@@ -24,7 +24,8 @@ const rowButtonClass = (active: boolean) =>
 
 const chipClass = (on: boolean) =>
   [
-    "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-metadata-sm font-mono",
+    // shrink-0 只在窄屏的 nowrap 轨道里起作用；lg 以上换行，芯片从不收缩
+    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-metadata-sm font-mono",
     "transition-colors duration-500 ease-out",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
     on
@@ -55,6 +56,8 @@ export default function MapExplorer({
   const [focus, setFocus] = useState<FocusRequest | null>(null);
   const [lightbox, setLightbox] = useState<{ photos: LightboxPhoto[]; index: number } | null>(null);
   const rows = useRef<Record<string, HTMLButtonElement | null>>({});
+  // 桌面端列表的内滚容器（移动端它是 display:contents，量不出滚动，见下面的 effect）
+  const listScroller = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
 
   const allYears = useMemo(() => yearsForLegend(markers), [markers]);
@@ -122,7 +125,13 @@ export default function MapExplorer({
     setActive((prev) => (name === null || prev === name ? null : name));
 
   useEffect(() => {
-    if (activeName) rows.current[activeName]?.scrollIntoView({ block: "nearest" });
+    if (!activeName) return;
+    // 只有列表真的是个内滚盒子时才把它滚进视野。移动端列表铺在文档流里，
+    // 这时候 scrollIntoView 会去滚整页，用户刚点的地图标记立刻被顶出屏幕。
+    // display:contents 的元素 clientHeight/scrollHeight 都是 0，正好据此判断「当前没有内滚」。
+    const scroller = listScroller.current;
+    if (!scroller || scroller.scrollHeight - scroller.clientHeight < 2) return;
+    rows.current[activeName]?.scrollIntoView({ block: "nearest" });
   }, [activeName]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
@@ -163,28 +172,48 @@ export default function MapExplorer({
           </div>
 
           {allYears.length > 0 && (
-            <div role="group" aria-label="按年份筛选" className="flex flex-wrap items-center gap-1.5">
-              {allYears.map((y) => {
-                const on = showAllYears || activeYears.has(y);
-                return (
-                  <button key={y} type="button" aria-pressed={on} onClick={() => toggleYear(y)} className={chipClass(on)}>
-                    <span
-                      aria-hidden
-                      className="h-2 w-2 rounded-full"
-                      style={on ? { background: yearColor(y) } : { boxShadow: `inset 0 0 0 1.5px ${yearColor(y)}` }}
-                    />
-                    {y}
-                  </button>
-                );
-              })}
-            </div>
+            /*
+              窄屏放不下时让年份芯片横向滑动而不是换行：头部每多占一行，下面 52vh 的
+              地图与列表就被往下挤一行。渐隐只在真的滑得动时出现（ScrollShadow 内置判断），
+              lg 以上用 contents 把这一层盒子摘掉，恢复原来的 flex-wrap 单行/多行换行。
+            */
+            <ScrollShadow orientation="horizontal" hideScrollBar className="min-w-0 lg:contents">
+              <div
+                role="group"
+                aria-label="按年份筛选"
+                className="flex w-max flex-nowrap items-center gap-1.5 lg:w-auto lg:flex-wrap"
+              >
+                {allYears.map((y) => {
+                  const on = showAllYears || activeYears.has(y);
+                  return (
+                    <button
+                      key={y}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => toggleYear(y)}
+                      className={chipClass(on)}
+                    >
+                      <span
+                        aria-hidden
+                        className="h-2 w-2 rounded-full"
+                        style={on ? { background: yearColor(y) } : { boxShadow: `inset 0 0 0 1.5px ${yearColor(y)}` }}
+                      />
+                      {y}
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollShadow>
           )}
         </div>
       </section>
 
       <div className="relative border-y border-primary/15 lg:flex lg:flex-1 lg:min-h-0 lg:flex-col">
         <div className="flex flex-col lg:flex-1 lg:min-h-0 lg:flex-row">
-          <div className="relative h-[400px] lg:h-full lg:min-h-0 lg:flex-1">
+          {/* 窄屏：地图按视口比例给高度（52vh），并留 320px 下限防止矮屏手机被压成一条；
+              列表跟着铺在文档流里，整页只有页面自身一个滚动容器。
+              lg 起恢复「锁视口 + 列表内滚」：下面那套 lg:* 原样接管，一个像素都不受移动端影响。 */}
+          <div className="relative h-[52vh] min-h-[320px] lg:h-full lg:min-h-0 lg:flex-1">
             {mapDecorations}
 
             {/*
@@ -203,13 +232,20 @@ export default function MapExplorer({
             />
           </div>
 
-          <aside className="relative h-[300px] w-full glass-panel lg:h-full lg:min-h-0 lg:w-80">
+          <aside className="relative w-full glass-panel lg:h-full lg:min-h-0 lg:w-80">
             {asideDecor}
-            {/* ScrollShadow 自身就是滚动容器（overflow-y:auto + 上下 mask 渐隐），
-                所以 aside 不再挂 overflow-y-auto，滚动只发生在列表内部 */}
-            <ScrollShadow className="h-full" orientation="vertical">
+            {/*
+              移动端把 ScrollShadow 变成 display:contents：盒子不再被生成，于是它的
+              overflow-y:auto 与上下 mask 一起消失，列表直接铺进文档流——比「留着盒子
+              再逐条否定它的内置行为」干净，也不会多出第二个滚动容器。
+              ScrollShadow 自身就是桌面端的滚动容器（overflow-y:auto + 上下 mask 渐隐），
+              所以 aside 不挂 overflow-y-auto，滚动只发生在列表内部。
+            */}
+            <ScrollShadow ref={listScroller} className="h-full max-lg:contents" orientation="vertical">
               <div className="p-4 md:p-6">
-                <div className="mb-3 flex items-baseline justify-between gap-2">
+                {/* 移动端列表铺进文档流后，这行标题+计数是纯开销：头部已经写着「N 地点」。
+                    省下的三十来像素正好换回一个完整地点条目。lg 起照旧显示。 */}
+                <div className="mb-3 hidden items-baseline justify-between gap-2 lg:flex">
                   <h2 className="text-label-caps text-outline">地点</h2>
                   <span className="text-metadata-sm text-outline font-mono">{locations.length}</span>
                 </div>

@@ -189,9 +189,13 @@ export default function MapClient({
     });
     const label = [r.name, r.admin1, r.country].filter(Boolean).join(", ");
     map._searchMarker = L.marker([r.latitude, r.longitude], { icon }).addTo(map);
-    map._searchMarker.bindPopup(
-      `<div style="font-family:Inter,sans-serif;font-size:13px;color:#141414;padding:2px 4px;"><strong>${r.name}</strong><br/><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#727973;">${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</span><br/><span style="font-size:11px;color:#727973;">${label}</span></div>`
-    ).openPopup();
+    // maxWidth 与摄影标记的 popup 对齐：Leaflet 默认 300，在 320px 宽的手机上会顶到视口边
+    map._searchMarker
+      .bindPopup(
+        `<div style="font-family:Inter,sans-serif;font-size:13px;color:#141414;padding:2px 4px;"><strong>${r.name}</strong><br/><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#727973;">${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</span><br/><span style="font-size:11px;color:#727973;">${label}</span></div>`,
+        { maxWidth: 260 }
+      )
+      .openPopup();
   };
 
   useEffect(() => {
@@ -349,8 +353,12 @@ export default function MapClient({
   return (
     <div className="relative w-full h-full">
       <div id="leaflet-map" className="w-full h-full" />
-      {/* 地名搜索框 */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[600] w-64 max-w-[80%]">
+      {/*
+        地名搜索框。<768px 改成通栏：左边缘让到缩放控件右缘（44px）之后，右留 12px。
+        原来居中 w-64 在 390px 上离缩放按钮只剩 23px 间隙，输入区也窄。
+        768px 起恢复居中 —— 那一档底图切换器在右上角，通栏会和它叠在一起。
+      */}
+      <div className="absolute top-3 left-14 right-3 z-[600] md:left-1/2 md:right-auto md:w-64 md:max-w-[80%] md:-translate-x-1/2">
         <SearchField
           fullWidth
           value={query}
