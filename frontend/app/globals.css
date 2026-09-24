@@ -255,3 +255,17 @@
     transform: translateY(0);
   }
 }
+
+/*
+ * Leaflet 的 popup 关闭按钮是 24×24，手指按不准。这里把命中区撑到 44×44：
+ * 只加透明的左边/下边边框，字形仍停在右上角，视觉与原来逐像素一致。
+ *
+ * 写成未分层规则而不是 Tailwind 工具类：leaflet.css 通过 @import 落在所有 @layer
+ * 之外，而未分层声明永远赢过分层声明（与特异性无关），工具类要赢只能靠 !important。
+ */
+.leaflet-container a.leaflet-popup-close-button {
+  box-sizing: content-box;
+  border-left: 20px solid transparent;
+  border-bottom: 20px solid transparent;
+}
+
