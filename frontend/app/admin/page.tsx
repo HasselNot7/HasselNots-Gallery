@@ -48,6 +48,8 @@ import {
   AdminUser,
 } from "@/lib/api";
 import { DEFAULT_SETTINGS, type Article, type SiteSettings } from "@/lib/api-server";
+import { FALLBACK_LAYER_NAME, schemeThumb, TILE_LAYERS } from "@/lib/mapLayers";
+import { DEFAULT_MAP_CONFIG, type MapConfig } from "@/lib/map-config";
 import Navbar from "@/components/Navbar";
 
 const API_BASE = "";
@@ -256,12 +258,29 @@ type TabId =
   | "upload"
   | "photos"
   | "blog"
+  | "map"
   | "albums"
   | "analytics"
   | "services"
   | "users";
 
 type NavItem = { id: TabId; label: string; icon: string };
+
+/** OSM 两套瓦片主机，与 backend/routes/services.py 的 OSM_SOURCES 对应 */
+const OSM_SOURCE_OPTIONS = [
+  {
+    value: "de",
+    label: "德国镜像",
+    host: "tile.openstreetmap.de",
+    note: "大陆可直接访问（默认）",
+  },
+  {
+    value: "official",
+    label: "官方域名",
+    host: "tile.openstreetmap.org",
+    note: "大陆被 DNS 污染，仅适合访客普遍挂代理的情况",
+  },
+];
 
 /* 后台各面板从 /api 拿到的形状。此前一律用 any，渲染处只能再逐个 (x: any) 标注。 */
 interface ServiceStatus {
@@ -278,6 +297,31 @@ interface ServicesReport {
   ok_count: number;
   total: number;
   checked_at: string;
+}
+
+/** GET /api/secrets 的一项。后端只给状态与长度，值本身从不出现在响应里。 */
+interface CredentialStatus {
+  env_key: string;
+  label: string;
+  secret: boolean;
+  required: boolean;
+  visibility: "server" | "client";
+  storage: "env" | "db";
+  configured: boolean;
+  length: number;
+  source: "env_file" | "os_environ" | "db" | "unset";
+  shadowed: boolean;
+  used_by: string[];
+  effect_if_missing: string;
+  effect_if_rotated: string;
+  restart_required: boolean;
+  change_howto: string;
+  provider_console: string;
+}
+
+interface VerifyResult {
+  ok: boolean | null;
+  detail: string;
 }
 
 interface AnalyticsReport {
@@ -298,6 +342,7 @@ const PRIMARY_TABS: NavItem[] = [
   { id: "photos", label: "照片管理", icon: "photo_library" },
   { id: "albums", label: "相册", icon: "photo_album" },
   { id: "blog", label: "笔记", icon: "article" },
+  { id: "map", label: "地图", icon: "map" },
 ];
 
 const MORE_TABS: NavItem[] = [
@@ -677,6 +722,20 @@ export default function AdminPage() {
   const [servicesLoading, setServicesLoading] = useState(false);
   const [fullCheckDone, setFullCheckDone] = useState(false);
 
+  /* 「地图」面板的密钥状态芯片读这份盘点（backend/credentials.py 那张表） */
+  const [creds, setCreds] = useState<CredentialStatus[] | null>(null);
+
+  /* 「地图」面板：底图密钥 */
+  const [cartoKey, setCartoKey] = useState("");
+  const [cartoDirty, setCartoDirty] = useState(false);
+  const [cartoSaving, setCartoSaving] = useState(false);
+  const [cartoVerifying, setCartoVerifying] = useState(false);
+  const [cartoVerify, setCartoVerify] = useState<VerifyResult | null>(null);
+
+  /* 「地图」面板：站点默认底图 + OSM 瓦片源 */
+  const [mapCfg, setMapCfg] = useState<MapConfig | null>(null);
+  const [mapCfgSaving, setMapCfgSaving] = useState(false);
+
   const SERVICE_DEFS = [
     { name: "SQLite Database", url: "本地 database.gallery.db" },
     { name: "Cloudflare R2 (S3 API)", url: "r2.cloudflarestorage.com" },
@@ -703,6 +762,11 @@ export default function AdminPage() {
   const displayServices: ServiceStatus[] = services
     ? services.services
     : SERVICE_DEFS.map((d) => ({ ...d, ok: null, latency_ms: null, detail: "" }));
+
+  const cartoCred = creds?.find((c) => c.env_key === "carto_api_key") ?? null;
+
+  const savedLayer = mapCfg?.default_map_layer ?? "";
+  const layerKnown = TILE_LAYERS.some((l) => l.name === savedLayer);
 
   const [sortBy, setSortBy] = useState<"shoot" | "upload">("shoot");
 
@@ -870,6 +934,98 @@ export default function AdminPage() {
       }
     } catch {
       // ignore
+    }
+  };
+
+  const authHeaders = () => ({ Authorization: `Bearer ${getToken()}` });
+
+  const loadCredentials = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/secrets`, { headers: authHeaders() });
+      if (res.ok) setCreds((await res.json()).credentials);
+      else toast.danger(`凭据状态读取失败（HTTP ${res.status}）`);
+    } catch {
+      toast.danger("凭据状态读取失败");
+    }
+  };
+
+  /**
+   * 后台读地图配置走这条独立 fetch，不复用 lib/map-config.ts 那份：
+   * 访客用的那份带模块级 + HTTP 双层缓存（max-age=60），管理员刚存完就要立刻看到回显，
+   * no-store 只影响这一个请求，不动访客侧的缓存策略。
+   */
+  const loadMapConfig = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/map-config`, { cache: "no-store" });
+      if (res.ok) setMapCfg(await res.json());
+    } catch {
+      toast.danger("地图配置读取失败");
+    }
+  };
+
+  const saveMapSetting = async (patch: Partial<MapConfig>) => {
+    setMapCfgSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/settings`, {
+        method: "PUT",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setMapCfg((prev) => ({ ...(prev ?? DEFAULT_MAP_CONFIG), ...patch }));
+      toast.success("已保存：新访客立即生效，已缓存过的浏览器最长 60 秒");
+    } catch {
+      toast.danger("保存失败");
+    } finally {
+      setMapCfgSaving(false);
+    }
+  };
+
+  /**
+   * 统一走这一个函数：任何失败都折成 {ok:false, detail}，调用方不必再 try。
+   */
+  const runVerify = async (envKey: string, candidate = ""): Promise<VerifyResult> => {
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/secrets/verify/${encodeURIComponent(envKey)}`,
+        {
+          method: "POST",
+          headers: { ...authHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({ candidate }),
+        }
+      );
+      if (!res.ok) return { ok: false, detail: `验证请求失败（HTTP ${res.status}）` };
+      const data = await res.json();
+      return { ok: data.ok, detail: data.detail };
+    } catch {
+      return { ok: false, detail: "验证请求失败" };
+    }
+  };
+
+  const verifyCartoKey = async () => {
+    setCartoVerifying(true);
+    setCartoVerify(await runVerify("carto_api_key", cartoKey.trim()));
+    setCartoVerifying(false);
+  };
+
+  const saveCartoKey = async () => {
+    setCartoSaving(true);
+    const value = cartoKey.trim();
+    try {
+      const res = await fetch(`${API_BASE}/api/settings`, {
+        method: "PUT",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ carto_api_key: value }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast.success(value ? "底图密钥已保存" : "底图密钥已清除");
+      setCartoDirty(false);
+      setCartoVerify(null);
+      await loadCredentials();
+    } catch {
+      toast.danger("保存失败");
+    } finally {
+      setCartoSaving(false);
     }
   };
 
@@ -1370,6 +1526,11 @@ export default function AdminPage() {
     setActiveTab(tab);
     navDrawerState.close();
     if (tab === "analytics") loadAnalytics();
+    // 地图面板的密钥状态芯片读 creds（backend/credentials.py 那张表），配置值读 map-config
+    if (tab === "map") {
+      if (!creds) loadCredentials();
+      loadMapConfig();
+    }
   };
 
   const handleLogout = () => {
@@ -2501,6 +2662,222 @@ export default function AdminPage() {
                 </Card>
               ))}
             </div>
+          </div>
+          )}
+
+          {/* 地图 */}
+          {activeTab === "map" && (
+          <div>
+            <h2 className="text-headline-lg text-primary mb-6">地图</h2>
+
+            {/* ① 默认底图 */}
+            <section className="mb-10">
+              <h3 className="text-label-caps text-outline uppercase mb-3">默认底图</h3>
+              <Card className="p-5 gap-4">
+                {!mapCfg ? (
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-metadata-sm text-on-surface-variant">
+                      当前：
+                      <span className="font-medium text-primary">
+                        {layerKnown ? savedLayer : `${savedLayer || "（空）"}`}
+                      </span>
+                      {savedLayer && !layerKnown && (
+                        <span className="text-[var(--danger)]">
+                          {" "}· 这个名字在图层表里找不到，前端按 {FALLBACK_LAYER_NAME} 兜底
+                        </span>
+                      )}
+                    </p>
+                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+                      {TILE_LAYERS.map((def) => {
+                        const on = savedLayer === def.name;
+                        return (
+                          <button
+                            key={def.name}
+                            type="button"
+                            aria-pressed={on}
+                            disabled={mapCfgSaving}
+                            onClick={() => !on && saveMapSetting({ default_map_layer: def.name })}
+                            className={`flex flex-col items-center gap-1 rounded-lg border p-1.5 transition-colors disabled:opacity-60 ${
+                              on
+                                ? "border-primary bg-primary/10"
+                                : "border-border-subtle hover:border-primary/50"
+                            }`}
+                          >
+                            <img
+                              src={schemeThumb(def.thumb)}
+                              alt=""
+                              className="aspect-square w-full rounded"
+                            />
+                            <span
+                              className={`w-full truncate text-center text-[10px] leading-tight ${
+                                on ? "text-primary font-medium" : "text-outline"
+                              }`}
+                            >
+                              {def.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </Card>
+            </section>
+
+            {/* ② 底图密钥：客户端密钥，值必然下发到浏览器 */}
+            <section className="mb-10">
+              <h3 className="text-label-caps text-outline uppercase mb-3">底图密钥</h3>
+              <Card className="p-5 gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-body-md text-on-surface font-medium">CARTO 底图 API Key</span>
+                  <Chip size="sm" color={cartoCred?.configured ? "success" : "warning"} variant="soft">
+                    <Chip.Label>
+                      {cartoCred?.configured ? `已配置（${cartoCred.length} 位）` : "未配置"}
+                    </Chip.Label>
+                  </Chip>
+                </div>
+
+                <LabeledInput
+                  label="粘贴新的 Key"
+                  value={cartoKey}
+                  onChange={(v) => {
+                    setCartoKey(v);
+                    setCartoDirty(true);
+                    setCartoVerify(null);
+                  }}
+                  placeholder={
+                    cartoCred?.configured
+                      ? "出于盘点口径这里不回显现值；输入新值保存即替换，保存空值即清除"
+                      : "尚未配置，底图当前带水印"
+                  }
+                />
+
+                <div className="flex flex-wrap items-center gap-x-3 text-metadata-sm text-outline">
+                  <a
+                    className="text-primary underline underline-offset-2"
+                    href="https://carto.com/basemaps/apikey/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    申请 key
+                  </a>
+                  <a
+                    className="text-primary underline underline-offset-2"
+                    href="https://dashboard.basemaps.carto.com"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    管理（域名限制 · 配额 · 吊销）
+                  </a>
+                </div>
+
+                {cartoVerify && (
+                  <div
+                    className={`flex items-start gap-2 rounded-lg border p-3 text-metadata-sm ${
+                      cartoVerify.ok
+                        ? "border-[var(--accent)]/40 bg-accent-soft/30"
+                        : "border-[var(--danger)]/40 bg-danger-soft/30"
+                    }`}
+                  >
+                    <span
+                      className={`material-symbols-outlined ${cartoVerify.ok ? "text-[var(--accent)]" : "text-[var(--danger)]"}`}
+                      style={{ fontSize: 18 }}
+                    >
+                      {cartoVerify.ok ? "check_circle" : "error"}
+                    </span>
+                    <span className={cartoVerify.ok ? "text-primary" : "text-[var(--danger)]"}>
+                      {cartoVerify.ok ? "验证通过：key 真的生效了" : "验证未通过"} · {cartoVerify.detail}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    isDisabled={!cartoDirty}
+                    isPending={cartoSaving}
+                    onPress={saveCartoKey}
+                  >
+                    保存
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="tertiary"
+                    isPending={cartoVerifying}
+                    onPress={verifyCartoKey}
+                  >
+                    验证
+                  </Button>
+                </div>
+              </Card>
+            </section>
+
+            {/* ③ OSM 瓦片源 */}
+            <section>
+              <h3 className="text-label-caps text-outline uppercase mb-3">OSM 瓦片源</h3>
+              <Card className="p-5 gap-4">
+                {!mapCfg ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Skeleton className="h-24 w-full rounded-lg" />
+                    <Skeleton className="h-24 w-full rounded-lg" />
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {OSM_SOURCE_OPTIONS.map((o) => {
+                      const on = mapCfg.osm_tile_source === o.value;
+                      return (
+                        <button
+                          key={o.value}
+                          type="button"
+                          aria-pressed={on}
+                          disabled={mapCfgSaving}
+                          onClick={() => !on && saveMapSetting({ osm_tile_source: o.value })}
+                          className={`rounded-lg border p-3 text-left transition-colors disabled:opacity-60 ${
+                            on
+                              ? "border-primary bg-primary/10"
+                              : o.value === "official"
+                                ? "border-[var(--danger)]/40"
+                                : "border-border-subtle hover:border-primary/50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                                on ? "bg-[var(--accent)]" : "bg-[var(--muted)]"
+                              }`}
+                            />
+                            <span className="text-body-md text-on-surface font-medium">
+                              {o.label}
+                            </span>
+                            {on && (
+                              <Chip size="sm" variant="soft">
+                                <Chip.Label>使用中</Chip.Label>
+                              </Chip>
+                            )}
+                          </div>
+                          <code className="mt-1 block font-mono text-metadata-sm text-outline">
+                            {o.host}
+                          </code>
+                          <div
+                            className={`mt-1 text-metadata-sm leading-relaxed ${
+                              o.value === "official" ? "text-[var(--danger)]" : "text-on-surface-variant"
+                            }`}
+                          >
+                            {o.note}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            </section>
           </div>
           )}
 

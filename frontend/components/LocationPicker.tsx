@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { SearchField, Spinner } from "@heroui/react";
 
-import { attachLayerSwitcher } from "@/lib/mapLayers";
+import { attachLayerSwitcher, resolveLayerIndex } from "@/lib/mapLayers";
+import { DEFAULT_MAP_CONFIG, fetchMapConfig } from "@/lib/map-config";
 import { searchPlaces, GeoResult } from "@/lib/geocode";
 
 export default function LocationPicker({
@@ -70,13 +71,16 @@ export default function LocationPicker({
     let disposed = false;
     let map: any = null;
 
-    import("leaflet").then(({ default: L }) => {
+    import("leaflet").then(async ({ default: L }) => {
+      if (disposed || !containerRef.current) return;
+      // 拿不到配置就按默认建图：底图照样出图，不该因此整张地图打不开
+      const mapConfig = await fetchMapConfig().catch(() => DEFAULT_MAP_CONFIG);
       if (disposed || !containerRef.current) return;
       const el = containerRef.current;
       const start: [number, number] = initialRef.current ?? [35.8617, 104.1954]; // China default
       map = L.map(el).setView(start, initialRef.current ? 12 : 5);
       mapRef.current = map;
-      attachLayerSwitcher(map, L, 5);
+      attachLayerSwitcher(map, L, resolveLayerIndex(mapConfig.default_map_layer), mapConfig);
 
       const icon = L.divIcon({
         className: "custom-marker",

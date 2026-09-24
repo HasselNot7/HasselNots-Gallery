@@ -1,14 +1,46 @@
+import { DEFAULT_MAP_CONFIG, type MapConfig } from "./map-config";
+
 export interface TileLayerDef {
   name: string;
+  /** 未填 {s} / {q} / {z} / {x} / {y} 之前的原始模板，不含任何密钥 */
   url: string;
   options: Record<string, unknown>;
   overlayUrls?: string[];
+  /** 该图层需要 provider 的 API Key 才没有水印；key 由 attachLayerSwitcher 在运行期拼上 */
+  needsKey?: boolean;
+  /** 该图层的瓦片主机由站点配置决定，url/options 里的值只是默认那一档 */
+  hostFromConfig?: boolean;
   /** 缩略图配色：迷你地图 SVG 预览 */
   thumb?: { bg: string; road: string; park?: string; water?: string; accent?: string };
 }
 
 const GAODE_SUB = ["webrd01", "webrd02", "webrd03", "webrd04"];
 const GAODE_SAT_SUB = ["webst01", "webst02", "webst03", "webst04"];
+/**
+ * OSM Standard 的两套瓦片主机，与 backend/routes/services.py 的 OSM_SOURCES 逐字一致
+ * （健康检查探的必须是这里真正在用的那台，否则又是"检测正常、用户看着空白"）。
+ * 官方域名在中国大陆被 DNS 污染（A/AAAA 被打到 Meta 段），解析层面就挂，重试无意义。
+ * 刻意不用 {s} 子域轮询：a/b/c/d.tile.openstreetmap.de 实测可用但分成两组后端，
+ * 同一块瓦片回的字节日略有差，轮询会在相邻瓦片间看到渲染错位。
+ */
+const OSM_SOURCES: Record<string, string> = {
+  de: "tile.openstreetmap.de",
+  official: "tile.openstreetmap.org",
+};
+const OSM_DEFAULT_SOURCE = "de";
+const OSM_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+function osmHostOf(source: string): string {
+  return OSM_SOURCES[source] ?? OSM_SOURCES[OSM_DEFAULT_SOURCE];
+}
+/**
+ * CARTO 子域轮询表。Leaflet 默认是 "abc"，但实测 a.basemaps.cartocdn.com 在本机
+ * 解析到 157.240.12.36（Meta 的段）且 443 不可达，b/c 才落在 Fastly 199.232.114.132 ——
+ * 按 "abc" 轮询会有三分之一瓦片直接失败。*.basemaps.cartocdn.com 是通配记录，
+ * 三个标签背后同一个 Fastly 边缘，少轮询一个不损失什么。
+ */
+const CARTO_SUB = "bc";
 const esriSat = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 const esriRef = (layer: string) =>
   `https://server.arcgisonline.com/ArcGIS/rest/services/Reference/${layer}/MapServer/tile/{z}/{y}/{x}`;
@@ -36,9 +68,12 @@ export const TILE_LAYERS: TileLayerDef[] = [
   },
   {
     name: "Streets",
-    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    // 默认档 = osm_tile_source "de"；实际主机在 attachLayerSwitcher 里按配置换
+    hostFromConfig: true,
+    url: `https://${OSM_SOURCES[OSM_DEFAULT_SOURCE]}/{z}/{x}/{y}.png`,
     options: {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution: OSM_ATTRIBUTION,
+      // 实测 .de 在密集区给到 z20（z21 起 404），但 z20 覆盖不全，留 19 不会出灰块
       maxZoom: 19,
     },
     thumb: { bg: "#F2EFE9", road: "#FFFFFF", park: "#CDE8C9", water: "#AAD3DF", accent: "#D9C99A" },
@@ -46,9 +81,12 @@ export const TILE_LAYERS: TileLayerDef[] = [
   {
     name: "Light",
     url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    needsKey: true,
     options: {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> / <a href="https://carto.com/">CARTO</a>',
       maxZoom: 19,
+      // 交给 Leaflet 轮询子域，不再把 {s} 手工换成字面量 "abc"（那只是蹭通配 DNS 能解析）
+      subdomains: CARTO_SUB,
     },
     thumb: { bg: "#F8F8F6", road: "#FFFFFF", park: "#E4F0E0", water: "#D6E8F2", accent: "#CCCCCC" },
   },
@@ -86,16 +124,36 @@ export const TILE_LAYERS: TileLayerDef[] = [
   {
     name: "Dark",
     url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    needsKey: true,
     options: {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> / <a href="https://carto.com/">CARTO</a>',
       maxZoom: 19,
+      subdomains: CARTO_SUB,
     },
     thumb: { bg: "#24262B", road: "#3A3D44", park: "#2C3430", water: "#1C2230", accent: "#565B66" },
   },
 ];
 
-/** 生成迷你地图缩略图 SVG（模仿 anitabi 的方案缩略图风格） */
-function schemeThumb(t: TileLayerDef["thumb"]): string {
+/** 站点默认底图解析不到时的兜底图层名 */
+export const FALLBACK_LAYER_NAME = "Hybrid";
+
+/**
+ * 把站点配置的图层名解析成 TILE_LAYERS 下标；名字对不上（改名、删层、脏数据）
+ * 回退到 Hybrid，连 Hybrid 都没有才退到 0 —— 地图不能因为一条配置写错就白屏。
+ *
+ * 存名字而不是下标：下标会随数组增删静默错位，指到别的图层上还不报错。
+ * 注意访客侧的 localStorage(SKIN_KEY) 存的**是数字下标**，这个不一致是故意的 ——
+ * 那套本身自洽且已经躺在用户机器上，迁移只会留下新旧值混存的脏状态。
+ */
+export function resolveLayerIndex(name: string): number {
+  const byName = TILE_LAYERS.findIndex((l) => l.name === name);
+  if (byName >= 0) return byName;
+  const fallback = TILE_LAYERS.findIndex((l) => l.name === FALLBACK_LAYER_NAME);
+  return fallback >= 0 ? fallback : 0;
+}
+
+/** 生成迷你地图缩略图 SVG（模仿 anitabi 的方案缩略图风格）。后台「默认底图」选择器共用。 */
+export function schemeThumb(t: TileLayerDef["thumb"]): string {
   const { bg, road, park = bg, water = bg, accent = road } = t || { bg: "#ccc", road: "#fff" };
   const svg = `
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'>
@@ -185,8 +243,40 @@ const LAYER_STYLE = `
   .scheme-select-shadow .scheme-btn-list .scheme-btn[data-current="true"] {
     box-shadow: 0 0 0 2px #141414;
   }
+  /* 需要 API Key 却还没配：方案缩略图角上挂一个 KEY 标，免得用户对着水印地图纳闷 */
+  .scheme-btn[data-nokey="true"]::after,
+  .current-scheme-btn[data-nokey="true"]::after {
+    content: "KEY";
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    padding: 0 3px;
+    border-radius: 3px;
+    background: var(--color-tertiary);
+    color: var(--color-on-tertiary);
+    font-size: 7px;
+    line-height: 11px;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+  .scheme-key-note {
+    position: absolute;
+    top: 52px;
+    right: 0;
+    max-width: 190px;
+    padding: 4px 7px;
+    border-radius: 6px;
+    background: var(--color-deep-charcoal);
+    color: var(--color-on-secondary);
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1.45;
+    text-shadow: none;
+  }
+  .scheme-key-note[data-hide="true"] { display: none; }
   @media (max-width: 767px) {
     .map-scheme { margin: 0 8px 8px 0 !important; }
+    .scheme-key-note { top: auto; bottom: 52px; }
   }
 `;
 
@@ -219,13 +309,34 @@ const SKIN_KEY = "mapSkinName";
 /**
  * Attach a base-layer switcher (anitabi 风格：缩略图方案选择器）。
  * 选中方案记忆在 localStorage，移动端位于右下角。
+ *
+ * config.carto_api_key 只拼进瓦片 URL 的 query，绝不进 attribution（attribution 会被
+ * Leaflet 原样注入 DOM 并显示在页面上），也不参与任何日志。
  */
-export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
+export function attachLayerSwitcher(
+  map: any,
+  L: any,
+  initialIndex = 0,
+  config: MapConfig = DEFAULT_MAP_CONFIG
+) {
+  const apiKey = config.carto_api_key.trim();
+  const osmHost = osmHostOf(config.osm_tile_source);
   const groups = TILE_LAYERS.map((def) => {
-    const url = def.url.includes("{s}")
-      ? def.url.replace("{s}", "abc")
-      : def.url;
-    const layers = [makeTileLayer(L, url, def.options)];
+    let url = def.url;
+    let options = def.options;
+    if (def.hostFromConfig) {
+      url = `https://${osmHost}/{z}/{x}/{y}.png`;
+      options = {
+        ...options,
+        attribution:
+          osmHost === OSM_SOURCES[OSM_DEFAULT_SOURCE]
+            ? `${OSM_ATTRIBUTION} / 瓦片由 FOSSGIS 镜像提供`
+            : OSM_ATTRIBUTION,
+      };
+    } else if (def.needsKey && apiKey) {
+      url = `${url}?key=${encodeURIComponent(apiKey)}`;
+    }
+    const layers = [makeTileLayer(L, url, options)];
     (def.overlayUrls || []).forEach((u) => {
       layers.push(
         L.tileLayer(u, { maxZoom: 19, attribution: "", zIndex: 50 })
@@ -234,6 +345,8 @@ export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
     return layers;
   });
 
+  // 访客自己动过选择器就以他的存储为准，站点默认只管首次访问者 —— 这里 localStorage
+  // 压过 initialIndex 是设计。后台「默认底图」面板里也把这句话写给了管理员。
   let active = initialIndex;
   try {
     const saved = localStorage.getItem(SKIN_KEY);
@@ -259,6 +372,18 @@ export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
   currentBtn.style.setProperty("--thumb", `url("${schemeThumb(TILE_LAYERS[active].thumb)}")`);
   currentBtn.textContent = TILE_LAYERS[active].name;
 
+  const keyNote = document.createElement("div");
+  keyNote.className = "scheme-key-note";
+  keyNote.textContent = "此底图需要 CARTO API Key，未配置时瓦片会带水印";
+
+  /** 当前方案要不要提示缺 key。文案是常量，不含 key 值本身。 */
+  const applyKeyHint = (index: number) => {
+    const missing = !!TILE_LAYERS[index].needsKey && !apiKey;
+    currentBtn.dataset.nokey = String(missing);
+    keyNote.dataset.hide = String(!missing);
+  };
+  applyKeyHint(active);
+
   const shadow = document.createElement("div");
   shadow.className = "scheme-select-shadow";
   shadow.dataset.hide = "true";
@@ -269,6 +394,7 @@ export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
     btn.className = "scheme-btn";
     btn.dataset.scheme = String(i);
     btn.dataset.current = String(i === active);
+    btn.dataset.nokey = String(!!def.needsKey && !apiKey);
     btn.style.setProperty("--thumb", `url("${schemeThumb(def.thumb)}")`);
     btn.textContent = def.name;
     btn.addEventListener("click", () => {
@@ -278,6 +404,7 @@ export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
         active = i;
         currentBtn.style.setProperty("--thumb", `url("${schemeThumb(def.thumb)}")`);
         currentBtn.textContent = def.name;
+        applyKeyHint(i);
         list.querySelectorAll(".scheme-btn").forEach((b) => {
           (b as HTMLElement).dataset.current = String((b as HTMLElement).dataset.scheme === String(i));
         });
@@ -314,6 +441,7 @@ export function attachLayerSwitcher(map: any, L: any, initialIndex = 0) {
   });
 
   wrap.appendChild(currentBtn);
+  wrap.appendChild(keyNote);
   container.appendChild(wrap);
   document.body.appendChild(shadow);
 

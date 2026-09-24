@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import envfile
 from database import engine, Base
-from routes import auth, photos, settings, articles, albums, comments, services, stats, search
+from routes import auth, photos, settings, articles, albums, comments, services, stats, search, secrets, map_config
 
 Base.metadata.create_all(bind=engine)
 
@@ -29,6 +29,8 @@ app.include_router(articles.router)
 app.include_router(albums.router)
 app.include_router(comments.router)
 app.include_router(services.router)
+app.include_router(secrets.router)
+app.include_router(map_config.router)
 app.include_router(stats.router)
 app.include_router(search.router)
 

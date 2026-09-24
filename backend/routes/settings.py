@@ -32,6 +32,14 @@ def _set(db: Session, key: str, value: str):
     db.commit()
 
 
+def get_setting(db: Session, key: str) -> str:
+    """读单个 KV，缺行时退到 DEFAULTS。给 /api/map-config 与密钥面板复用。"""
+    row = db.query(Setting).filter(Setting.key == key).first()
+    if row is not None:
+        return row.value
+    return DEFAULTS.get(key, "")
+
+
 def _icon_file() -> str | None:
     if not os.path.isdir(ICON_DIR):
         return None

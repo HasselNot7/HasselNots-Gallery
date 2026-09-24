@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Marker } from "leaflet";
 import { SearchField, Spinner } from "@heroui/react";
-import { attachLayerSwitcher } from "@/lib/mapLayers";
+import { attachLayerSwitcher, resolveLayerIndex } from "@/lib/mapLayers";
+import { DEFAULT_MAP_CONFIG, fetchMapConfig } from "@/lib/map-config";
 import { clusterBasePoints, type BasePoint, type Cluster } from "@/lib/mapCluster";
 import { yearColor, yearOf } from "@/lib/mapYears";
 import { searchPlaces, GeoResult } from "@/lib/geocode";
@@ -201,17 +202,21 @@ export default function MapClient({
   useEffect(() => {
     let map: any;
     let disposed = false;
-    import("leaflet").then(({ default: L }) => {
+    import("leaflet").then(async ({ default: L }) => {
       const mapContainer = document.getElementById("leaflet-map");
       // StrictMode 会先跑一次 cleanup 再跑第二次 effect，而首次的 map 是异步建的：
       // 没有 disposed 就会留下一个「卸载时无人可拆」的地图，之后 _leaflet_id 挡住所有重建
       if (disposed || !mapContainer || (mapContainer as any)._leaflet_id) return;
 
+      // 拿不到配置就按默认建图：底图照样出图，不该因此整张地图打不开
+      const mapConfig = await fetchMapConfig().catch(() => DEFAULT_MAP_CONFIG);
+      if (disposed) return;
+
       map = L.map("leaflet-map").setView(center, markers.length === 1 ? 12 : 5);
       mapRef.current = map;
       LRef.current = L;
       markersByName.current = new Map();
-      attachLayerSwitcher(map, L, 5);
+      attachLayerSwitcher(map, L, resolveLayerIndex(mapConfig.default_map_layer), mapConfig);
 
       const bounds: [number, number][] = [];
 

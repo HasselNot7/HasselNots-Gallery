@@ -36,4 +36,11 @@ DEFAULTS = {
     "show_hero_decorations": "true",
     "show_hero_shader": "true",
     "show_water_ripple": "true",
+    # 客户端底图密钥。故意只在这里 + SettingsUpdate 出现，不进 SettingsOut：
+    # 公开的 GET /api/settings 靠 response_model 过滤掉它，浏览器改从 /api/map-config 取。
+    "carto_api_key": "",
+    # 下面两项同样是「只走 /api/map-config」的地图配置，不进 SettingsOut。
+    # 值存图层名而不是数组下标：下标会随 TILE_LAYERS 增删静默错位。
+    "osm_tile_source": "de",
+    "default_map_layer": "Hybrid",
 }

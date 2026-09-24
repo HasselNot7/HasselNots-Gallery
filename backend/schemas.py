@@ -237,3 +237,8 @@ class SettingsUpdate(BaseModel):
     show_hero_decorations: Optional[str] = None
     show_hero_shader: Optional[str] = None
     show_water_ripple: Optional[str] = None
+    # 写入通道有、读取通道（SettingsOut）没有：公开的 GET /api/settings 拿不到它，
+    # 浏览器改从公开的 /api/map-config 取。别把它们加进 SettingsOut。
+    carto_api_key: Optional[str] = None
+    osm_tile_source: Optional[str] = None
+    default_map_layer: Optional[str] = None
