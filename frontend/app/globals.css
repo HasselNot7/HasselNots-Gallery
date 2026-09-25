@@ -257,15 +257,142 @@
 }
 
 /*
- * Leaflet 的 popup 关闭按钮是 24×24，手指按不准。这里把命中区撑到 44×44：
- * 只加透明的左边/下边边框，字形仍停在右上角，视觉与原来逐像素一致。
+ * 地图标记弹窗（Leaflet popup）
  *
- * 写成未分层规则而不是 Tailwind 工具类：leaflet.css 通过 @import 落在所有 @layer
- * 之外，而未分层声明永远赢过分层声明（与特异性无关），工具类要赢只能靠 !important。
+ * 全部写成未分层规则：leaflet.css 通过 @import 落在所有 @layer 之外，而未分层声明永远
+ * 赢过分层声明（与特异性无关），Tailwind 工具类要赢只能靠 !important。
+ * 内容结构见 components/MapClient.tsx 的 popupHtml()，类名以 .mp 起头。
  */
+.leaflet-popup-content-wrapper {
+  --mp-radius: 12px;          /* 弹窗外框与缩略图共用这一个值，靠继承保证两者永远同弧度 */
+  padding: 0;                 /* Leaflet 自带 1px，会让头部与渐隐贴不到边 */
+  border-radius: var(--mp-radius);
+  overflow: hidden;           /* 头部是方角背景，不裁就戳破圆角 */
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 4px 16px rgba(20, 20, 20, 0.12);
+}
+/* 箭头：tip-container 有 overflow:hidden，上半截被裁掉，所以四边描边不会在接缝处露线 */
+.leaflet-popup-tip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: none;
+}
+/* 滚动交给内层 .mp-list：bindPopup 不再传 maxHeight，Leaflet 就不会加 .leaflet-popup-scrolled */
+.leaflet-popup-content {
+  margin: 0;
+  line-height: 1.45;
+  font-size: 13px;
+  font-family: var(--font-body);
+}
+/* 关闭按钮：字形 16px 与标题行同基线；透明左/下边框把命中区撑到 44×44（手指按得准） */
 .leaflet-container a.leaflet-popup-close-button {
   box-sizing: content-box;
+  top: 10px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  font: 16px/16px var(--font-mono);
+  color: var(--color-outline);
   border-left: 20px solid transparent;
   border-bottom: 20px solid transparent;
 }
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+  color: var(--color-primary);
+}
+
+.mp {
+  position: relative;
+  width: 280px;
+  max-width: calc(100vw - 40px);
+  /* 行自带 3px 下内边距，补 7px 才与头部 10px 的上内边距对称；单张照片时尤其明显 */
+  --mp-pad-b: 7px;
+  padding-bottom: var(--mp-pad-b);
+}
+.mp-head {
+  padding: 10px 30px 8px 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+}
+.mp-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mp-count {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-outline);
+}
+.mp-coord {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--color-outline);
+}
+/* 3 行 × 72px：滚动区高度是行高的整数倍，初始与吸附后都不会露半张图 */
+.mp-list {
+  max-height: 216px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.mp-list::-webkit-scrollbar { display: none; }
+.mp-list:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+.mp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  height: 72px;
+  padding: 3px 12px;
+  scroll-snap-align: start;
+  border-bottom: 1px solid var(--color-border-subtle);
+  text-decoration: none;
+  color: inherit;
+}
+.mp-row:last-child { border-bottom: 0; }
+.mp-thumb {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--mp-radius);
+  background: var(--color-surface-container);
+}
+.mp-label {
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mp-row:hover .mp-label { color: var(--color-primary); }
+/* 渐隐挂在 .mp（不滚动）上，写成 .mp-list 自己的 ::after 会跟着内容一起滚走 */
+.mp-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--mp-pad-b);   /* 贴在列表下沿，不是贴在弹窗下沿：.mp 底部还有一段补白 */
+  height: 32px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--color-surface));
+  transition: opacity 150ms linear;
+}
+.mp[data-at-bottom="true"] .mp-fade { opacity: 0; }
 

@@ -13,8 +13,8 @@ export default async function AlbumsPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-7xl mx-auto w-full">
-        <div className="mb-10">
+      <main className="flex-1 px-4 md:px-grid-margin py-12 max-md:py-8 max-w-7xl mx-auto w-full">
+        <div className="mb-10 max-md:mb-6">
           <h1 className="text-headline-lg md:text-display-lg text-primary mb-2 uppercase" style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', sans-serif" }}>
             Albums
           </h1>

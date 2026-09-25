@@ -100,7 +100,8 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
           <div className="lg:col-span-4">
             <div className="sticky top-[84px] md:top-[100px] flex flex-col gap-6">
               <div className="border-b border-border-subtle pb-4">
-                <h1 className="text-headline-lg text-primary mb-1">{photo.title || "Untitled"}</h1>
+                {/* 标题常是 MVIMG_20260817_224317 这类无空格长串，不折行会把整页顶出 11px 横向溢出 */}
+                <h1 className="text-headline-lg text-primary mb-1 break-words">{photo.title || "Untitled"}</h1>
                 <div className="flex items-center gap-3 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                   {shootDate && <span>{shootDate}</span>}
                   <ViewCounter kind="photo" slug={String(photo.id)} currentViews={photo.views} />

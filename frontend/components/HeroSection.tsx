@@ -45,7 +45,8 @@ export default function HeroSection({
     <main className="relative h-[calc(100svh+120px)] w-full bg-primary-fixed/10 border-b border-primary/20">
       <div className="sticky top-[64px] md:top-[72px] h-[calc(100svh-64px)] md:h-[calc(100svh-72px)] w-full flex overflow-hidden">
         {/* Left Vertical Sidebar */}
-        <aside className="w-10 md:w-24 shrink-0 bg-primary-container text-primary-fixed flex flex-col justify-between items-center py-4 md:py-grid-margin border-r border-primary/30 z-20 shadow-[20px_0_40px_rgba(20,20,20,0.12)] relative">
+        {/* 移动端整条隐藏：40px 宽 + 40px 模糊灰影向右溢出，在 390px 上是纯损耗 */}
+        <aside className="hidden md:flex w-24 shrink-0 bg-primary-container text-primary-fixed flex-col justify-between items-center py-grid-margin border-r border-primary/30 z-20 shadow-[20px_0_40px_rgba(20,20,20,0.12)] relative">
           <div className="absolute inset-0 pointer-events-none" style={{
             backgroundImage: `
               linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
@@ -54,13 +55,13 @@ export default function HeroSection({
             backgroundSize: "40px 40px",
             opacity: 0.2,
           }} />
-          <div className="relative z-10 text-metadata-sm tracking-widest uppercase transform rotate-180 border-l border-primary-fixed/30 pl-2 whitespace-nowrap hidden sm:block" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+          <div className="relative z-10 text-metadata-sm tracking-widest uppercase transform rotate-180 border-l border-primary-fixed/30 pl-2 whitespace-nowrap" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {sideLabelText}
           </div>
-          <div className="relative z-10 text-metadata-sm tracking-widest transform rotate-180 opacity-70 hidden sm:block" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
+          <div className="relative z-10 text-metadata-sm tracking-widest transform rotate-180 opacity-70" style={{ writingMode: "vertical-rl", fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
             {new Date().toLocaleDateString("en-GB")}
           </div>
-          <div className="relative z-10 text-lg md:text-3xl tracking-tighter transform rotate-180 whitespace-nowrap" style={{ writingMode: "vertical-rl", fontFamily: "'Hanken Grotesk', sans-serif" }}>
+          <div className="relative z-10 text-3xl tracking-tighter transform rotate-180 whitespace-nowrap" style={{ writingMode: "vertical-rl", fontFamily: "'Hanken Grotesk', sans-serif" }}>
             {sideBrandText}
           </div>
         </aside>
@@ -161,9 +162,10 @@ export default function HeroSection({
           )}
 
           {/* Floating UI Elements */}
-          <div className="relative z-20 w-full max-w-4xl px-grid-margin flex flex-col items-center">
+          <div className="relative z-20 w-full max-w-4xl px-6 md:px-grid-margin flex flex-col items-center">
             {/* Main Branded Card */}
-            <div className="relative flex items-center justify-center gap-4 md:gap-6 max-w-4xl">
+            {/* 移动端图标与标题竖排：横排时标题只剩 190px 可用宽，43 字符必然折成 4 行 */}
+            <div className="relative flex items-center justify-center max-md:flex-col max-md:gap-3 md:gap-6 max-w-4xl">
               {/* Icon */}
               {heroIconUrl ? (
                 <div className="shrink-0 inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-full overflow-hidden border border-primary/10 bg-surface shadow-[0_8px_18px_rgba(0,0,0,0.40),0_24px_52px_rgba(0,0,0,0.36)]">
@@ -176,7 +178,7 @@ export default function HeroSection({
               )}
 
               {/* Title */}
-              <h1 className="text-3xl md:text-5xl lg:text-6xl text-primary tracking-normal uppercase drop-shadow-[0_5px_14px_rgba(0,0,0,0.45)]" style={{ fontFamily: "var(--font-display)" }}>
+              <h1 className="text-[26px] max-md:text-center md:text-5xl lg:text-6xl text-primary tracking-normal uppercase drop-shadow-[0_5px_14px_rgba(0,0,0,0.45)]" style={{ fontFamily: "var(--font-display)" }}>
                 {titleLines.map((line, i) => (
                   <span key={i} className="block md:whitespace-nowrap">
                     {line}

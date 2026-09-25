@@ -63,8 +63,8 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-5xl mx-auto w-full">
-        <div className="mb-10">
+      <main className="flex-1 px-4 md:px-grid-margin py-12 max-md:py-8 max-w-5xl mx-auto w-full">
+        <div className="mb-10 max-md:mb-6">
           <h1
             className="text-2xl md:text-3xl text-primary mb-6 uppercase"
             style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', serif" }}

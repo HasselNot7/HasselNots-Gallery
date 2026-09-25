@@ -183,8 +183,16 @@ export default function MapExplorer({
 
   return (
     <>
-      {/* 头部：一行搞定，左侧标题 + 统计，右侧年份筛选；底纹与 border-b 维持原样 */}
-      <section className="relative w-full border-b border-primary/15 bg-primary-fixed/5 px-4 pt-4 pb-3 md:px-grid-margin">
+      {/*
+        头部：移动端压成一行 —— 标题在左、年份芯片在右，统计行只在 lg 起出现。
+        移动端 sticky + backdrop-blur：列表滚走后筛选仍然可达，同时给一个「你在哪」的锚点
+        （列表区的「地点」小标题在移动端是有意藏掉的，见下面 :307 那段注释）。
+        z-[1100] 要压过 Leaflet 的控件层（.leaflet-top/.leaflet-bottom 是 1000），
+        又必须低于底图选择器的弹层（mapLayers.ts 的 10000/10001），否则点开就看不见。
+        lg 起用 relative 而不是 static：这层里面的网格底纹是 absolute inset-0，
+        头部一旦不再是包含块，那张 40px 网格就会甩到整个页面上去（实测桌面端整页像素差 5.7%）。
+      */}
+      <section className="sticky top-0 w-full border-b border-primary/15 bg-primary-fixed/5 px-4 pt-4 pb-3 max-lg:z-[1100] max-lg:backdrop-blur lg:relative md:px-grid-margin">
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `
             linear-gradient(to right, rgba(20,20,20,0.05) 1px, transparent 1px),
@@ -194,12 +202,13 @@ export default function MapExplorer({
           opacity: 0.2,
         }} />
 
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+        <div className="relative z-10 flex flex-nowrap items-center justify-between gap-x-3 lg:flex-wrap lg:gap-x-6 lg:gap-y-3">
+          <div className="flex shrink-0 flex-wrap items-baseline gap-x-6 gap-y-1">
             <h1 className="text-xl text-primary uppercase md:text-2xl" style={{ fontFamily: "var(--font-display)" }}>
               影像足迹
             </h1>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-metadata-sm text-on-surface-variant">
+            {/* 「N 地点 / M 照片」在移动端整行让给芯片：数字与底部条、芯片上的年份数重复三遍 */}
+            <div className="hidden flex-wrap items-center gap-x-5 gap-y-1 text-metadata-sm text-on-surface-variant lg:flex">
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-primary">location_on</span>
                 {locations.length} 地点
@@ -269,10 +278,11 @@ export default function MapExplorer({
 
       <div className="relative border-y border-primary/15 lg:flex lg:flex-1 lg:min-h-0 lg:flex-col">
         <div className="flex flex-col lg:flex-1 lg:min-h-0 lg:flex-row">
-          {/* 窄屏：地图按视口比例给高度（52vh），并留 320px 下限防止矮屏手机被压成一条；
+          {/* 窄屏：地图按视口比例给高度，并留 320px 下限防止矮屏手机被压成一条；
               列表跟着铺在文档流里，整页只有页面自身一个滚动容器。
+              用 svh 而不是 vh：iOS Safari 地址栏收放时 vh 按大视口算，滚动瞬间地图会跳一次高度。
               lg 起恢复「锁视口 + 列表内滚」：下面那套 lg:* 原样接管，一个像素都不受移动端影响。 */}
-          <div className="relative h-[52vh] min-h-[320px] lg:h-full lg:min-h-0 lg:flex-1">
+          <div className="relative h-[46svh] min-h-[320px] lg:h-full lg:min-h-0 lg:flex-1">
             {mapDecorations}
 
             {/*
@@ -313,7 +323,7 @@ export default function MapExplorer({
                     {markers.length === 0 ? "暂无带坐标的照片" : "该年份下没有带坐标的照片"}
                   </p>
                 ) : (
-                  <ul className="flex flex-col gap-5" onKeyDown={onKeyDown}>
+                  <ul className="flex flex-col gap-2 lg:gap-5" onKeyDown={onKeyDown}>
                     {locations.map((loc) => {
                       const isActive = activeName === loc.name;
                       const overflow = loc.count - 3;
@@ -325,7 +335,7 @@ export default function MapExplorer({
                           {isActive && (
                             <span aria-hidden className="absolute -left-[5px] top-2 bottom-2 w-[3px] rounded-full bg-primary" />
                           )}
-                          <div className="mb-2 flex items-baseline justify-between gap-2">
+                          <div className="mb-1.5 flex items-baseline justify-between gap-2 lg:mb-2">
                             <button
                               type="button"
                               ref={(el) => {
@@ -360,7 +370,7 @@ export default function MapExplorer({
                           </div>
                           <div className="grid grid-cols-3 gap-1.5">
                             {loc.photos.slice(0, 3).map((p, i) => (
-                              <div key={p.id} className="relative h-16">
+                              <div key={p.id} className="relative h-24 lg:h-16">
                                 <a
                                   href={`/photo/${p.id}`}
                                   onClick={(e) => {
@@ -410,7 +420,11 @@ export default function MapExplorer({
         <span className="text-on-surface-variant flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full border border-primary/50" />
           <span className="w-4 border-t border-dashed border-primary/25" />
-          {filteredMarkers.length} 张带坐标的照片
+          {/* 未筛选时报总数；筛选中改成「显示 N / 总数」—— 这里只负责表达筛选态，
+              不再和头部的「N 照片」重复同一句话 */}
+          {filtering
+            ? `显示 ${filteredMarkers.length} / ${markers.length}`
+            : `${filteredMarkers.length} 张带坐标的照片`}
         </span>
         {showHud && (
           <span className="w-1.5 h-1.5 rounded-full bg-mint-accent border border-primary animate-pulse" />

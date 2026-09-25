@@ -30,7 +30,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ slug: st
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 px-4 md:px-grid-margin py-12 max-w-7xl mx-auto w-full">
+      <main className="flex-1 px-4 md:px-grid-margin py-12 max-md:py-8 max-w-7xl mx-auto w-full">
         <a
           href="/albums"
           className="inline-flex items-center gap-2 text-label-caps text-on-surface-variant hover:text-primary transition-colors mb-8"
@@ -39,7 +39,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ slug: st
           Back to Albums
         </a>
 
-        <div className="mb-10">
+        <div className="mb-10 max-md:mb-6">
           <h1 className="text-headline-lg md:text-display-lg text-primary mb-3 uppercase" style={{ fontFamily: "var(--font-sigma), 'Noto Serif SC', sans-serif" }}>
             {album.title}
           </h1>

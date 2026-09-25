@@ -37,6 +37,23 @@ export interface FocusRequest {
   seq: number;
 }
 
+/** 弹窗内容是拼 HTML 字符串的，标题来自 EXIF/用户编辑，必须转义 */
+const esc = (s: string) =>
+  s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] as string);
+
+/**
+ * 相机原始文件名：只有字母数字下划线连字符（没有空格、没有中日韩）且含 4 位以上连续数字。
+ * 命中就当它没有标题 —— 同一地点三行都显示 `_DSF20` 前缀是零信息量的。
+ */
+const isRawCameraName = (t: string) => !/[\s\u3400-\u9fff]/.test(t) && /\d{4}/.test(t);
+
+/** 行标签回落顺序：有意义的 title → 拍摄日期 → 第 N 张 */
+const rowLabel = (m: MapMarker, i: number) => {
+  const t = m.title?.trim();
+  if (t && !isRawCameraName(t)) return t;
+  return m.shoot_time ? m.shoot_time.slice(0, 10) : `第 ${i + 1} 张`;
+};
+
 export default function MapClient({
   markers,
   center,
@@ -53,7 +70,7 @@ export default function MapClient({
   focusRequest?: FocusRequest | null;
   /** 灯箱等有全屏键盘监听的浮层打开时置 false，避免方向键同时平移地图 */
   keyboardEnabled?: boolean;
-  /** 传地点名 = 选中该地点；传 null = 清除选中（点击跨地点聚合体时用） */
+  /** 地图只会传 null（点跨地点聚合体时清除选中）；传地点名 = 选中该地点，由列表侧驱动 */
   onSelectLocation?: (location: string | null) => void;
 }) {
   const mapRef = useRef<any>(null);
@@ -190,11 +207,15 @@ export default function MapClient({
     });
     const label = [r.name, r.admin1, r.country].filter(Boolean).join(", ");
     map._searchMarker = L.marker([r.latitude, r.longitude], { icon }).addTo(map);
-    // maxWidth 与摄影标记的 popup 对齐：Leaflet 默认 300，在 320px 宽的手机上会顶到视口边
+    // 与摄影标记的 popup 同一套 .mp 外壳与 maxWidth，两种弹窗风格不能一个定制一个没动
     map._searchMarker
       .bindPopup(
-        `<div style="font-family:Inter,sans-serif;font-size:13px;color:#141414;padding:2px 4px;"><strong>${r.name}</strong><br/><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#727973;">${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</span><br/><span style="font-size:11px;color:#727973;">${label}</span></div>`,
-        { maxWidth: 260 }
+        `<div class="mp"><div class="mp-head">
+            <div class="mp-title">${esc(r.name)}</div>
+            <div class="mp-coord">${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</div>
+            <div class="mp-coord">${esc(label)}</div>
+          </div></div>`,
+        { maxWidth: 280 }
       )
       .openPopup();
   };
@@ -202,6 +223,10 @@ export default function MapClient({
   useEffect(() => {
     let map: any;
     let disposed = false;
+    let container: HTMLElement | null = null;
+    const closeOnEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") mapRef.current?.closePopup();
+    };
     import("leaflet").then(async ({ default: L }) => {
       const mapContainer = document.getElementById("leaflet-map");
       // StrictMode 会先跑一次 cleanup 再跑第二次 effect，而首次的 map 是异步建的：
@@ -265,34 +290,35 @@ export default function MapClient({
       );
 
       const popupHtml = (c: Cluster<MapMarker>) => {
-        const photosHtml = c.photos
+        const rows = c.photos
           .map(
-            (m) => `
-            <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #eef1ee;align-items:center;">
-              <a href="/photo/${m.id}" style="flex-shrink:0;width:88px;height:88px;overflow:hidden;border:1px solid #e2e8e2;display:block;">
-                <img src="${m.thumbnail}" alt="${m.title}" style="width:100%;height:100%;object-fit:cover;" />
-              </a>
-              <div style="min-width:0;">
-                <a href="/photo/${m.id}" style="font-size:13px;font-weight:500;color:#141414;text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.title}</a>
-                ${m.camera ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#727973;margin-top:2px;">${m.camera}</div>` : ""}
-              </div>
-            </div>`
+            (m, i) => `<a class="mp-row" href="/photo/${m.id}">
+              <img class="mp-thumb" src="${esc(m.thumbnail)}" alt="" loading="lazy" />
+              <span class="mp-label">${esc(rowLabel(m, i))}</span>
+            </a>`
           )
           .join("");
-        return `<div style="font-family:Inter,sans-serif;max-width:240px;">
-            <div style="display:flex;align-items:center;gap:6px;padding:8px 0 4px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#727973;letter-spacing:0.05em;text-transform:uppercase;">
-              <span style="width:6px;height:6px;border-radius:50%;background:#141414;display:inline-block;"></span>
-              ${c.count} photo${c.count > 1 ? "s" : ""} at this location
+        const list =
+          c.photos.length > 1
+            ? `<div class="mp-list" tabindex="0" role="region" aria-label="该地点的照片列表">${rows}</div>
+               <div class="mp-fade" aria-hidden="true"></div>`
+            : rows;
+        return `<div class="mp">
+            <div class="mp-head">
+              <div class="mp-title">${esc(c.names[0] ?? "未标注地点")}<span class="mp-count">${c.count} 张</span></div>
+              <div class="mp-coord">${c.lat.toFixed(2)}, ${c.lng.toFixed(2)}</div>
             </div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#727973;padding-bottom:4px;">${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}</div>
-            ${photosHtml}
+            ${list}
           </div>`;
       };
 
       /**
        * 按当前 zoom 重画标记。聚合只是视觉合并、不代表数据合并，因此点击分两种：
-       * - 簇内所有点同属一个 location_name -> 等价于点击该地点：选中 + 列表联动 + 弹照片
-       * - 簇跨多个 location_name -> 只放大到簇范围（至少一级），并清除选中与强调态，
+       * - 簇内所有点同属一个 location_name -> 只弹该坐标的照片。不回写列表选中：
+       *   簇是「该地点在这个坐标上的那几张」，列表行是「该地点全部照片」，两者数量
+       *   常常不等（北京 17 张里这个簇只占 12），点亮一行会让用户以为数字对不上；
+       *   桌面端还会顺带把列表滚过去。选中只由列表 → 地图单向驱动。
+       * - 簇跨多个 location_name -> 放大到簇范围（至少一级），并清除选中与强调态，
        *   因为视野已经离开原选中地点，列表再高亮它会造成 UI 与视野错位
        * 重建一律走 markersByName 注册表（不另起 layerGroup），否则 zoomend 之后
        * applyEmphasis() 会操作已销毁的 marker 而静默失效。
@@ -304,6 +330,10 @@ export default function MapClient({
         const zoom = map.getZoom();
         clusterBasePoints((la, ln, z) => map.project([la, ln], z), basePoints, zoom).forEach((c) => {
           const marker = L.marker([c.lat, c.lng], { icon: L.divIcon(iconSpec(c.color, c.count, "none")) }).addTo(map);
+          // 点开弹窗后再点一次关，浏览器算 dblclick，地图于是缩放一级。Leaflet 在
+          // _fireDOMEvent 里见到 originalEvent._stopped 就不再往地图冒，doubleClickZoom
+          // 收不到事件；弹窗容器 Leaflet 自己已经挡过 dblclick，只有 marker 没挡。
+          marker.on("dblclick", L.DomEvent.stopPropagation);
           const entry: RegisteredMarker = { marker, color: c.color, count: c.count, names: c.names, emphasis: "none" };
           c.names.forEach((n) => {
             const list = markersByName.current.get(n);
@@ -312,8 +342,16 @@ export default function MapClient({
           });
 
           if (c.names.length <= 1) {
-            marker.bindPopup(popupHtml(c), { maxWidth: 260, maxHeight: 320 });
-            if (c.names.length === 1) marker.on("click", () => selectRef.current?.(c.names[0]));
+            // 不传 maxHeight：Leaflet 一旦启用它就会给内容加 .leaflet-popup-scrolled 的第二层滚动，
+            // 与内层 .mp-list 叠成两层两条滚动条。
+            // 顶部留 64px：搜索浮层盖在地图上方，弹窗右上角的 ✕ 会落到它下面 ——
+            // .leaflet-map-pane 带 transform 自成层叠上下文，弹窗的 z-700 出不去那个上下文，
+            // 压不过搜索层的 z-600，只能靠 autoPan 把弹窗整体推离顶部。
+            marker.bindPopup(popupHtml(c), {
+              maxWidth: 280,
+              autoPanPaddingTopLeft: [16, 64],
+              autoPanPaddingBottomRight: [16, 16],
+            });
           } else {
             marker.on("click", () => {
               selectRef.current?.(null);
@@ -331,6 +369,35 @@ export default function MapClient({
 
       map.on("zoomend", render);
 
+      /*
+       * 底部渐隐：滚到底必须消失，否则用户以为下面还有内容。
+       * 监听成对挂在 popupopen / popupclose 上 —— 挂在别处会每次开弹窗叠一个监听器。
+       */
+      let fade: { root: HTMLElement; list: HTMLElement } | null = null;
+      const syncFade = () => {
+        if (!fade) return;
+        const atBottom = fade.list.scrollTop + fade.list.clientHeight >= fade.list.scrollHeight - 1;
+        fade.root.dataset.atBottom = String(atBottom);
+      };
+      map.on("popupopen", (e: { popup: { getElement(): HTMLElement | null } }) => {
+        const root = e.popup.getElement()?.querySelector<HTMLElement>(".mp");
+        const list = root?.querySelector<HTMLElement>(".mp-list");
+        if (!root || !list) return;
+        fade = { root, list };
+        list.addEventListener("scroll", syncFade);
+        syncFade();
+      });
+      map.on("popupclose", () => {
+        fade?.list.removeEventListener("scroll", syncFade);
+        fade = null;
+      });
+
+      // Leaflet 的 ESC 只在焦点落在地图容器/代理元素上才生效，而点完标记焦点停在 marker
+      // 的 div 上，弹窗因此关不掉。补一个容器级 keydown；没开弹窗时 closePopup() 是空操作。
+      const mapEl: HTMLElement = map.getContainer();
+      container = mapEl;
+      mapEl.addEventListener("keydown", closeOnEsc);
+
       // 地图建好后补一次键盘设置（键盘默认开着，而浮层可能已经先打开了）
       applyKeyboard();
 
@@ -347,6 +414,9 @@ export default function MapClient({
 
     return () => {
       disposed = true;
+      // 容器 div 是 React 的，map.remove() 不会带走挂在它上面的监听器；
+      // 年份筛选会让这个 effect 整个重跑一遍，不摘就是一次筛选叠一个 handler
+      container?.removeEventListener("keydown", closeOnEsc);
       if (map) map.remove();
       else if (mapRef.current) mapRef.current.remove();
       if (mapRef.current) mapRef.current = null;
@@ -372,8 +442,10 @@ export default function MapClient({
             setShowResults(true);
           }}
         >
-          <SearchField.Group>
-            <SearchField.SearchIcon />
+          {/* 移动端它是画面上唯一显眼的入口控件，压给一点存在感：实底 + 描边 + 44px 命中高度。
+              只用 max-lg: 加，桌面端保持原样（这次改动要求桌面逐像素不变） */}
+          <SearchField.Group className="max-lg:h-11 max-lg:bg-surface max-lg:ring-1 max-lg:ring-primary/15">
+            <SearchField.SearchIcon className="max-lg:text-outline" />
             <SearchField.Input
               className="min-w-0"
               placeholder="搜索地点…"
