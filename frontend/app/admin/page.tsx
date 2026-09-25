@@ -18,11 +18,19 @@ import {
   Card,
   Checkbox,
   Chip,
+  DateField,
+  DateRangePicker,
   Drawer,
+  EmptyState,
   Input,
   Label,
+  Link as HeroLink,
   ListBox,
   Modal,
+  Radio,
+  RadioGroup,
+  RangeCalendar,
+  SearchField,
   Select,
   Skeleton,
   Slider,
@@ -30,9 +38,13 @@ import {
   TextField,
   TextArea,
   Toast,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   toast,
   useOverlayState,
+  type DateRange,
+  type DateValue,
 } from "@heroui/react";
 import {
   Photo,
@@ -191,14 +203,18 @@ function LabeledInput({
   );
 }
 
-function MapSectionHeading({ title, hint }: { title: string; hint: string }) {
-  return (
-    <div className="mb-3">
-      <h3 className="text-[13px] font-medium text-on-surface">{title}</h3>
-      <p className="mt-0.5 text-metadata-sm text-outline leading-relaxed">{hint}</p>
-    </div>
-  );
+function MapSectionHeading({ title }: { title: string }) {
+  return <h3 className="mb-3 text-[13px] font-medium text-on-surface">{title}</h3>;
 }
+
+/** 时间戳 → 本地日历日序号（yyyymmdd）。与列表里 formatDate 同一口径，UTC 偏移不会把边界照片挪一天 */
+const dayKey = (d: string | null) => {
+  if (!d) return 0;
+  const t = new Date(d);
+  return t.getFullYear() * 10000 + (t.getMonth() + 1) * 100 + t.getDate();
+};
+
+const calendarDayKey = (d: DateValue) => d.year * 10000 + d.month * 100 + d.day;
 
 function LabeledTextarea({
   label,
@@ -782,6 +798,7 @@ export default function AdminPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [batchConfirmDelete, setBatchConfirmDelete] = useState(false);
   const [batchBusy, setBatchBusy] = useState(false);
 
@@ -1568,8 +1585,15 @@ export default function AdminPage() {
     if (statusFilter === "published" && !p.is_published) return false;
     if (statusFilter === "draft" && p.is_published) return false;
     if (searchQuery && !p.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (dateRange) {
+      const k = dayKey(p.shoot_time);
+      if (k < calendarDayKey(dateRange.start) || k > calendarDayKey(dateRange.end)) return false;
+    }
     return true;
   });
+
+  const photoFiltering =
+    statusFilter !== "all" || searchQuery !== "" || dateRange !== null;
 
   const allVisibleSelected = filteredPhotos.length > 0 && filteredPhotos.every((p) => selected.has(p.id));
 
@@ -1649,14 +1673,16 @@ export default function AdminPage() {
       <Toast.Provider placement="top" />
       <Navbar
         leadingSlot={
-          <button
-            onClick={navDrawerState.open}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="lg:hidden -ml-1 mr-1 text-primary"
+            onPress={navDrawerState.open}
             aria-label="打开功能导航"
-            className="lg:hidden flex items-center gap-1.5 h-9 px-2 -ml-1 mr-1 rounded-lg text-sm text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <span className="material-symbols-outlined text-[22px]">menu</span>
             <span className="font-medium">{ALL_TABS.find((t) => t.id === activeTab)?.label}</span>
-          </button>
+          </Button>
         }
       />
 
@@ -1934,12 +1960,14 @@ export default function AdminPage() {
                             onChange={(e) => setSettingsField(field.key, e.target.value)}
                             className="w-10 h-9 border border-border-subtle rounded-md bg-surface cursor-pointer"
                           />
-                          <input
-                            type="text"
+                          <TextField
+                            className="flex-1"
                             value={settings[field.key]}
-                            onChange={(e) => setSettingsField(field.key, e.target.value)}
-                            className="flex-1 border border-border-subtle p-2 text-metadata-sm bg-surface focus:outline-none focus:border-primary"
-                          />
+                            onChange={(v) => setSettingsField(field.key, v)}
+                          >
+                            <Label className="sr-only">{field.label}十六进制值</Label>
+                            <Input />
+                          </TextField>
                         </div>
                       </div>
                     ))}
@@ -2095,16 +2123,20 @@ export default function AdminPage() {
                   {previews.map((preview, i) => (
                     <div key={i} className="aspect-square border border-border-subtle overflow-hidden bg-surface-dim relative rounded-lg">
                       <img src={preview} alt={`预览 ${i + 1}`} className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => {
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="danger"
+                        className="absolute top-1 right-1"
+                        isDisabled={uploading}
+                        aria-label={`移出第 ${i + 1} 张`}
+                        onPress={() => {
                           setFiles((f) => f.filter((_, idx) => idx !== i));
                           setPreviews((p) => p.filter((_, idx) => idx !== i));
                         }}
-                        className="absolute top-1 right-1 w-5 h-5 bg-[var(--danger)] text-white rounded-full flex items-center justify-center text-[12px]"
-                        disabled={uploading}
                       >
-                        ✕
-                      </button>
+                        <span className="material-symbols-outlined text-[16px]">close</span>
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -2139,34 +2171,113 @@ export default function AdminPage() {
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-auto">
                 <span className="text-label-caps text-outline uppercase">排序方式</span>
-                <Button size="sm" variant={sortBy === "shoot" ? "primary" : "tertiary"} onPress={() => setSortBy("shoot")}>
-                  拍摄日期
-                </Button>
-                <Button size="sm" variant={sortBy === "upload" ? "primary" : "tertiary"} onPress={() => setSortBy("upload")}>
-                  上传时间
-                </Button>
+                <ToggleButtonGroup
+                  isDetached
+                  size="sm"
+                  aria-label="照片排序方式"
+                  className="**:data-[selected=true]:bg-primary **:data-[selected=true]:text-[var(--color-on-primary)]"
+                  selectionMode="single"
+                  selectedKeys={[sortBy]}
+                  onSelectionChange={(keys) => {
+                    const k = [...keys][0];
+                    if (k != null) setSortBy(k === "upload" ? "upload" : "shoot");
+                  }}
+                >
+                  <ToggleButton id="shoot">拍摄日期</ToggleButton>
+                  <ToggleButton id="upload">上传时间</ToggleButton>
+                </ToggleButtonGroup>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-              <TextField
+              <SearchField
                 className="w-full sm:max-w-sm"
                 value={searchQuery}
                 onChange={setSearchQuery}
               >
-                <Input type="text" placeholder="按标题搜索..." />
-              </TextField>
-              <div className="flex items-center gap-2">
-                {(["all", "published", "draft"] as const).map((s) => (
+                <Label className="sr-only">按标题搜索</Label>
+                <SearchField.Group>
+                  <SearchField.SearchIcon />
+                  <SearchField.Input placeholder="按标题搜索..." />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
+              <ToggleButtonGroup
+                isDetached
+                size="sm"
+                aria-label="照片状态筛选"
+                className="**:data-[selected=true]:bg-primary **:data-[selected=true]:text-[var(--color-on-primary)]"
+                selectionMode="single"
+                selectedKeys={[statusFilter]}
+                onSelectionChange={(keys) => {
+                  const k = [...keys][0];
+                  if (k != null) setStatusFilter(k as typeof statusFilter);
+                }}
+              >
+                <ToggleButton id="all">全部</ToggleButton>
+                <ToggleButton id="published">已发布</ToggleButton>
+                <ToggleButton id="draft">草稿</ToggleButton>
+              </ToggleButtonGroup>
+              <div className="flex items-center gap-1">
+                <DateRangePicker
+                  className="w-full sm:w-64"
+                  aria-label="拍摄日期时间段"
+                  startName="shoot_from"
+                  endName="shoot_to"
+                  value={dateRange}
+                  onChange={setDateRange}
+                >
+                  <DateField.Group fullWidth>
+                    <DateField.Input slot="start">
+                      {(segment) => <DateField.Segment segment={segment} />}
+                    </DateField.Input>
+                    <DateRangePicker.RangeSeparator />
+                    <DateField.Input slot="end">
+                      {(segment) => <DateField.Segment segment={segment} />}
+                    </DateField.Input>
+                    <DateField.Suffix>
+                      <DateRangePicker.Trigger>
+                        <DateRangePicker.TriggerIndicator />
+                      </DateRangePicker.Trigger>
+                    </DateField.Suffix>
+                  </DateField.Group>
+                  <DateRangePicker.Popover>
+                    <RangeCalendar aria-label="选择拍摄日期时间段">
+                      <RangeCalendar.Header>
+                        <RangeCalendar.YearPickerTrigger>
+                          <RangeCalendar.YearPickerTriggerHeading />
+                          <RangeCalendar.YearPickerTriggerIndicator />
+                        </RangeCalendar.YearPickerTrigger>
+                        <RangeCalendar.NavButton slot="previous" />
+                        <RangeCalendar.NavButton slot="next" />
+                      </RangeCalendar.Header>
+                      <RangeCalendar.Grid>
+                        <RangeCalendar.GridHeader>
+                          {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                        </RangeCalendar.GridHeader>
+                        <RangeCalendar.GridBody>
+                          {(date) => <RangeCalendar.Cell date={date} />}
+                        </RangeCalendar.GridBody>
+                      </RangeCalendar.Grid>
+                      <RangeCalendar.YearPickerGrid>
+                        <RangeCalendar.YearPickerGridBody>
+                          {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                        </RangeCalendar.YearPickerGridBody>
+                      </RangeCalendar.YearPickerGrid>
+                    </RangeCalendar>
+                  </DateRangePicker.Popover>
+                </DateRangePicker>
+                {dateRange && (
                   <Button
-                    key={s}
+                    isIconOnly
                     size="sm"
-                    variant={statusFilter === s ? "primary" : "tertiary"}
-                    onPress={() => setStatusFilter(s)}
+                    variant="ghost"
+                    aria-label="清除时间段"
+                    onPress={() => setDateRange(null)}
                   >
-                    {s === "all" ? "全部" : s === "published" ? "已发布" : "草稿"}
+                    <span className="material-symbols-outlined text-[18px]">close</span>
                   </Button>
-                ))}
+                )}
               </div>
             </div>
 
@@ -2206,11 +2317,15 @@ export default function AdminPage() {
             </div>
 
             {loading ? (
-              <div className="animate-pulse space-y-2">
+              <div className="flex flex-col gap-2">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-surface-container-low border border-border-subtle" />
+                  <Skeleton key={i} className="h-16 rounded-lg" />
                 ))}
               </div>
+            ) : filteredPhotos.length === 0 ? (
+              <EmptyState className="border border-border-subtle rounded-lg py-16 text-center">
+                {photoFiltering ? "没有符合筛选条件的照片" : "还没有照片"}
+              </EmptyState>
             ) : (
               <>
                 <div className="hidden md:flex flex-col border border-border-subtle rounded-lg overflow-hidden">
@@ -2248,9 +2363,9 @@ export default function AdminPage() {
                         </Checkbox>
                       </div>
                       <div className={PHOTO_COL.preview}>
-                        <a href={`/photo/${photo.id}`} className="w-16 h-16 bg-surface-container overflow-hidden border border-border-subtle block rounded-lg">
+                        <HeroLink href={`/photo/${photo.id}`} aria-label={photo.title} className="block w-16 h-16 bg-surface-container overflow-hidden border border-border-subtle rounded-lg hover:no-underline">
                           <img src={adminPhotoUrl(photo.id)} alt={photo.title} className="w-full h-full object-cover" />
-                        </a>
+                        </HeroLink>
                       </div>
                       <div className={`${PHOTO_COL.title} text-body-md text-on-surface truncate`}>
                         {photo.title || "无标题"}
@@ -2264,19 +2379,19 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <div className={PHOTO_COL.status}>
-                        <button onClick={() => handleTogglePublish(photo)} className="rounded-none">
+                        <Button size="sm" variant="ghost" className="px-1" onPress={() => handleTogglePublish(photo)}>
                           <Chip size="sm" color={photo.is_published ? "success" : "default"} variant="soft">
                             <Chip.Label>{photo.is_published ? "已发布" : "草稿"}</Chip.Label>
                           </Chip>
-                        </button>
+                        </Button>
                       </div>
                       <div className={PHOTO_COL.actions}>
                         <Button isIconOnly size="sm" variant="ghost" onPress={() => startEdit(photo)} aria-label="编辑">
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </Button>
-                        <a href={`/photo/${photo.id}`} className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors" title="查看">
+                        <HeroLink href={`/photo/${photo.id}`} aria-label="查看" className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:no-underline transition-colors">
                           <span className="material-symbols-outlined text-[18px]">visibility</span>
-                        </a>
+                        </HeroLink>
 
                         {deleteConfirm === photo.id ? (
                           <div className="flex gap-1">
@@ -2307,12 +2422,13 @@ export default function AdminPage() {
                           </Checkbox.Control>
                         </Checkbox.Content>
                       </Checkbox>
-                      <a
+                      <HeroLink
                         href={`/photo/${photo.id}`}
-                        className="w-16 h-16 flex-shrink-0 bg-surface-container overflow-hidden border border-border-subtle block rounded-lg"
+                        aria-label={photo.title}
+                        className="w-16 h-16 flex-shrink-0 bg-surface-container overflow-hidden border border-border-subtle block rounded-lg hover:no-underline"
                       >
                         <img src={adminPhotoUrl(photo.id)} alt={photo.title} className="w-full h-full object-cover" />
-                      </a>
+                      </HeroLink>
                       <div className="flex-1 min-w-0">
                         <div className="text-body-md text-on-surface truncate font-medium">
                           {photo.title || "无标题"}
@@ -2320,11 +2436,11 @@ export default function AdminPage() {
                         <div className="text-metadata-sm text-on-surface-variant mt-0.5">
                           {formatDate(photo.shoot_time) || "—"}
                         </div>
-                        <button onClick={() => handleTogglePublish(photo)} className="mt-1.5 block">
+                        <Button size="sm" variant="ghost" className="mt-1.5 px-1" onPress={() => handleTogglePublish(photo)}>
                           <Chip size="sm" color={photo.is_published ? "success" : "default"} variant="soft">
                             <Chip.Label>{photo.is_published ? "已发布" : "草稿"}</Chip.Label>
                           </Chip>
-                        </button>
+                        </Button>
                       </div>
                       <div className="flex flex-col gap-1 flex-shrink-0">
                         <Button isIconOnly size="sm" variant="ghost" onPress={() => startEdit(photo)} aria-label="编辑">
@@ -2354,15 +2470,15 @@ export default function AdminPage() {
             </div>
 
             {albums.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle rounded-lg text-on-surface-variant">
+              <EmptyState className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle rounded-lg text-on-surface-variant">
                 <span className="material-symbols-outlined text-6xl mb-4">photo_album</span>
                 <p className="text-headline-mobile text-on-surface-variant">暂无相册</p>
-              </div>
+              </EmptyState>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {albums.map((album) => (
                   <div key={album.id} className="border border-border-subtle bg-surface overflow-hidden">
-                    <a href={`/album/${album.slug}`} className="block aspect-[4/3] bg-surface-container relative">
+                    <HeroLink href={`/album/${album.slug}`} aria-label={album.title} className="block aspect-[4/3] bg-surface-container relative hover:no-underline">
                       {album.cover_photo_id ? (
                         <img src={adminPhotoUrl(album.cover_photo_id)} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -2373,7 +2489,7 @@ export default function AdminPage() {
                       <span className="absolute bottom-2 right-2 text-metadata-sm text-white bg-primary/70 px-2 py-0.5" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                         {album.photo_count}
                       </span>
-                    </a>
+                    </HeroLink>
                     <div className="p-4 flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-body-md text-on-surface truncate font-medium">{album.title}</div>
@@ -2417,10 +2533,10 @@ export default function AdminPage() {
             </div>
 
             {articles.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle rounded-lg text-on-surface-variant">
+              <EmptyState className="flex flex-col items-center justify-center py-24 border border-dashed border-border-subtle rounded-lg text-on-surface-variant">
                 <span className="material-symbols-outlined text-6xl mb-4">article</span>
                 <p className="text-headline-mobile text-on-surface-variant">暂无笔记</p>
-              </div>
+              </EmptyState>
             ) : (
               <div className="flex flex-col border border-border-subtle rounded-lg overflow-hidden">
                 <div className="flex items-center gap-4 border-b border-border-subtle p-4 text-label-caps text-outline bg-surface-bright">
@@ -2444,19 +2560,19 @@ export default function AdminPage() {
                       /blog/{article.slug}
                     </div>
                     <div className={BLOG_COL.status}>
-                      <button onClick={() => handleToggleArticlePublish(article)} className="rounded-none">
+                      <Button size="sm" variant="ghost" className="px-1" onPress={() => handleToggleArticlePublish(article)}>
                         <Chip size="sm" color={article.is_published ? "success" : "default"} variant="soft">
                           <Chip.Label>{article.is_published ? "已发布" : "草稿"}</Chip.Label>
                         </Chip>
-                      </button>
+                      </Button>
                     </div>
                     <div className={BLOG_COL.actions}>
                       <Button isIconOnly size="sm" variant="ghost" onPress={() => openArticleEditor(article)} aria-label="编辑">
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                       </Button>
-                      <a href={`/blog/${article.slug}`} className="w-8 h-8 flex items-center justify-center hover:text-primary transition-colors" title="查看">
+                      <HeroLink href={`/blog/${article.slug}`} aria-label="查看" className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:no-underline transition-colors">
                         <span className="material-symbols-outlined text-[18px]">visibility</span>
-                      </a>
+                      </HeroLink>
                       <Button
                         isIconOnly
                         size="sm"
@@ -2564,7 +2680,7 @@ export default function AdminPage() {
                   <div>
                     <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">热门页面（7 天）</h3>
                     <div className="flex flex-col gap-2">
-                      {analytics.top_pages.length === 0 && <p className="text-metadata-sm text-outline">暂无数据</p>}
+                      {analytics.top_pages.length === 0 && <EmptyState>暂无数据</EmptyState>}
                       {analytics.top_pages.map((p) => (
                         <div key={p.path} className="flex items-center justify-between text-metadata-sm">
                           <span className="text-on-surface truncate">{p.path}</span>
@@ -2576,24 +2692,24 @@ export default function AdminPage() {
                   <div>
                     <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">热门照片</h3>
                     <div className="flex flex-col gap-2">
-                      {analytics.top_photos.length === 0 && <p className="text-metadata-sm text-outline">暂无数据</p>}
+                      {analytics.top_photos.length === 0 && <EmptyState>暂无数据</EmptyState>}
                       {analytics.top_photos.map((p) => (
-                        <a key={p.id} href={`/photo/${p.id}`} className="flex items-center justify-between text-metadata-sm hover:text-primary transition-colors">
+                        <HeroLink key={p.id} href={`/photo/${p.id}`} className="flex items-center justify-between text-metadata-sm">
                           <span className="text-on-surface truncate">{p.title}</span>
                           <span className="text-primary ml-2">{p.views}</span>
-                        </a>
+                        </HeroLink>
                       ))}
                     </div>
                   </div>
                   <div>
                     <h3 className="text-label-caps text-secondary tracking-widest border-b border-primary/15 pb-2 mb-3">热门文章</h3>
                     <div className="flex flex-col gap-2">
-                      {analytics.top_articles.length === 0 && <p className="text-metadata-sm text-outline">暂无数据</p>}
+                      {analytics.top_articles.length === 0 && <EmptyState>暂无数据</EmptyState>}
                       {analytics.top_articles.map((a) => (
-                        <a key={a.slug} href={`/blog/${a.slug}`} className="flex items-center justify-between text-metadata-sm hover:text-primary transition-colors">
+                        <HeroLink key={a.slug} href={`/blog/${a.slug}`} className="flex items-center justify-between text-metadata-sm">
                           <span className="text-on-surface truncate">{a.title}</span>
                           <span className="text-primary ml-2">{a.views}</span>
-                        </a>
+                        </HeroLink>
                       ))}
                     </div>
                   </div>
@@ -2681,10 +2797,7 @@ export default function AdminPage() {
 
             {/* ① 默认底图 */}
             <section className="mb-10">
-              <MapSectionHeading
-                title="默认底图"
-                hint="只影响首次访客；访客自己动过图层选择器的话，他的浏览器记忆优先。"
-              />
+              <MapSectionHeading title="默认底图" />
               <Card className="p-5 gap-4">
                 {!mapCfg ? (
                   <div className="flex flex-wrap gap-2">
@@ -2705,48 +2818,38 @@ export default function AdminPage() {
                         </span>
                       )}
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {TILE_LAYERS.map((def) => {
-                        const on = savedLayer === def.name;
-                        return (
-                          <button
-                            key={def.name}
-                            type="button"
-                            aria-pressed={on}
-                            disabled={mapCfgSaving}
-                            onClick={() => !on && saveMapSetting({ default_map_layer: def.name })}
-                            className={`relative flex w-[92px] flex-col items-center gap-1 rounded-lg border p-1.5 pb-2 transition-all disabled:opacity-60 ${
-                              on
-                                ? "border-primary opacity-100 ring-2 ring-primary/70 ring-offset-1 ring-offset-surface saturate-100"
-                                : "border-border-subtle opacity-75 saturate-50 hover:border-primary/50 hover:opacity-100 hover:saturate-100"
-                            }`}
+                    <RadioGroup
+                      aria-label="默认底图"
+                      className="flex-row flex-wrap gap-2 **:data-[slot=radio]:mt-0"
+                      isDisabled={mapCfgSaving}
+                      value={savedLayer}
+                      onChange={(v) => v !== savedLayer && saveMapSetting({ default_map_layer: String(v) })}
+                    >
+                      {TILE_LAYERS.map((def) => (
+                        <Radio key={def.name} value={def.name}>
+                          <Radio.Content
+                            className="group relative flex w-[92px] flex-col items-center gap-1 rounded-lg border border-border-subtle p-1.5 pb-2 opacity-75 saturate-50 transition-all data-[hovered=true]:border-primary/50 data-[hovered=true]:opacity-100 data-[hovered=true]:saturate-100 data-[selected=true]:border-primary data-[selected=true]:opacity-100 data-[selected=true]:saturate-100 data-[selected=true]:ring-2 data-[selected=true]:ring-primary/70 data-[selected=true]:ring-offset-1 data-[selected=true]:ring-offset-surface data-[focus-visible=true]:outline-2 data-[focus-visible=true]:outline-offset-2 data-[focus-visible=true]:outline-primary data-[disabled=true]:opacity-60"
                           >
                             <img
                               src={schemeThumb(def.thumb)}
                               alt=""
                               className="aspect-square w-full rounded"
                             />
-                            <span
-                              className={`w-full truncate text-center text-[11px] leading-tight ${
-                                on ? "text-primary font-medium" : "text-outline"
-                              }`}
-                            >
+                            <span className="w-full truncate text-center text-[11px] leading-tight text-outline group-data-[selected=true]:text-primary group-data-[selected=true]:font-medium">
                               {def.name}
                             </span>
-                            {on && (
-                              <span
-                                aria-hidden
-                                className="absolute -right-1.5 -top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary text-[var(--color-on-primary)] shadow-sm"
-                              >
-                                <span className="material-symbols-outlined" style={{ fontSize: 12 }}>
-                                  check
-                                </span>
+                            <span
+                              aria-hidden
+                              className="absolute -right-1.5 -top-1.5 hidden h-[18px] w-[18px] items-center justify-center rounded-full bg-primary text-[var(--color-on-primary)] shadow-sm group-data-[selected=true]:flex"
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: 12 }}>
+                                check
                               </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                            </span>
+                          </Radio.Content>
+                        </Radio>
+                      ))}
+                    </RadioGroup>
                   </>
                 )}
               </Card>
@@ -2754,23 +2857,20 @@ export default function AdminPage() {
 
             {/* ② 底图密钥：客户端密钥，值必然下发到浏览器 */}
             <section className="mb-10">
-              <MapSectionHeading
-                title="底图密钥"
-                hint="去掉 Light / Dark / Voyager 底图的水印。"
-              />
+              <MapSectionHeading title="底图密钥" />
               <Card className="p-5">
                 <div className="flex max-w-xl flex-col gap-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-body-md text-on-surface font-medium">CARTO 底图 API Key</span>
                     <Chip size="sm" color={cartoCred?.configured ? "success" : "warning"} variant="soft">
                       <Chip.Label>
-                        {cartoCred?.configured ? `已配置（${cartoCred.length} 位）` : "未配置"}
+                        {cartoCred?.configured ? "已配置" : "未配置"}
                       </Chip.Label>
                     </Chip>
                   </div>
 
                   <LabeledInput
-                    label="粘贴新的 Key"
+                    label="Key"
                     value={cartoKey}
                     onChange={(v) => {
                       setCartoKey(v);
@@ -2785,22 +2885,24 @@ export default function AdminPage() {
                   />
 
                   <div className="flex flex-wrap items-center gap-x-3 text-metadata-sm text-outline">
-                    <a
-                      className="text-primary underline underline-offset-2"
+                    <HeroLink
+                      className="text-primary"
                       href="https://carto.com/basemaps/apikey/"
                       target="_blank"
                       rel="noreferrer"
                     >
                       申请 key
-                    </a>
-                    <a
-                      className="text-primary underline underline-offset-2"
+                      <HeroLink.Icon />
+                    </HeroLink>
+                    <HeroLink
+                      className="text-primary"
                       href="https://dashboard.basemaps.carto.com"
                       target="_blank"
                       rel="noreferrer"
                     >
                       管理 key
-                    </a>
+                      <HeroLink.Icon />
+                    </HeroLink>
                   </div>
 
                   {cartoVerify && (
@@ -2847,35 +2949,25 @@ export default function AdminPage() {
 
             {/* ③ OSM 瓦片源 */}
             <section>
-              <MapSectionHeading
-                title="OSM 瓦片源"
-                hint="只影响 Streets 这一个图层。"
-              />
+              <MapSectionHeading title="OSM 瓦片源" />
               <Card className="p-4">
                 <div className="flex max-w-xl flex-col gap-2">
-                  {!mapCfg
-                    ? [0, 1].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)
-                    : OSM_SOURCE_OPTIONS.map((o) => {
-                        const on = mapCfg.osm_tile_source === o.value;
-                        return (
-                          <button
-                            key={o.value}
-                            type="button"
-                            aria-pressed={on}
-                            disabled={mapCfgSaving}
-                            onClick={() => !on && saveMapSetting({ osm_tile_source: o.value })}
-                            className={`flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2.5 text-left transition-colors disabled:opacity-60 ${
-                              on
-                                ? "border-primary bg-primary/5 ring-1 ring-primary/60"
-                                : "border-border-subtle hover:border-primary/50"
-                            }`}
-                          >
-                            <span
-                              aria-hidden
-                              className={`w-3 h-3 flex-shrink-0 rounded-full ${
-                                on ? "bg-primary" : "border-2 border-[var(--muted)]"
-                              }`}
-                            />
+                  {!mapCfg ? (
+                    [0, 1].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)
+                  ) : (
+                    <RadioGroup
+                      aria-label="OSM 瓦片源"
+                      className="gap-2 **:data-[slot=radio]:mt-0"
+                      isDisabled={mapCfgSaving}
+                      value={mapCfg.osm_tile_source}
+                      onChange={(v) => v !== mapCfg.osm_tile_source && saveMapSetting({ osm_tile_source: String(v) })}
+                    >
+                      {OSM_SOURCE_OPTIONS.map((o) => (
+                        <Radio key={o.value} value={o.value}>
+                          <Radio.Content className="group flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border-subtle px-3 py-2.5 text-left transition-colors data-[hovered=true]:border-primary/50 data-[selected=true]:border-primary data-[selected=true]:bg-primary/5 data-[selected=true]:ring-1 data-[selected=true]:ring-primary/60 data-[focus-visible=true]:outline-2 data-[focus-visible=true]:outline-offset-2 data-[focus-visible=true]:outline-primary data-[disabled=true]:opacity-60">
+                            <Radio.Control>
+                              <Radio.Indicator />
+                            </Radio.Control>
                             <span className="text-body-md text-on-surface font-medium">
                               {o.label}
                             </span>
@@ -2887,17 +2979,17 @@ export default function AdminPage() {
                                 <Chip.Label>{o.warn}</Chip.Label>
                               </Chip>
                             )}
-                            {on && (
-                              <Chip size="sm" variant="soft">
-                                <Chip.Label>使用中</Chip.Label>
-                              </Chip>
-                            )}
+                            <Chip size="sm" variant="soft" className="hidden group-data-[selected=true]:inline-flex">
+                              <Chip.Label>使用中</Chip.Label>
+                            </Chip>
                             <span className="w-full text-metadata-sm text-outline sm:w-auto">
                               {o.note}
                             </span>
-                          </button>
-                        );
-                      })}
+                          </Radio.Content>
+                        </Radio>
+                      ))}
+                    </RadioGroup>
+                  )}
                 </div>
               </Card>
             </section>
