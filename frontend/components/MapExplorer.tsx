@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { ScrollShadow } from "@heroui/react";
 import Lightbox, { type LightboxPhoto } from "./Lightbox";
 import MapClient, { type FocusRequest, type MapMarker } from "./MapClient";
@@ -22,16 +30,34 @@ const rowButtonClass = (active: boolean) =>
     active ? "font-medium text-primary" : "text-on-surface",
   ].join(" ");
 
-const chipClass = (on: boolean) =>
+/**
+ * 芯片三态。安静态（没在筛）与弱化态（被排除）必须互相分得清：
+ * 前者描边完整、字色正常，后者整颗降透明度 —— 这样一眼能看出「现在有没有在筛」。
+ * 强调态不用实心黑：黑药丸会把最该安静的默认态画成视觉负担，这里改用该年份自己的
+ * 13% 底色 + 同色描边（见 chipStyle）。
+ */
+type ChipState = "quiet" | "on" | "off";
+
+const chipClass = (state: ChipState) =>
   [
     // shrink-0 只在窄屏的 nowrap 轨道里起作用；lg 以上换行，芯片从不收缩
     "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-metadata-sm font-mono",
-    "transition-colors duration-500 ease-out",
+    "transition-all duration-500 ease-out",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-    on
-      ? "bg-primary text-primary-fixed ring-1 ring-primary"
-      : "text-outline ring-1 ring-border-subtle hover:text-primary hover:ring-primary/40",
+    state === "on"
+      ? "text-primary"
+      : state === "off"
+        ? "text-outline opacity-45 ring-1 ring-border-subtle hover:opacity-100"
+        : "text-on-surface ring-1 ring-border-subtle hover:ring-primary/40",
   ].join(" ");
+
+/** 强调态的配色。文字一律用 --color-primary：色板里有浅青浅紫，直接当字色过不了对比度。 */
+const chipStyle = (state: ChipState, year: number | null): CSSProperties | undefined => {
+  if (state !== "on") return undefined;
+  if (year === null) return { background: "var(--color-primary-fixed)" };
+  const c = yearColor(year);
+  return { background: `${c}22`, boxShadow: `inset 0 0 0 1px ${c}66` };
+};
 
 /**
  * 足迹页的交互容器：持有年份筛选、地点选中与灯箱状态，并渲染头部统计、地图区、
@@ -63,6 +89,20 @@ export default function MapExplorer({
   const allYears = useMemo(() => yearsForLegend(markers), [markers]);
   const [activeYears, setActiveYears] = useState<Set<number>>(() => new Set(yearsForLegend(markers)));
   const showAllYears = activeYears.size === 0 || activeYears.size >= allYears.length;
+  const filtering = !showAllYears;
+
+  /**
+   * 每个年份的照片总数。刻意不随筛选变化：若算的是"当前可见数"，被排除的年份
+   * 会一律显示 0，读起来像数据坏了。它同时给芯片当信息量用。
+   */
+  const yearCounts = useMemo(() => {
+    const acc = new Map<number, number>();
+    markers.forEach((m) => {
+      const y = yearOf(m.shoot_time);
+      if (y !== null) acc.set(y, (acc.get(y) ?? 0) + 1);
+    });
+    return acc;
+  }, [markers]);
 
   const filteredMarkers = useMemo(
     () =>
@@ -181,24 +221,43 @@ export default function MapExplorer({
               <div
                 role="group"
                 aria-label="按年份筛选"
-                className="flex w-max flex-nowrap items-center gap-1.5 lg:w-auto lg:flex-wrap"
+                className="flex w-max flex-nowrap items-center gap-2 lg:w-auto lg:flex-wrap"
               >
+                {/* 复位入口只在筛选中出现，且固定在行首：位置稳定，也不会在未筛选时
+                    留一个按不动的按钮占位 */}
+                {filtering && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveYears(new Set(allYears))}
+                    className={chipClass("on")}
+                    style={chipStyle("on", null)}
+                  >
+                    <span aria-hidden className="material-symbols-outlined" style={{ fontSize: 13 }}>
+                      close
+                    </span>
+                    全部
+                  </button>
+                )}
                 {allYears.map((y) => {
-                  const on = showAllYears || activeYears.has(y);
+                  const state: ChipState = filtering ? (activeYears.has(y) ? "on" : "off") : "quiet";
                   return (
                     <button
                       key={y}
                       type="button"
-                      aria-pressed={on}
+                      aria-pressed={state !== "off"}
                       onClick={() => toggleYear(y)}
-                      className={chipClass(on)}
+                      className={chipClass(state)}
+                      style={chipStyle(state, y)}
                     >
+                      {/* 色点是图例（地图上标记就按这个颜色画），三态一律实心；
+                          弱化交给整颗芯片的 opacity，不掏空 */}
                       <span
                         aria-hidden
                         className="h-2 w-2 rounded-full"
-                        style={on ? { background: yearColor(y) } : { boxShadow: `inset 0 0 0 1.5px ${yearColor(y)}` }}
+                        style={{ background: yearColor(y) }}
                       />
                       {y}
+                      <span className="text-[10px] text-outline">{yearCounts.get(y)}</span>
                     </button>
                   );
                 })}
@@ -352,7 +411,6 @@ export default function MapExplorer({
           <span className="w-1.5 h-1.5 rounded-full border border-primary/50" />
           <span className="w-4 border-t border-dashed border-primary/25" />
           {filteredMarkers.length} 张带坐标的照片
-          {!showAllYears && <span className="text-outline">（已按年份筛选）</span>}
         </span>
         {showHud && (
           <span className="w-1.5 h-1.5 rounded-full bg-mint-accent border border-primary animate-pulse" />

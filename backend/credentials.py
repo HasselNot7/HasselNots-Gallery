@@ -169,16 +169,20 @@ CREDENTIALS = [
         "required": False,
         "visibility": "client",
         "storage": "db",
-        "used_by": ["frontend/lib/mapLayers.ts:48", "frontend/lib/mapLayers.ts:88"],
+        "used_by": [
+            "frontend/lib/mapLayers.ts:85",
+            "frontend/lib/mapLayers.ts:128",
+            "frontend/lib/mapLayers.ts:142",
+        ],
         "effect_if_missing": (
-            "Light/Dark 两套底图照常出图，但每张瓦片被 Fastly 叠上斜向 'API KEY REQUIRED' 水印"
+            "Light/Dark/Voyager 三套底图照常出图，但每张瓦片被 Fastly 叠上斜向 'API KEY REQUIRED' 水印"
         ),
         "effect_if_rotated": (
             "旧 key 立即失效；浏览器最长 60 秒后拿到新值（/api/map-config 的 max-age=60），"
             "瓦片 URL 变了所以 CDN 缓存自然穿透"
         ),
         "restart_required": False,
-        "change_howto": "在本面板「底图密钥」框填写并保存，即时生效，无需重启后端",
+        "change_howto": "在后台「地图 → 底图密钥」框填写并保存，即时生效，无需重启后端",
         "provider_console": (
             "申请 https://carto.com/basemaps/apikey/ ；"
             "管理与吊销 https://dashboard.basemaps.carto.com （可设限、可删除）"

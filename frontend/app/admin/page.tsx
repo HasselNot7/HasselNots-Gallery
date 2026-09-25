@@ -191,6 +191,15 @@ function LabeledInput({
   );
 }
 
+function MapSectionHeading({ title, hint }: { title: string; hint: string }) {
+  return (
+    <div className="mb-3">
+      <h3 className="text-[13px] font-medium text-on-surface">{title}</h3>
+      <p className="mt-0.5 text-metadata-sm text-outline leading-relaxed">{hint}</p>
+    </div>
+  );
+}
+
 function LabeledTextarea({
   label,
   value,
@@ -272,13 +281,15 @@ const OSM_SOURCE_OPTIONS = [
     value: "de",
     label: "德国镜像",
     host: "tile.openstreetmap.de",
-    note: "大陆可直接访问（默认）",
+    note: "FOSSGIS 镜像",
+    warn: "",
   },
   {
     value: "official",
     label: "官方域名",
     host: "tile.openstreetmap.org",
-    note: "大陆被 DNS 污染，仅适合访客普遍挂代理的情况",
+    note: "OSM 官方瓦片服务",
+    warn: "大陆不可用",
   },
 ];
 
@@ -550,7 +561,6 @@ function NavList({
   groupSuffix: string;
   collapsed?: boolean;
 }) {
-  const moreGroupActive = MORE_TABS.some((t) => t.id === activeTab);
   const groupId = `admin-nav-more-${groupSuffix}`;
   // 分组展开与否只由 moreExpanded 决定：折叠态同样可独立展开/收起，
   // 两种侧栏宽度共用同一份持久化状态。
@@ -584,10 +594,9 @@ function NavList({
               aria-label={collapsed ? "更多功能" : undefined}
               aria-expanded={moreExpanded}
               aria-controls={groupId}
-              /* 折叠态整列只剩图标，分组按钮再套选中底色会被读成「两个都被选中」；
-                 它是开合器（aria-expanded 表达状态），不承担选中。展开态有文字与
-                 缩进层级，保留分组高亮。 */
-              className={navRowClass(moreGroupActive && !collapsed, false, collapsed)}
+              /* 它是开合器（aria-expanded 表达状态），不承担选中：无论折叠还是展开，
+                 选中底色都只归子项，否则分组与当前项会同时亮成「两个都被选中」。 */
+              className={navRowClass(false, false, collapsed)}
             >
               {/* 折叠态放不下 chevron，改用图标本身表达开/关 */}
               <span className="material-symbols-outlined text-[22px]">
@@ -2672,12 +2681,15 @@ export default function AdminPage() {
 
             {/* ① 默认底图 */}
             <section className="mb-10">
-              <h3 className="text-label-caps text-outline uppercase mb-3">默认底图</h3>
+              <MapSectionHeading
+                title="默认底图"
+                hint="只影响首次访客；访客自己动过图层选择器的话，他的浏览器记忆优先。"
+              />
               <Card className="p-5 gap-4">
                 {!mapCfg ? (
-                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from({ length: TILE_LAYERS.length }).map((_, i) => (
+                      <Skeleton key={i} className="h-[116px] w-[92px] rounded-lg" />
                     ))}
                   </div>
                 ) : (
@@ -2693,7 +2705,7 @@ export default function AdminPage() {
                         </span>
                       )}
                     </p>
-                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+                    <div className="flex flex-wrap gap-2">
                       {TILE_LAYERS.map((def) => {
                         const on = savedLayer === def.name;
                         return (
@@ -2703,10 +2715,10 @@ export default function AdminPage() {
                             aria-pressed={on}
                             disabled={mapCfgSaving}
                             onClick={() => !on && saveMapSetting({ default_map_layer: def.name })}
-                            className={`flex flex-col items-center gap-1 rounded-lg border p-1.5 transition-colors disabled:opacity-60 ${
+                            className={`relative flex w-[92px] flex-col items-center gap-1 rounded-lg border p-1.5 pb-2 transition-all disabled:opacity-60 ${
                               on
-                                ? "border-primary bg-primary/10"
-                                : "border-border-subtle hover:border-primary/50"
+                                ? "border-primary opacity-100 ring-2 ring-primary/70 ring-offset-1 ring-offset-surface saturate-100"
+                                : "border-border-subtle opacity-75 saturate-50 hover:border-primary/50 hover:opacity-100 hover:saturate-100"
                             }`}
                           >
                             <img
@@ -2715,12 +2727,22 @@ export default function AdminPage() {
                               className="aspect-square w-full rounded"
                             />
                             <span
-                              className={`w-full truncate text-center text-[10px] leading-tight ${
+                              className={`w-full truncate text-center text-[11px] leading-tight ${
                                 on ? "text-primary font-medium" : "text-outline"
                               }`}
                             >
                               {def.name}
                             </span>
+                            {on && (
+                              <span
+                                aria-hidden
+                                className="absolute -right-1.5 -top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary text-[var(--color-on-primary)] shadow-sm"
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: 12 }}>
+                                  check
+                                </span>
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -2732,150 +2754,151 @@ export default function AdminPage() {
 
             {/* ② 底图密钥：客户端密钥，值必然下发到浏览器 */}
             <section className="mb-10">
-              <h3 className="text-label-caps text-outline uppercase mb-3">底图密钥</h3>
-              <Card className="p-5 gap-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-body-md text-on-surface font-medium">CARTO 底图 API Key</span>
-                  <Chip size="sm" color={cartoCred?.configured ? "success" : "warning"} variant="soft">
-                    <Chip.Label>
-                      {cartoCred?.configured ? `已配置（${cartoCred.length} 位）` : "未配置"}
-                    </Chip.Label>
-                  </Chip>
-                </div>
-
-                <LabeledInput
-                  label="粘贴新的 Key"
-                  value={cartoKey}
-                  onChange={(v) => {
-                    setCartoKey(v);
-                    setCartoDirty(true);
-                    setCartoVerify(null);
-                  }}
-                  placeholder={
-                    cartoCred?.configured
-                      ? "出于盘点口径这里不回显现值；输入新值保存即替换，保存空值即清除"
-                      : "尚未配置，底图当前带水印"
-                  }
-                />
-
-                <div className="flex flex-wrap items-center gap-x-3 text-metadata-sm text-outline">
-                  <a
-                    className="text-primary underline underline-offset-2"
-                    href="https://carto.com/basemaps/apikey/"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    申请 key
-                  </a>
-                  <a
-                    className="text-primary underline underline-offset-2"
-                    href="https://dashboard.basemaps.carto.com"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    管理（域名限制 · 配额 · 吊销）
-                  </a>
-                </div>
-
-                {cartoVerify && (
-                  <div
-                    className={`flex items-start gap-2 rounded-lg border p-3 text-metadata-sm ${
-                      cartoVerify.ok
-                        ? "border-[var(--accent)]/40 bg-accent-soft/30"
-                        : "border-[var(--danger)]/40 bg-danger-soft/30"
-                    }`}
-                  >
-                    <span
-                      className={`material-symbols-outlined ${cartoVerify.ok ? "text-[var(--accent)]" : "text-[var(--danger)]"}`}
-                      style={{ fontSize: 18 }}
-                    >
-                      {cartoVerify.ok ? "check_circle" : "error"}
-                    </span>
-                    <span className={cartoVerify.ok ? "text-primary" : "text-[var(--danger)]"}>
-                      {cartoVerify.ok ? "验证通过：key 真的生效了" : "验证未通过"} · {cartoVerify.detail}
-                    </span>
+              <MapSectionHeading
+                title="底图密钥"
+                hint="去掉 Light / Dark / Voyager 底图的水印。"
+              />
+              <Card className="p-5">
+                <div className="flex max-w-xl flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-body-md text-on-surface font-medium">CARTO 底图 API Key</span>
+                    <Chip size="sm" color={cartoCred?.configured ? "success" : "warning"} variant="soft">
+                      <Chip.Label>
+                        {cartoCred?.configured ? `已配置（${cartoCred.length} 位）` : "未配置"}
+                      </Chip.Label>
+                    </Chip>
                   </div>
-                )}
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    isDisabled={!cartoDirty}
-                    isPending={cartoSaving}
-                    onPress={saveCartoKey}
-                  >
-                    保存
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="tertiary"
-                    isPending={cartoVerifying}
-                    onPress={verifyCartoKey}
-                  >
-                    验证
-                  </Button>
+                  <LabeledInput
+                    label="粘贴新的 Key"
+                    value={cartoKey}
+                    onChange={(v) => {
+                      setCartoKey(v);
+                      setCartoDirty(true);
+                      setCartoVerify(null);
+                    }}
+                    placeholder={
+                      cartoCred?.configured
+                        ? "不回显当前值；输入即替换，留空即清除"
+                        : "尚未配置，底图当前带水印"
+                    }
+                  />
+
+                  <div className="flex flex-wrap items-center gap-x-3 text-metadata-sm text-outline">
+                    <a
+                      className="text-primary underline underline-offset-2"
+                      href="https://carto.com/basemaps/apikey/"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      申请 key
+                    </a>
+                    <a
+                      className="text-primary underline underline-offset-2"
+                      href="https://dashboard.basemaps.carto.com"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      管理 key
+                    </a>
+                  </div>
+
+                  {cartoVerify && (
+                    <div
+                      className={`flex items-start gap-2 rounded-lg border p-3 text-metadata-sm ${
+                        cartoVerify.ok
+                          ? "border-[var(--accent)]/40 bg-accent-soft/30"
+                          : "border-[var(--danger)]/40 bg-danger-soft/30"
+                      }`}
+                    >
+                      <span
+                        className={`material-symbols-outlined ${cartoVerify.ok ? "text-[var(--accent)]" : "text-[var(--danger)]"}`}
+                        style={{ fontSize: 18 }}
+                      >
+                        {cartoVerify.ok ? "check_circle" : "error"}
+                      </span>
+                      <span className={cartoVerify.ok ? "text-primary" : "text-[var(--danger)]"}>
+                        {cartoVerify.detail}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      isDisabled={!cartoDirty}
+                      isPending={cartoSaving}
+                      onPress={saveCartoKey}
+                    >
+                      保存
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="tertiary"
+                      isPending={cartoVerifying}
+                      onPress={verifyCartoKey}
+                    >
+                      验证
+                    </Button>
+                  </div>
                 </div>
               </Card>
             </section>
 
             {/* ③ OSM 瓦片源 */}
             <section>
-              <h3 className="text-label-caps text-outline uppercase mb-3">OSM 瓦片源</h3>
-              <Card className="p-5 gap-4">
-                {!mapCfg ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Skeleton className="h-24 w-full rounded-lg" />
-                    <Skeleton className="h-24 w-full rounded-lg" />
-                  </div>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {OSM_SOURCE_OPTIONS.map((o) => {
-                      const on = mapCfg.osm_tile_source === o.value;
-                      return (
-                        <button
-                          key={o.value}
-                          type="button"
-                          aria-pressed={on}
-                          disabled={mapCfgSaving}
-                          onClick={() => !on && saveMapSetting({ osm_tile_source: o.value })}
-                          className={`rounded-lg border p-3 text-left transition-colors disabled:opacity-60 ${
-                            on
-                              ? "border-primary bg-primary/10"
-                              : o.value === "official"
-                                ? "border-[var(--danger)]/40"
+              <MapSectionHeading
+                title="OSM 瓦片源"
+                hint="只影响 Streets 这一个图层。"
+              />
+              <Card className="p-4">
+                <div className="flex max-w-xl flex-col gap-2">
+                  {!mapCfg
+                    ? [0, 1].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)
+                    : OSM_SOURCE_OPTIONS.map((o) => {
+                        const on = mapCfg.osm_tile_source === o.value;
+                        return (
+                          <button
+                            key={o.value}
+                            type="button"
+                            aria-pressed={on}
+                            disabled={mapCfgSaving}
+                            onClick={() => !on && saveMapSetting({ osm_tile_source: o.value })}
+                            className={`flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2.5 text-left transition-colors disabled:opacity-60 ${
+                              on
+                                ? "border-primary bg-primary/5 ring-1 ring-primary/60"
                                 : "border-border-subtle hover:border-primary/50"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
+                            }`}
+                          >
                             <span
-                              className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                                on ? "bg-[var(--accent)]" : "bg-[var(--muted)]"
+                              aria-hidden
+                              className={`w-3 h-3 flex-shrink-0 rounded-full ${
+                                on ? "bg-primary" : "border-2 border-[var(--muted)]"
                               }`}
                             />
                             <span className="text-body-md text-on-surface font-medium">
                               {o.label}
                             </span>
+                            <code className="font-mono text-metadata-sm text-outline">
+                              {o.host}
+                            </code>
+                            {o.warn && (
+                              <Chip size="sm" color="warning" variant="soft">
+                                <Chip.Label>{o.warn}</Chip.Label>
+                              </Chip>
+                            )}
                             {on && (
                               <Chip size="sm" variant="soft">
                                 <Chip.Label>使用中</Chip.Label>
                               </Chip>
                             )}
-                          </div>
-                          <code className="mt-1 block font-mono text-metadata-sm text-outline">
-                            {o.host}
-                          </code>
-                          <div
-                            className={`mt-1 text-metadata-sm leading-relaxed ${
-                              o.value === "official" ? "text-[var(--danger)]" : "text-on-surface-variant"
-                            }`}
-                          >
-                            {o.note}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                            <span className="w-full text-metadata-sm text-outline sm:w-auto">
+                              {o.note}
+                            </span>
+                          </button>
+                        );
+                      })}
+                </div>
               </Card>
             </section>
           </div>

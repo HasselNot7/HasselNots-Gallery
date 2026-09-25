@@ -107,6 +107,14 @@ SERVICES = [
         "policy": "与 Light 共用同一个 key 与同一份额度，配额按账户合并统计",
     },
     {
+        "name": "CARTO Voyager Tiles",
+        "url": f"https://{CARTO_HOST}/rastertiles/voyager/{CARTO_PROBE_TILE}",
+        "kind": "carto",
+        "style": "rastertiles/voyager",
+        "needs_key": True,
+        "policy": "与 Light/Dark 共用同一把 key 与同一份额度；Voyager 只挂在 rastertiles/ 下",
+    },
+    {
         "name": "Esri Satellite Tiles",
         "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/5/15/22",
         "kind": "http",
@@ -244,14 +252,19 @@ def _check_http(url: str):
         return False, int((time.time() - start) * 1000), str(e)[:120]
 
 
-def _get_headers(url: str, referer: str) -> dict:
+def _get_headers(url: str, referer: str, timeout: int = 15) -> dict:
     headers = {"User-Agent": "Mozilla/5.0 GalleryCheck/1.0"}
     if referer:
         headers["Referer"] = referer
     req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=8) as resp:
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
         resp.read(64)
         return {k.lower(): v for k, v in resp.headers.items()}
+
+
+def _why(e: Exception) -> str:
+    """短到不占地方、又足以分清「超时」和「真连不上」"""
+    return "超时" if "timed out" in str(e).lower() else type(e).__name__
 
 
 def _check_carto(style: str, api_key: str, referer: str = ""):
@@ -266,38 +279,26 @@ def _check_carto(style: str, api_key: str, referer: str = ""):
     """
     start = time.time()
     base = f"https://{CARTO_HOST}/{style}/{CARTO_PROBE_TILE}"
-    probe = f"（探测来源 {referer.rstrip('/')}）" if referer else "（未拿到探测来源，绑域名的 key 必被拒）"
-    origin_txt = referer.rstrip("/") if referer else "空 —— 浏览器没带 Referer，绑域名的 key 必被拒"
+    ms = lambda: int((time.time() - start) * 1000)
     try:
         anon = _get_headers(base, referer)
     except urllib.error.HTTPError as e:
-        # 基线请求本身被拒。不能并进下面的「不可达」：那会把「CARTO 活着但拒了我们」
-        # 误报成网络故障 —— 正是这一串坑里最贵的那个。
-        return False, int((time.time() - start) * 1000), f"CARTO 拒绝无 key 基线请求 HTTP {e.code}{probe}"
+        # 基线请求本身被拒不能并进「不可达」：那会把 CARTO 活着但拒了我们误报成网络故障
+        return False, ms(), f"基线请求 HTTP {e.code}"
     except Exception as e:
-        return False, int((time.time() - start) * 1000), f"CARTO 不可达：{str(e)[:100]}"
+        return False, ms(), f"CARTO 不可达（{_why(e)}）"
     if not api_key:
-        return False, int((time.time() - start) * 1000), "未配置 key：瓦片带 API KEY REQUIRED 水印"
+        return False, ms(), "未配置 key"
     try:
         keyed = _get_headers(f"{base}?key={api_key}", referer)
     except urllib.error.HTTPError as e:
-        # 详情里绝不回显 URL —— key 就拼在上面那个串里
-        if e.code == 403:
-            return False, int((time.time() - start) * 1000), (
-                f"被 CARTO 拒绝 HTTP 403：该 key 的 Referer 白名单不含当前探测来源 "
-                f"{origin_txt}。key 本身可能仍然有效，去后台把它要用的域名加进白名单"
-            )
-        return False, int((time.time() - start) * 1000), f"带 key 请求返回 HTTP {e.code}{probe}"
+        # 只报状态码，不回显 URL —— key 就拼在上面那个串里
+        return False, ms(), "来源不在 key 白名单" if e.code == 403 else f"带 key 请求 HTTP {e.code}"
     except Exception as e:
-        return False, int((time.time() - start) * 1000), f"带 key 请求失败：{type(e).__name__}{probe}"
-    etag_changed = keyed.get("etag") != anon.get("etag")
-    io_gone = "fastly-io-info" not in keyed
-    ms = int((time.time() - start) * 1000)
-    if etag_changed and io_gone:
-        return True, ms, f"key 生效：etag 变化且 fastly-io-info 已消失{probe}"
-    if etag_changed:
-        return True, ms, f"key 生效：etag 与无 key 时不同{probe}"
-    return False, ms, f"key 无效：etag 与无 key 完全一致，仍在返回水印瓦片{probe}"
+        return False, ms(), f"带 key 请求失败（{_why(e)}）"
+    if keyed.get("etag") != anon.get("etag") and "fastly-io-info" not in keyed:
+        return True, ms(), "key 生效"
+    return False, ms(), "key 无效：仍返回水印瓦片"
 
 
 def _check_osm(url: str):
@@ -316,12 +317,11 @@ def _check_osm(url: str):
     except ValueError:
         size = 0
     ms = int((time.time() - start) * 1000)
-    host = url.split("/")[2]
     if "image/" not in ctype:
-        return False, ms, f"{host} 返回的不是图片（content-type={ctype or '缺失'}）"
+        return False, ms, "返回的不是图片"
     if size < 2000:
-        return False, ms, f"{host} 疑似空白瓦（{ctype} 仅 {size}B）"
-    return True, ms, f"{host} 真瓦片 {ctype} {size}B"
+        return False, ms, f"疑似空白瓦（{size}B）"
+    return True, ms, f"真瓦片 {size}B"
 
 
 def _check_one(service: dict, carto_key: str = "", referer: str = ""):

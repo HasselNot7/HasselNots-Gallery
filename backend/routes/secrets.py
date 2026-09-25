@@ -76,16 +76,16 @@ def _verify_jwt() -> dict:
 
 
 def _verify_r2() -> dict:
-    ok, ms, detail = _check_r2()
-    return {"ok": ok, "detail": f"{detail}（{ms}ms）"}
+    ok, _ms, detail = _check_r2()
+    return {"ok": ok, "detail": detail}
 
 
 def _verify_carto(candidate: str, db: Session, referer: str) -> dict:
     """referer 用调用方（后台页面）自己的来源：CARTO 的 key 绑域名，
     不带 Referer 时有效 key 也会被 403，验不出真实结果。"""
     key = candidate or get_setting(db, "carto_api_key")
-    ok, ms, detail = _check_carto("light_all", key, referer)
-    return {"ok": ok, "detail": f"{detail}（{ms}ms）"}
+    ok, _ms, detail = _check_carto("light_all", key, referer)
+    return {"ok": ok, "detail": detail}
 
 
 @router.post("/verify/{env_key}")

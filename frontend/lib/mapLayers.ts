@@ -30,6 +30,8 @@ const OSM_SOURCES: Record<string, string> = {
 const OSM_DEFAULT_SOURCE = "de";
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const CARTO_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> / <a href="https://carto.com/">CARTO</a>';
 
 function osmHostOf(source: string): string {
   return OSM_SOURCES[source] ?? OSM_SOURCES[OSM_DEFAULT_SOURCE];
@@ -55,7 +57,7 @@ export const TILE_LAYERS: TileLayerDef[] = [
       attribution: "&copy; 必应地图",
       maxZoom: 19,
     },
-    thumb: { bg: "#E8ECF3", road: "#FFFFFF", park: "#B9D8B2", water: "#A8C8E8", accent: "#7A9BC8" },
+    thumb: { bg: "#E3EBF6", road: "#FFFFFF", park: "#AFCFEA", water: "#7FAEDC", accent: "#4F7FB4" },
   },
   {
     name: "Bing Satellite",
@@ -76,19 +78,19 @@ export const TILE_LAYERS: TileLayerDef[] = [
       // 实测 .de 在密集区给到 z20（z21 起 404），但 z20 覆盖不全，留 19 不会出灰块
       maxZoom: 19,
     },
-    thumb: { bg: "#F2EFE9", road: "#FFFFFF", park: "#CDE8C9", water: "#AAD3DF", accent: "#D9C99A" },
+    thumb: { bg: "#F6EEDD", road: "#FFFDF6", park: "#D3DCAE", water: "#B8D4DE", accent: "#C29A55" },
   },
   {
     name: "Light",
     url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
     needsKey: true,
     options: {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> / <a href="https://carto.com/">CARTO</a>',
+      attribution: CARTO_ATTRIBUTION,
       maxZoom: 19,
       // 交给 Leaflet 轮询子域，不再把 {s} 手工换成字面量 "abc"（那只是蹭通配 DNS 能解析）
       subdomains: CARTO_SUB,
     },
-    thumb: { bg: "#F8F8F6", road: "#FFFFFF", park: "#E4F0E0", water: "#D6E8F2", accent: "#CCCCCC" },
+    thumb: { bg: "#F7F7F7", road: "#FFFFFF", park: "#E9E9E9", water: "#DDE3E8", accent: "#BFBFBF" },
   },
   {
     name: "Satellite",
@@ -119,18 +121,33 @@ export const TILE_LAYERS: TileLayerDef[] = [
       attribution: "&copy; 高德地图",
       maxZoom: 19,
     },
-    thumb: { bg: "#F2EFE9", road: "#FFFFFF", park: "#C9E8C5", water: "#A8D0E8", accent: "#F8B080" },
+    thumb: { bg: "#FAF1E7", road: "#FFFFFF", park: "#E8D8C2", water: "#BFD9E8", accent: "#EE7A22" },
   },
   {
     name: "Dark",
     url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
     needsKey: true,
     options: {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> / <a href="https://carto.com/">CARTO</a>',
+      attribution: CARTO_ATTRIBUTION,
       maxZoom: 19,
       subdomains: CARTO_SUB,
     },
     thumb: { bg: "#24262B", road: "#3A3D44", park: "#2C3430", water: "#1C2230", accent: "#565B66" },
+  },
+  {
+    // 追加在末尾而不是挨着 Light/Dark：访客侧 mapSkinName 存的是数组下标，
+    // 插在中间会把已有记忆静默指到别的图层上；追加则老下标全部不变。
+    name: "Voyager",
+    // Voyager 只挂在 rastertiles/ 下，根路径 /voyager/ 实测 404（Light/Dark 两种都通）
+    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    needsKey: true,
+    options: {
+      attribution: CARTO_ATTRIBUTION,
+      // 实测 z20 起返回 103 字节的空白瓦，真实覆盖到 19，与 Light/Dark 一致
+      maxZoom: 19,
+      subdomains: CARTO_SUB,
+    },
+    thumb: { bg: "#F3EEE3", road: "#FFFFFF", park: "#9FD89B", water: "#93CFE8", accent: "#E2703F" },
   },
 ];
 
@@ -263,7 +280,9 @@ const LAYER_STYLE = `
     position: absolute;
     top: 52px;
     right: 0;
-    max-width: 190px;
+    /* 必须是 width 而不是 max-width：包含块 .map-scheme 只有 48px 宽，
+       绝对定位的 shrink-to-fit 会把提示压成一条竖排窄条 */
+    width: 190px;
     padding: 4px 7px;
     border-radius: 6px;
     background: var(--color-deep-charcoal);
