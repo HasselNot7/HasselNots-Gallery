@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from database import get_db
+from defaults import DEFAULTS
 from routes.settings import get_setting
 
 router = APIRouter(prefix="/api/map-config", tags=["map-config"])
@@ -18,12 +19,14 @@ router = APIRouter(prefix="/api/map-config", tags=["map-config"])
 
 @router.get("")
 def get_map_config(db: Session = Depends(get_db)):
+    # 两个配置项空串没有意义（只有 key 允许为空），退到默认而不是把空值下发 ——
+    # 否则后台选择器会两个选项都不高亮，看着像没配置。
     # max-age=60 是吊销/轮换后的扩散上限：CDN 与浏览器最多缓存一分钟
     return JSONResponse(
         {
             "carto_api_key": get_setting(db, "carto_api_key"),
-            "osm_tile_source": get_setting(db, "osm_tile_source"),
-            "default_map_layer": get_setting(db, "default_map_layer"),
+            "osm_tile_source": get_setting(db, "osm_tile_source") or DEFAULTS["osm_tile_source"],
+            "default_map_layer": get_setting(db, "default_map_layer") or DEFAULTS["default_map_layer"],
         },
         headers={"Cache-Control": "public, max-age=60"},
     )
