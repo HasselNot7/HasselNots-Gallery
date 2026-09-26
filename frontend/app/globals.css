@@ -307,8 +307,8 @@
   position: relative;
   width: 280px;
   max-width: calc(100vw - 40px);
-  /* 行自带 3px 下内边距，补 7px 才与头部 10px 的上内边距对称；单张照片时尤其明显 */
-  --mp-pad-b: 7px;
+  /* 行自带 8px 下内边距，补 2px 才与头部 10px 的上内边距对称；单张照片时尤其明显 */
+  --mp-pad-b: 2px;
   padding-bottom: var(--mp-pad-b);
 }
 .mp-head {
@@ -337,9 +337,9 @@
   letter-spacing: 0.04em;
   color: var(--color-outline);
 }
-/* 3 行 × 72px：滚动区高度是行高的整数倍，初始与吸附后都不会露半张图 */
+/* 3 行 × 80px：滚动区高度是行高的整数倍，初始与吸附后都不会露半张图 */
 .mp-list {
-  max-height: 216px;
+  max-height: 240px;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
   overscroll-behavior: contain;
@@ -347,6 +347,12 @@
   scrollbar-width: none;
 }
 .mp-list::-webkit-scrollbar { display: none; }
+/* 矮屏下地图只有 max(320px, 46svh)，3 行弹窗（299.8px）放不下：Leaflet autoPan 扣掉
+   64+16 内边距后可用不足 300px 就放弃平移，弹窗底部会被 .leaflet-container 裁成半张图。
+   46svh ≥ 379.8 才装得下 3 行，即视口高 ≥ 826px；更矮就退成 2 整行（160 = 2×80）。 */
+@media (max-width: 1023px) and (max-height: 825px) {
+  .mp-list { max-height: 160px; }
+}
 .mp-list:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
@@ -356,8 +362,8 @@
   align-items: center;
   gap: 10px;
   box-sizing: border-box;
-  height: 72px;
-  padding: 3px 12px;
+  height: 80px;
+  padding: 8px 12px;
   scroll-snap-align: start;
   border-bottom: 1px solid var(--color-border-subtle);
   text-decoration: none;
