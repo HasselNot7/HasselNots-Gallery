@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Marker } from "leaflet";
-import { SearchField, Spinner } from "@heroui/react";
+import { Button, SearchField, Spinner } from "@heroui/react";
 import { attachLayerSwitcher, resolveLayerIndex } from "@/lib/mapLayers";
 import { DEFAULT_MAP_CONFIG, fetchMapConfig } from "@/lib/map-config";
 import { clusterBasePoints, type BasePoint, type Cluster } from "@/lib/mapCluster";
 import { yearColor, yearOf } from "@/lib/mapYears";
-import { searchPlaces, GeoResult } from "@/lib/geocode";
+import { searchPlaces, placeContext, GeoResult } from "@/lib/geocode";
 
 export interface MapMarker {
   id: number;
@@ -102,6 +102,8 @@ export default function MapClient({
   const [results, setResults] = useState<GeoResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  // 缩放按钮的可用区间随底图变（高德 18、OSM 19），所以 zoom 变化时一并重取上下限
+  const [zoomInfo, setZoomInfo] = useState({ z: 0, min: 0, max: 0 });
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -205,7 +207,7 @@ export default function MapClient({
       iconSize: [20, 20],
       iconAnchor: [10, 10],
     });
-    const label = [r.name, r.admin1, r.country].filter(Boolean).join(", ");
+    const label = [r.name, placeContext(r)].filter(Boolean).join(", ");
     map._searchMarker = L.marker([r.latitude, r.longitude], { icon }).addTo(map);
     // 与摄影标记的 popup 同一套 .mp 外壳与 maxWidth，两种弹窗风格不能一个定制一个没动
     map._searchMarker
@@ -237,8 +239,15 @@ export default function MapClient({
       const mapConfig = await fetchMapConfig().catch(() => DEFAULT_MAP_CONFIG);
       if (disposed) return;
 
-      map = L.map("leaflet-map").setView(center, markers.length === 1 ? 12 : 5);
+      map = L.map("leaflet-map", { zoomControl: false }).setView(
+        center,
+        markers.length === 1 ? 12 : 5
+      );
       mapRef.current = map;
+      const syncZoom = () =>
+        setZoomInfo({ z: map.getZoom(), min: map.getMinZoom(), max: map.getMaxZoom() });
+      syncZoom();
+      map.on("zoomend", syncZoom);
       LRef.current = L;
       markersByName.current = new Map();
       attachLayerSwitcher(map, L, resolveLayerIndex(mapConfig.default_map_layer), mapConfig);
@@ -428,12 +437,37 @@ export default function MapClient({
   return (
     <div className="relative w-full h-full">
       <div id="leaflet-map" className="w-full h-full" />
+      {/* Leaflet 自带的 +/- 是裸字形配浏览器默认按钮底，和站内其它 HeroUI 控件两套风格；
+          关掉 zoomControl，用两个 Button 叠在同一个位置，到上下限就置灰 */}
+      <div className="absolute left-3 top-3 z-[600] flex flex-col gap-1">
+        <Button
+          aria-label="放大"
+          size="sm"
+          variant="secondary"
+          isIconOnly
+          className="max-lg:h-11 max-lg:w-11 shadow-lg"
+          isDisabled={zoomInfo.z >= zoomInfo.max}
+          onPress={() => mapRef.current?.zoomIn()}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
+        </Button>
+        <Button
+          aria-label="缩小"
+          size="sm"
+          variant="secondary"
+          isIconOnly
+          className="max-lg:h-11 max-lg:w-11 shadow-lg"
+          isDisabled={zoomInfo.z <= zoomInfo.min}
+          onPress={() => mapRef.current?.zoomOut()}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>remove</span>
+        </Button>
+      </div>
       {/*
-        地名搜索框。<768px 改成通栏：左边缘让到缩放控件右缘（44px）之后，右留 12px。
-        原来居中 w-64 在 390px 上离缩放按钮只剩 23px 间隙，输入区也窄。
+        地名搜索框。<768px 改成通栏：左边缘让到缩放按钮右缘（12+44=56px）之后，再留 12px。
         768px 起恢复居中 —— 那一档底图切换器在右上角，通栏会和它叠在一起。
       */}
-      <div className="absolute top-3 left-14 right-3 z-[600] md:left-1/2 md:right-auto md:w-64 md:max-w-[80%] md:-translate-x-1/2">
+      <div className="absolute top-3 left-[68px] right-3 z-[600] md:left-1/2 md:right-auto md:w-64 md:max-w-[80%] md:-translate-x-1/2">
         <SearchField
           fullWidth
           value={query}
@@ -484,7 +518,7 @@ export default function MapClient({
                 >
                   <div className="text-body-md text-on-surface leading-tight">{r.name}</div>
                   <div className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                    {[r.admin1, r.country].filter(Boolean).join(", ")}
+                    {placeContext(r)}
                     <span className="ml-2">{r.latitude.toFixed(3)}, {r.longitude.toFixed(3)}</span>
                   </div>
                 </button>

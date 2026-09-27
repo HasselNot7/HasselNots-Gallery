@@ -1,4 +1,5 @@
 import { fetchPhoto, getPhotoImageUrl, Photo } from "@/lib/api-server";
+import { Separator } from "@heroui/react";
 import PhotoTags from "@/components/PhotoTags";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -51,15 +52,22 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
     );
   }
 
-  const exifFields = [
-    { label: "CAMERA", value: photo.camera_model },
-    { label: "LENS", value: photo.lens_model },
-    { label: "APERTURE", value: photo.aperture },
-    { label: "SHUTTER", value: photo.shutter_speed },
-    { label: "ISO", value: photo.iso },
-    { label: "FOCAL LENGTH", value: photo.focal_length },
-  ];
-  const hasExif = exifFields.some((f) => f.value);
+  // 曝光三要素并排成一行，其余各自成行：分组读数比 6 项平铺更像相机参数条
+  const exifGroups = [
+    [
+      { label: "CAMERA", value: photo.camera_model },
+      { label: "LENS", value: photo.lens_model },
+    ],
+    [
+      { label: "APERTURE", value: photo.aperture },
+      { label: "SHUTTER", value: photo.shutter_speed },
+      { label: "ISO", value: photo.iso },
+    ],
+    [{ label: "FOCAL LENGTH", value: photo.focal_length }],
+  ]
+    .map((g) => g.filter((f) => f.value))
+    .filter((g) => g.length > 0);
+  const hasExif = exifGroups.length > 0;
 
   const shootDate = photo.shoot_time
     ? new Date(photo.shoot_time).toLocaleDateString("en-US", {
@@ -110,20 +118,20 @@ export default async function PhotoDetailPage({ params }: { params: Promise<{ id
 
               {hasExif && (
                 <div className="bg-surface-container-low border border-border-subtle p-6 flex flex-col gap-4 rounded-md">
-                  <h2 className="text-body-md font-bold text-primary tracking-widest pb-4 border-b border-border-subtle mb-6">
+                  <h2 className="text-body-md font-bold text-primary tracking-widest" style={{ fontFamily: "var(--font-display)" }}>
                     EXIF &amp; TECHNICAL
                   </h2>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-metadata-sm text-on-surface">
-                    {exifFields.map(
-                      (f) =>
-                        f.value && (
-                          <div key={f.label} className="flex flex-col">
-                            <span className="text-outline text-[10px] mb-1">{f.label}</span>
-                            <span>{f.value}</span>
-                          </div>
-                        )
-                    )}
-                  </div>
+                  <Separator />
+                  {exifGroups.map((g) => (
+                    <div key={g[0].label} className="flex gap-x-4">
+                      {g.map((f) => (
+                        <div key={f.label} className="flex min-w-0 flex-1 flex-col gap-1.5">
+                          <span className="text-label-caps text-outline">{f.label}</span>
+                          <span className="text-metadata-sm break-words text-on-surface">{f.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
               )}
 

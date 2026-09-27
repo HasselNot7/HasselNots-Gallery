@@ -5,7 +5,7 @@ import { SearchField, Spinner } from "@heroui/react";
 
 import { attachLayerSwitcher, resolveLayerIndex } from "@/lib/mapLayers";
 import { DEFAULT_MAP_CONFIG, fetchMapConfig } from "@/lib/map-config";
-import { searchPlaces, GeoResult } from "@/lib/geocode";
+import { searchPlaces, placeContext, GeoResult } from "@/lib/geocode";
 
 export default function LocationPicker({
   initial,
@@ -164,7 +164,7 @@ export default function LocationPicker({
                 >
                   <div className="text-body-md text-on-surface leading-tight">{r.name}</div>
                   <div className="text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
-                    {[r.admin1, r.country].filter(Boolean).join(", ")}
+                    {placeContext(r)}
                   </div>
                 </button>
               ))
