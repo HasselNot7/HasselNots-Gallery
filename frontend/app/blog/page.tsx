@@ -44,7 +44,7 @@ export default async function BlogPage() {
               <Reveal key={a.id} delay={(i % 4) * 70}>
                 <a
                   href={`/blog/${a.slug}`}
-                  className="group block border border-border-subtle p-6 md:p-8 bg-surface hover:border-primary/40 transition-colors duration-300"
+                  className="group block border border-border-subtle rounded-lg p-6 md:p-8 bg-surface hover:border-primary/40 transition-colors duration-300"
                 >
                   <div className="flex items-center justify-between mb-3 text-metadata-sm text-outline" style={{ fontFamily: "'JetBrains Mono', 'Noto Serif SC', monospace" }}>
                     <span>{formatDate(a.created_at)}</span>
