@@ -385,8 +385,6 @@ const MORE_TABS: NavItem[] = [
   { id: "users", label: "管理员", icon: "group" },
 ];
 
-const ALL_TABS: NavItem[] = [...PRIMARY_TABS, ...MORE_TABS];
-
 /**
  * 列表列宽。标题是唯一的弹性列（flex-1 + min-w-0，否则 grid/flex 的 min-width:auto
  * 会让长标题撑破轨道、truncate 失效），其余列固定宽度不随容器拉伸。
@@ -1680,15 +1678,16 @@ export default function AdminPage() {
       <Toast.Provider placement="top" />
       <Navbar
         leadingSlot={
+          /* 只留图标：带上当前页名会撑成一块药丸，把站点名往右顶，而页内标题已经写了同一句 */
           <Button
+            isIconOnly
             size="sm"
             variant="ghost"
-            className="lg:hidden -ml-1 mr-1 text-primary"
+            className="lg:hidden ml-1 mr-1 text-primary"
             onPress={navDrawerState.open}
             aria-label="打开功能导航"
           >
             <span className="material-symbols-outlined text-[22px]">menu</span>
-            <span className="font-medium">{ALL_TABS.find((t) => t.id === activeTab)?.label}</span>
           </Button>
         }
       />
