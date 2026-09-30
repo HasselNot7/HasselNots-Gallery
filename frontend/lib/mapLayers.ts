@@ -1,4 +1,5 @@
 import { DEFAULT_MAP_CONFIG, type MapConfig } from "./map-config";
+import type { Datum } from "./coords";
 
 export interface TileLayerDef {
   name: string;
@@ -10,6 +11,8 @@ export interface TileLayerDef {
   needsKey?: boolean;
   /** 该图层的瓦片主机由站点配置决定，url/options 里的值只是默认那一档 */
   hostFromConfig?: boolean;
+  /** 瓦片用的坐标基准，缺省 wgs84。高德系是 gcj02，落点不重投影会在境内偏出几百米 */
+  datum?: Datum;
   /** 缩略图配色：迷你地图 SVG 预览 */
   thumb?: { bg: string; road: string; park?: string; water?: string; accent?: string };
 }
@@ -104,6 +107,7 @@ export const TILE_LAYERS: TileLayerDef[] = [
   {
     name: "Hybrid",
     url: gaodeSat(GAODE_SAT_SUB),
+    datum: "gcj02",
     options: {
       attribution: "&copy; 高德地图",
       maxZoom: 19,
@@ -117,6 +121,7 @@ export const TILE_LAYERS: TileLayerDef[] = [
   {
     name: "Gaode",
     url: `https://${GAODE_SUB[Math.floor(Math.random() * GAODE_SUB.length)]}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}`,
+    datum: "gcj02",
     options: {
       attribution: "&copy; 高德地图",
       maxZoom: 19,
@@ -336,8 +341,12 @@ export function attachLayerSwitcher(
   map: any,
   L: any,
   initialIndex = 0,
-  config: MapConfig = DEFAULT_MAP_CONFIG
+  config: MapConfig = DEFAULT_MAP_CONFIG,
+  /** 当前底图的坐标基准变化时回调（含建图时的首次）。访客的 localStorage 记忆会改初始档，
+      所以基准只能由这里报出来，外面自己算初始下标算不准 */
+  onDatumChange?: (datum: Datum) => void
 ) {
+  const datumOf = (i: number): Datum => TILE_LAYERS[i]?.datum ?? "wgs84";
   const apiKey = config.carto_api_key.trim();
   const osmHost = osmHostOf(config.osm_tile_source);
   const groups = TILE_LAYERS.map((def) => {
@@ -377,6 +386,7 @@ export function attachLayerSwitcher(
     // ignore
   }
   groups[active].forEach((l: any) => l.addTo(map));
+  onDatumChange?.(datumOf(active));
 
   const styleEl = document.createElement("style");
   styleEl.textContent = LAYER_STYLE;
@@ -421,6 +431,7 @@ export function attachLayerSwitcher(
         groups[active].forEach((l: any) => map.removeLayer(l));
         groups[i].forEach((l: any) => l.addTo(map));
         active = i;
+        onDatumChange?.(datumOf(i));
         currentBtn.style.setProperty("--thumb", `url("${schemeThumb(def.thumb)}")`);
         currentBtn.textContent = def.name;
         applyKeyHint(i);

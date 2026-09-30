@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Marker } from "leaflet";
 import { Button, SearchField, Spinner } from "@heroui/react";
 import { attachLayerSwitcher, resolveLayerIndex } from "@/lib/mapLayers";
+import { fromWgs, toWgs, type Datum } from "@/lib/coords";
 import { DEFAULT_MAP_CONFIG, fetchMapConfig } from "@/lib/map-config";
 import { clusterBasePoints, type BasePoint, type Cluster } from "@/lib/mapCluster";
 import { yearColor, yearOf } from "@/lib/mapYears";
@@ -79,6 +80,8 @@ export default function MapClient({
   const markersByName = useRef<Map<string, RegisteredMarker[]>>(new Map());
   // 地点名 -> 该地点所有照片的加权中心，flyTo 用它，避免受聚合形态影响
   const centroidByName = useRef<Map<string, [number, number]>>(new Map());
+  // 当前底图的坐标基准。数据侧永远是 WGS-84，只有落到图上这一刻才按基准投出去
+  const datumRef = useRef<Datum>("wgs84");
   const activeRef = useRef<string | null>(null);
   const hoverRef = useRef<string | null>(null);
   // onSelectLocation 每次渲染同步，避免标记回调拿到旧闭包
@@ -166,7 +169,7 @@ export default function MapClient({
     const map = mapRef.current;
     const at = centroidByName.current.get(focusRequest.name);
     if (!map || !at) return;
-    map.flyTo(at, Math.max(map.getZoom(), 9), { duration: 0.9 });
+    map.flyTo(fromWgs(at[0], at[1], datumRef.current), Math.max(map.getZoom(), 9), { duration: 0.9 });
   }, [focusRequest]);
 
   const handleSearch = (q: string) => {
@@ -193,7 +196,9 @@ export default function MapClient({
   const jumpTo = (r: GeoResult) => {
     const map = mapRef.current;
     if (!map) return;
-    map.flyTo([r.latitude, r.longitude], 10, { duration: 1.2 });
+    // 搜索结果是 WGS-84，落点要按底图基准投；弹窗里那行数字仍给真实坐标
+    const at = fromWgs(r.latitude, r.longitude, datumRef.current);
+    map.flyTo(at, 10, { duration: 1.2 });
     setResults([]);
     setShowResults(false);
     setQuery(r.name);
@@ -208,7 +213,7 @@ export default function MapClient({
       iconAnchor: [10, 10],
     });
     const label = [r.name, placeContext(r)].filter(Boolean).join(", ");
-    map._searchMarker = L.marker([r.latitude, r.longitude], { icon }).addTo(map);
+    map._searchMarker = L.marker(at, { icon }).addTo(map);
     // 与摄影标记的 popup 同一套 .mp 外壳与 maxWidth，两种弹窗风格不能一个定制一个没动
     map._searchMarker
       .bindPopup(
@@ -250,7 +255,28 @@ export default function MapClient({
       map.on("zoomend", syncZoom);
       LRef.current = L;
       markersByName.current = new Map();
-      attachLayerSwitcher(map, L, resolveLayerIndex(mapConfig.default_map_layer), mapConfig);
+      /**
+       * 切到高德系底图时把落点整体投到 GCJ-02，切回来还原：数据侧永远存 WGS-84，
+       * 只有画到瓦片上这一步跟着基准走。视图中心也换一次基准，否则切底图会看到
+       * 整幅画面平移几百米，用户以为标记跳了位。
+       */
+      let markersReady = false;
+      const applyDatum = (next: Datum) => {
+        const prev = datumRef.current;
+        datumRef.current = next;
+        if (prev === next || !markersReady) return;
+        const c = map.getCenter();
+        const [wLat, wLng] = toWgs(c.lat, c.lng, prev);
+        map.setView(fromWgs(wLat, wLng, next), map.getZoom(), { animate: false });
+        render();
+      };
+      attachLayerSwitcher(
+        map,
+        L,
+        resolveLayerIndex(mapConfig.default_map_layer),
+        mapConfig,
+        applyDatum
+      );
 
       const bounds: [number, number][] = [];
 
@@ -268,7 +294,7 @@ export default function MapClient({
       groups.forEach((group) => {
         const lat = group[0].latitude;
         const lng = group[0].longitude;
-        bounds.push([lat, lng]);
+        bounds.push(fromWgs(lat, lng, datumRef.current));
 
         // 取组内最新拍摄年份作为标记颜色
         let year: number | null = null;
@@ -299,6 +325,10 @@ export default function MapClient({
       );
 
       const popupHtml = (c: Cluster<MapMarker>) => {
+        // 弹窗里报 GPS 原始坐标，不跟着底图基准走：换张底图不该改变一个地点的经纬度
+        const n = c.photos.length || 1;
+        const wLat = c.photos.reduce((s, p) => s + p.latitude, 0) / n;
+        const wLng = c.photos.reduce((s, p) => s + p.longitude, 0) / n;
         const rows = c.photos
           .map(
             (m, i) => `<a class="mp-row" href="/photo/${m.id}">
@@ -315,7 +345,7 @@ export default function MapClient({
         return `<div class="mp">
             <div class="mp-head">
               <div class="mp-title">${esc(c.names[0] ?? "未标注地点")}<span class="mp-count">${c.count} 张</span></div>
-              <div class="mp-coord">${c.lat.toFixed(2)}, ${c.lng.toFixed(2)}</div>
+              <div class="mp-coord">${wLat.toFixed(2)}, ${wLng.toFixed(2)}</div>
             </div>
             ${list}
           </div>`;
@@ -337,7 +367,12 @@ export default function MapClient({
         markersByName.current = new Map();
 
         const zoom = map.getZoom();
-        clusterBasePoints((la, ln, z) => map.project([la, ln], z), basePoints, zoom).forEach((c) => {
+        // 聚合按屏幕距离合并，喂给它的必须是当前基准下的落点，否则在高德图上簇会错开
+        const plotted = basePoints.map((p) => {
+          const [la, ln] = fromWgs(p.lat, p.lng, datumRef.current);
+          return { ...p, lat: la, lng: ln };
+        });
+        clusterBasePoints((la, ln, z) => map.project([la, ln], z), plotted, zoom).forEach((c) => {
           const marker = L.marker([c.lat, c.lng], { icon: L.divIcon(iconSpec(c.color, c.count, "none")) }).addTo(map);
           // 点开弹窗后再点一次关，浏览器算 dblclick，地图于是缩放一级。Leaflet 在
           // _fireDOMEvent 里见到 originalEvent._stopped 就不再往地图冒，doubleClickZoom
@@ -364,7 +399,11 @@ export default function MapClient({
           } else {
             marker.on("click", () => {
               selectRef.current?.(null);
-              const b = L.latLngBounds(c.photos.map((p) => [p.latitude, p.longitude] as [number, number]));
+              const b = L.latLngBounds(
+                c.photos.map(
+                  (p) => fromWgs(p.latitude, p.longitude, datumRef.current) as [number, number]
+                )
+              );
               // 至少放大一级；上限 +3 级，避免退化边界（同坐标多地点）一步跳到最大缩放
               const fit = map.getBoundsZoom(b);
               const target = Math.min(zoom + 3, map.getMaxZoom(), Math.max(zoom + 1, fit));
@@ -414,6 +453,7 @@ export default function MapClient({
 
       // 建完立刻按最终 zoom 画一次（fitBounds 之后再由 zoomend 重算）
       render();
+      markersReady = true;
 
       // Ensure correct sizing after mount (mobile layouts, late CSS, etc.)
       setTimeout(() => {
@@ -435,7 +475,9 @@ export default function MapClient({
   }, [markers, center, applyEmphasis, applyKeyboard]);
 
   return (
-    <div className="relative w-full h-full">
+    /* isolate：Leaflet 给 .leaflet-top/.leaflet-bottom 的 z-index 是 1000，容器不自成层叠
+       上下文就会盖掉 sticky z-50 的导航栏；图层选择器的遮罩是 append 到 body 的，不受这里影响 */
+    <div className="relative isolate w-full h-full">
       <div id="leaflet-map" className="w-full h-full" />
       {/* Leaflet 自带的 +/- 是裸字形配浏览器默认按钮底，和站内其它 HeroUI 控件两套风格；
           关掉 zoomControl，用两个 Button 叠在同一个位置，到上下限就置灰 */}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { SearchField, Spinner } from "@heroui/react";
 
 import { attachLayerSwitcher, resolveLayerIndex } from "@/lib/mapLayers";
+import { fromWgs, toWgs, type Datum } from "@/lib/coords";
 import { DEFAULT_MAP_CONFIG, fetchMapConfig } from "@/lib/map-config";
 import { searchPlaces, placeContext, GeoResult } from "@/lib/geocode";
 
@@ -17,6 +18,8 @@ export default function LocationPicker({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  // 当前底图基准：存库的坐标永远是 WGS-84，只有画到瓦片上这一步跟着基准走
+  const datumRef = useRef<Datum>("wgs84");
   const [picked, setPicked] = useState<[number, number] | null>(initial);
 
   // 地图只在挂载时按 initial 定位一次，之后 coords 变化不应重建地图，
@@ -57,8 +60,10 @@ export default function LocationPicker({
   const jumpTo = (r: GeoResult) => {
     const map = mapRef.current;
     if (!map) return;
-    map.flyTo([r.latitude, r.longitude], 12, { duration: 1.2 });
-    if (markerRef.current) markerRef.current.setLatLng([r.latitude, r.longitude]);
+    // 搜索结果是 WGS-84：存它本身，但落点与视野按底图基准投出去
+    const at = fromWgs(r.latitude, r.longitude, datumRef.current);
+    map.flyTo(at, 12, { duration: 1.2 });
+    if (markerRef.current) markerRef.current.setLatLng(at);
     setPicked([r.latitude, r.longitude]);
     onPick([r.latitude, r.longitude]);
     setResults([]);
@@ -80,7 +85,31 @@ export default function LocationPicker({
       const start: [number, number] = initialRef.current ?? [35.8617, 104.1954]; // China default
       map = L.map(el).setView(start, initialRef.current ? 12 : 5);
       mapRef.current = map;
-      attachLayerSwitcher(map, L, resolveLayerIndex(mapConfig.default_map_layer), mapConfig);
+      /**
+       * 换底图时把视野与选点一起搬到位：两者存的都必须是同一块地面的 WGS-84 坐标，
+       * 不能因为管理员当时开着高德就把火星坐标写进库。
+       */
+      const applyDatum = (next: Datum) => {
+        const prev = datumRef.current;
+        datumRef.current = next;
+        if (prev === next) return;
+        const c = map.getCenter();
+        const [wLat, wLng] = toWgs(c.lat, c.lng, prev);
+        map.setView(fromWgs(wLat, wLng, next), map.getZoom(), { animate: false });
+        const m = markerRef.current;
+        if (m) {
+          const p = m.getLatLng();
+          const [pLat, pLng] = toWgs(p.lat, p.lng, prev);
+          m.setLatLng(fromWgs(pLat, pLng, next));
+        }
+      };
+      attachLayerSwitcher(
+        map,
+        L,
+        resolveLayerIndex(mapConfig.default_map_layer),
+        mapConfig,
+        applyDatum
+      );
 
       const icon = L.divIcon({
         className: "custom-marker",
@@ -90,12 +119,16 @@ export default function LocationPicker({
       });
 
       const update = (latlng: any) => {
-        const c: [number, number] = [latlng.lat, latlng.lng];
+        // 从瓦片上读到的点先按当前基准还原成 WGS-84，再交给外面写库
+        const c = toWgs(latlng.lat, latlng.lng, datumRef.current) as [number, number];
         setPicked(c);
         onPickRef.current(c);
       };
 
-      markerRef.current = L.marker(initialRef.current ?? start, { icon, draggable: true }).addTo(map);
+      const [sLat, sLng] = initialRef.current ?? start;
+      markerRef.current = L
+        .marker(fromWgs(sLat, sLng, datumRef.current), { icon, draggable: true })
+        .addTo(map);
       markerRef.current.on("dragend", (e: any) => update(e.target.getLatLng()));
       map.on("click", (e: any) => {
         markerRef.current.setLatLng(e.latlng);
@@ -112,7 +145,8 @@ export default function LocationPicker({
   }, []);
 
   return (
-    <div className="relative w-full h-full">
+    /* 与 MapClient 同一条理由：Leaflet 控件容器的 z-index 是 1000，不隔开会盖住导航栏 */
+    <div className="relative isolate w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
 
       {/* 地名搜索框 */}
