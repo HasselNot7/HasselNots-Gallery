@@ -281,8 +281,10 @@ export default function MapExplorer({
           {/* 窄屏：地图按视口比例给高度，并留 320px 下限防止矮屏手机被压成一条；
               列表跟着铺在文档流里，整页只有页面自身一个滚动容器。
               用 svh 而不是 vh：iOS Safari 地址栏收放时 vh 按大视口算，滚动瞬间地图会跳一次高度。
+              62svh 是按「地图底边之上还要留一整条地点」倒推的：412x915 上地图 567px，
+              下面剩 224px 刚好露出北京那一组缩略图，既以图为主又不至于看不出还能往下滚。
               lg 起恢复「锁视口 + 列表内滚」：下面那套 lg:* 原样接管，一个像素都不受移动端影响。 */}
-          <div className="relative h-[46svh] min-h-[320px] lg:h-full lg:min-h-0 lg:flex-1">
+          <div className="relative h-[62svh] min-h-[320px] lg:h-full lg:min-h-0 lg:flex-1">
             {mapDecorations}
 
             {/*
