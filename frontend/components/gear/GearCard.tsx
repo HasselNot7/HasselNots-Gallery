@@ -5,13 +5,14 @@ import { BrandChip, Sparkline } from "@/components/gear/Charts";
 
 const MONO = "'JetBrains Mono', 'Noto Serif SC', monospace";
 
-/** 只用在项目里实测渲染得出来的连字名：写错会把 "query_stats" 这种字形名当文字显示出来 */
+/** 行首图标。连字名必须 aria-hidden，否则读屏会念出 "photo_library" 这种字形名；
+    与 11px 数字同基线时图标墨迹中心略高，下移 1.1px 补回（沿用照片详情页的量法） */
 function TileIcon({ name }: { name: string }) {
   return (
     <span
       aria-hidden="true"
       className="material-symbols-outlined shrink-0 text-outline"
-      style={{ fontSize: 12, transform: "translateY(1.25px)" }}
+      style={{ fontSize: 11, transform: "translateY(1.1px)" }}
     >
       {name}
     </span>
@@ -21,13 +22,13 @@ function TileIcon({ name }: { name: string }) {
 function Tile({ icon, label, value, hint }: { icon: string; label: string; value: string; hint?: string }) {
   if (!value) return null;
   return (
-    <div className="flex min-w-0 items-baseline gap-1.5 rounded-lg border border-border-subtle px-2 py-1.5">
+    <div className="flex items-baseline gap-1 rounded-lg border border-border-subtle px-1.5 py-1">
       <TileIcon name={icon} />
       <span className="sr-only">{label}</span>
       <span
-        className="min-w-0 truncate text-metadata-sm text-on-surface"
+        className="text-metadata-sm text-on-surface"
         title={hint || `${label} ${value}`}
-        style={{ fontFamily: MONO }}
+        style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 0 }}
       >
         {value}
       </span>
@@ -94,7 +95,7 @@ export default function GearCard({ gear }: { gear: GearUsage }) {
         <div className="min-w-0">
           <h3
             className="truncate text-headline-mobile text-primary"
-            style={{ fontFamily: "var(--font-display)", fontSize: 20 }}
+            style={{ fontFamily: "var(--font-display)", fontSize: 18 }}
             title={name}
           >
             {name}
