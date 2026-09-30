@@ -219,11 +219,21 @@ curl -s -o /dev/null -D- --http2 -w 'http_version=%{http_version}\n' \
       `ADMIN_PASSWORD` 重跑 `init_db.py` —— 用户已存在时它不会重置密码）
 - [ ] 上传一张测试照片 → 本地压缩 → 原图+缩略图进入 R2 → 本地文件被删除
 
+### 拉新代码后要不要动数据库
+
+`Base.metadata.create_all` 只建新表，**不会**给已存在的表加列，所以拉完代码要分情况：
+
+- 只加新表（例如 `gear` 器材表）→ 重启后端就会自动建表。
+- 给老表加列 → 必须跑该功能的迁移脚本，否则后端起得来、一查就 500。器材功能对应
+  `python migrate_gear.py`（幂等，可反复执行）：给 `photos` 补 `camera_make` / `lens_make`
+  两列、按型号串回填品牌、按照片里出现过的型号建初始器材条目。跑之前先备份数据库。
+
 ## 9. 常见问题
 
 | 问题 | 解决 |
 |---|---|
 | 图片 404 / 未重定向 | 检查 `.env` 的 R2 配置；确认 DB 路径是 `r2://` 开头 |
+| 器材页品牌全是「未记录」 | 没跑 `migrate_gear.py`，`photos.camera_make` 这一列还不存在或全是空 |
 | 上传报错 EXIF 注入失败 | 确认已装 `piexif`（requirements.txt 含） |
 | 中文乱码 / 字体问题 | Google Fonts 在部分网络被墙，可改用国内 CDN 或自托管字体文件 |
 | 地图瓦片加载慢 | 底图切换器可选高德（国内快）；OSM/CARTO 海外瓦片需网络可达 |

@@ -35,7 +35,9 @@ class PhotoOut(BaseModel):
     description: str
     shoot_time: Optional[datetime] = None
     camera_model: str
+    camera_make: str = ""
     lens_model: str
+    lens_make: str = ""
     focal_length: str
     aperture: str
     shutter_speed: str
@@ -171,6 +173,44 @@ class CommentCreate(BaseModel):
     article_id: Optional[int] = None
     author: str
     content: str
+
+
+class GearOut(BaseModel):
+    id: int
+    kind: str
+    brand: str = ""
+    model: str = ""
+    label: str = ""
+    note: str = ""
+    focal_range: str = ""
+    max_aperture: str = ""
+    # 只给「有没有图」，image_path / image_full_path 是内部存储键（r2://…），不出现在响应里
+    has_image: bool = False
+    has_full_image: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class GearCreate(BaseModel):
+    kind: str = "camera"
+    model: str
+    brand: str = ""
+    label: str = ""
+    note: str = ""
+    focal_range: str = ""
+    max_aperture: str = ""
+
+
+class GearUpdate(BaseModel):
+    kind: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    label: Optional[str] = None
+    note: Optional[str] = None
+    focal_range: Optional[str] = None
+    max_aperture: Optional[str] = None
 
 
 class SettingsOut(BaseModel):

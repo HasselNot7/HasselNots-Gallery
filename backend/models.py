@@ -26,7 +26,11 @@ class Photo(Base):
 
     shoot_time = Column(DateTime, default=None)
     camera_model = Column(String, default="")
+    # Make / LensMake 单独存列：型号串里品牌常被厂商吃掉
+    # （ILCE-7CM2 看不出是 Sony，85mm F1.4 DG DN | Art 020 看不出是适马）
+    camera_make = Column(String, default="")
     lens_model = Column(String, default="")
+    lens_make = Column(String, default="")
     focal_length = Column(String, default="")
     aperture = Column(String, default="")
     shutter_speed = Column(String, default="")
@@ -49,6 +53,27 @@ class Photo(Base):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     tags = Column(String, default="")
     album_id = Column(Integer, default=None)
+
+
+class Gear(Base):
+    """一条器材（机身或镜头）。照片表里的 camera_model/lens_model 是自由文本，
+    这里把它升级成有封面、有品牌、有备注的实体：model 字段存 EXIF 原样型号串，
+    与照片按字符串对上（后台从 /api/gear/detected 的实测值里挑，不手打，避免对不上）。"""
+
+    __tablename__ = "gear"
+
+    id = Column(Integer, primary_key=True, index=True)
+    kind = Column(String, default="camera")  # camera | lens
+    brand = Column(String, default="")       # Sony / Sigma / Fujifilm…
+    model = Column(String, default="", index=True)  # EXIF Model / LensModel 原样
+    label = Column(String, default="")       # 展示名，留空退到 brand + model
+    note = Column(String, default="")        # 心得/规格备注
+    focal_range = Column(String, default="")  # 镜头固有焦段，来自 0xA432 LensSpecification
+    max_aperture = Column(String, default="")  # 最大光圈 F2.8 之类
+    image_path = Column(String, default="")  # 展示图：gear/<uuid>-d.jpg，长边 1000px 的 JPEG
+    image_full_path = Column(String, default="")  # 原图：gear/<uuid><ext>，字节原样留档
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
 
 class Album(Base):
