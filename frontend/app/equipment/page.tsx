@@ -30,8 +30,9 @@ export default async function EquipmentPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      {/* 图表要横向空间，原来的 max-w-4xl 会把环形图和柱图挤成一条 */}
-      <main className="flex-1 px-4 md:px-grid-margin py-12 max-md:py-8 max-w-6xl mx-auto w-full">
+      {/* 图表要横向空间，原来的 max-w-4xl 会把环形图和柱图挤成一条；
+          7xl 与相册、照片详情页同宽，卡片一行仍是四张，只是每张宽 32px */}
+      <main className="flex-1 px-4 md:px-grid-margin py-12 max-md:py-8 max-w-7xl mx-auto w-full">
         {/* 标题与统计行都删了：导航栏已点亮「器材」，数字总览那排卡片里都有 */}
         {hasData ? (
           <EquipmentStatsView stats={stats} />
