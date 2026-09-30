@@ -28,6 +28,8 @@ GEAR_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "
 GEAR_KEY_PREFIX = "gear/"
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 COVER_SIZE = (1000, 1000)
+JPEG_QUALITY = 88
+WEBP_QUALITY = 90
 KINDS = ("camera", "lens")
 
 
@@ -55,6 +57,68 @@ def _remove_image(gear: Gear):
     _drop(gear.image_full_path)
     gear.image_path = ""
     gear.image_full_path = ""
+
+
+def _render_display(contents: bytes) -> tuple[bytes, str]:
+    """把原图字节转成展示图，返回 (字节, 扩展名)。
+
+    有透明的源必须走 WebP：convert('RGB') 会把 alpha 直接压到黑底上，JPEG 又根本没有
+    透明通道 —— 镜头产品图基本都是透明底 PNG，存成 JPEG 就变成一块黑。
+    不透明的仍走 JPEG q88，同画质下体积小得多。"""
+    img = Image.open(BytesIO(contents))
+    img = ImageOps.exif_transpose(img)
+    img.thumbnail(COVER_SIZE, Image.LANCZOS)
+    has_alpha = False
+    if img.mode != "RGB":
+        try:
+            has_alpha = img.convert("RGBA").getchannel("A").getextrema()[0] < 255
+        except Exception:
+            has_alpha = False
+    buf = BytesIO()
+    if has_alpha:
+        img.convert("RGBA").save(buf, format="WEBP", quality=WEBP_QUALITY, method=4)
+        return buf.getvalue(), ".webp"
+    img.convert("RGB").save(buf, format="JPEG", quality=JPEG_QUALITY)
+    return buf.getvalue(), ".jpg"
+
+
+def _regenerate_display(db: Session, gear: Gear) -> bool:
+    """用存着的原图重算展示图（换尺寸策略或修了透明底问题后不必让后台重传一遍）。
+    没有原图的行没法重算，返回 False 让调用方跳过。"""
+    if not gear.image_full_path:
+        return False
+    if storage.is_remote(gear.image_full_path):
+        client = storage.get_client()
+        if client is None:
+            return False
+        key = gear.image_full_path[len(storage.R2_PREFIX):]
+        contents = client.get_object(Bucket=storage.BUCKET, Key=key)["Body"].read()
+    else:
+        path = _local_path(gear.image_full_path)
+        if not os.path.exists(path):
+            return False
+        contents = open(path, "rb").read()
+    try:
+        display, ext = _render_display(contents)
+    except Exception:
+        return False
+
+    os.makedirs(GEAR_DIR, exist_ok=True)
+    name = f"{uuid.uuid4().hex}-d{ext}"
+    local = os.path.join(GEAR_DIR, name)
+    with open(local, "wb") as f:
+        f.write(display)
+    old = gear.image_path
+    remote = storage.upload_file(local, f"{GEAR_KEY_PREFIX}{name}")
+    if remote:
+        if os.path.exists(local):
+            os.remove(local)
+        gear.image_path = remote
+    else:
+        gear.image_path = name
+    db.commit()
+    _drop(old)
+    return True
 
 
 def _to_out(gear: Gear) -> GearOut:
@@ -256,10 +320,10 @@ def upload_gear_image(
     db: Session = Depends(get_db),
     current_user=Depends(require_admin),
 ):
-    """一次上传存两份：原图字节原样留档（gear/<uuid><ext>），另存一张
-    长边 1000px、q88 的 JPEG 当展示图（gear/<uuid>-d.jpg，同一个 uuid 好认）。
-    卡片位实测只要 690px（345 CSS px × 2 倍屏），1000px 留足余量；
-    后台传的多是相机产品图，动辄好几 MB，直接展示既慢又费流量。"""
+    """一次上传存两份：原图字节原样留档（gear/<uuid><ext>），另存一张长边 1000px 的
+    展示图（gear/<uuid>-d.jpg 或 -d.webp）。卡片位实测只要 690px（345 CSS px × 2 倍屏），
+    1000px 留足余量；后台传的多是相机产品图，动辄好几 MB，直接展示既慢又费流量。
+    透明底的产品图展示图会存成 WebP —— JPEG 没有 alpha，压出来就是一块黑底。"""
     gear = db.query(Gear).filter(Gear.id == gear_id).first()
     if gear is None:
         raise HTTPException(status_code=404, detail="Gear not found")
@@ -271,20 +335,19 @@ def upload_gear_image(
     if len(contents) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="Image too large (max 10MB)")
     try:
-        img = Image.open(BytesIO(contents))
-        img = ImageOps.exif_transpose(img)
-        img.thumbnail(COVER_SIZE, Image.LANCZOS)
+        display, disp_ext = _render_display(contents)
     except Exception:
         raise HTTPException(status_code=400, detail="Cannot decode image")
 
     os.makedirs(GEAR_DIR, exist_ok=True)
     stem = uuid.uuid4().hex
-    full_name, disp_name = f"{stem}{ext}", f"{stem}-d.jpg"
+    full_name, disp_name = f"{stem}{ext}", f"{stem}-d{disp_ext}"
     local_full = os.path.join(GEAR_DIR, full_name)
     local_disp = os.path.join(GEAR_DIR, disp_name)
     with open(local_full, "wb") as f:
         f.write(contents)
-    img.convert("RGB").save(local_disp, format="JPEG", quality=88)
+    with open(local_disp, "wb") as f:
+        f.write(display)
 
     old_full, old_disp = gear.image_full_path, gear.image_path
     remote_full = storage.upload_file(local_full, f"{GEAR_KEY_PREFIX}{full_name}")
