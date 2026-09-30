@@ -13,8 +13,13 @@ export default async function EquipmentPage() {
     lenses: [],
     focal_lengths: [],
     apertures: [],
-    isos: [],
-    shutter_speeds: [],
+    iso_ranges: [],
+    shutter_ranges: [],
+    camera_brands: [],
+    lens_brands: [],
+    yearly: [],
+    months: [],
+    gear: [],
   };
   try {
     stats = await fetchEquipmentStats();
@@ -23,12 +28,18 @@ export default async function EquipmentPage() {
   }
 
   const hasData =
-    stats.cameras.length + stats.lenses.length + stats.focal_lengths.length > 0;
+    stats.gear.length + stats.cameras.length + stats.lenses.length + stats.focal_lengths.length > 0;
+  const brands = new Set(
+    [...stats.camera_brands, ...stats.lens_brands]
+      .filter((b) => b.name !== "未记录")
+      .map((b) => b.name),
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 px-4 md:px-grid-margin py-12 max-md:py-8 max-w-4xl mx-auto w-full">
+      {/* 图表要横向空间，原来的 max-w-4xl 会把环形图和柱图挤成一条 */}
+      <main className="flex-1 px-4 md:px-grid-margin py-12 max-md:py-8 max-w-6xl mx-auto w-full">
         <div className="mb-10 max-md:mb-6">
           <h1
             className="text-headline-lg md:text-display-lg text-primary mb-2 uppercase"
@@ -37,7 +48,8 @@ export default async function EquipmentPage() {
             器材
           </h1>
           <span className="text-metadata-sm text-outline" style={{ fontFamily: MONO }}>
-            <CountUp to={stats.total_photos} duration={1.2} className="tabular-nums" /> 张照片 · EXIF 统计
+            <CountUp to={stats.total_photos} duration={1.2} className="tabular-nums" /> 张照片 ·{" "}
+            {stats.gear.length} 件器材 · {brands.size} 个品牌 · EXIF 统计
           </span>
         </div>
 

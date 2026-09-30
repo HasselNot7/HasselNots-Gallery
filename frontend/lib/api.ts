@@ -102,6 +102,43 @@ export function getPhotoImageUrl(id: number, thumb: boolean = false, token?: str
   return token ? `${base}?token=${encodeURIComponent(token)}` : base;
 }
 
+/** 后台器材表的一行（GET /api/gear）。封面只给 has_image，存储键不出后端。 */
+export interface GearItem {
+  id: number;
+  kind: "camera" | "lens";
+  brand: string;
+  model: string;
+  label: string;
+  note: string;
+  focal_range: string;
+  max_aperture: string;
+  has_image: boolean;
+  has_full_image: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** GET /api/gear/detected 的一行：照片里真实出现过的型号与建议值 */
+export interface DetectedGear {
+  kind: "camera" | "lens";
+  model: string;
+  photos: number;
+  known: boolean;
+  gear_id: number | null;
+  suggested_brand: string;
+  suggested_focal_range: string;
+  suggested_max_aperture: string;
+}
+
+export function getGearImageUrl(id: number): string {
+  return `${API_BASE}/api/gear/${id}/image`;
+}
+
+/** 原图（字节原样存档那张），后台缩略图点它 */
+export function getGearFullImageUrl(id: number): string {
+  return `${API_BASE}/api/gear/${id}/image/full`;
+}
+
 export async function fetchPhotos(publishedOnly: boolean = true): Promise<Photo[]> {
   const all: Photo[] = [];
   const pageSize = 100;

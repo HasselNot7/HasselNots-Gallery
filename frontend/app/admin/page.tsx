@@ -63,6 +63,7 @@ import { DEFAULT_SETTINGS, type Article, type SiteSettings } from "@/lib/api-ser
 import { FALLBACK_LAYER_NAME, schemeThumb, TILE_LAYERS } from "@/lib/mapLayers";
 import { DEFAULT_MAP_CONFIG, type MapConfig } from "@/lib/map-config";
 import Navbar from "@/components/Navbar";
+import GearPanel from "@/components/admin/GearPanel";
 
 const API_BASE = "";
 
@@ -132,6 +133,10 @@ function buildExifJson(input: unknown): Record<string, unknown> {
   if (ex[37386] !== undefined) out.focal_length = Array.isArray(ex[37386]) ? ex[37386][0] / ex[37386][1] : Number(ex[37386]);
   if (ex[34855] !== undefined) out.iso = Number(ex[34855]);
   if (ex[42036] !== undefined) out.lens_model = clean(ex[42036]);
+  // 0xA433 LensMake、0xA432 LensSpecification：副厂头装在 Sony 上时 LensMake 是空的，
+  // 后端会退回按型号猜品牌，但焦段和最大光圈只有这个 tag 里有
+  if (ex[42035] !== undefined) out.lens_make = clean(ex[42035]);
+  if (ex[42034] !== undefined) out.lens_spec = ex[42034];
   return out;
 }
 
@@ -285,6 +290,7 @@ type TabId =
   | "blog"
   | "map"
   | "albums"
+  | "gear"
   | "analytics"
   | "services"
   | "users";
@@ -368,6 +374,7 @@ const PRIMARY_TABS: NavItem[] = [
   { id: "upload", label: "上传照片", icon: "cloud_upload" },
   { id: "photos", label: "照片管理", icon: "photo_library" },
   { id: "albums", label: "相册", icon: "photo_album" },
+  { id: "gear", label: "器材", icon: "photo_camera" },
   { id: "blog", label: "笔记", icon: "article" },
   { id: "map", label: "地图", icon: "map" },
 ];
@@ -2520,6 +2527,9 @@ export default function AdminPage() {
             )}
           </div>
           )}
+
+          {/* Gear — 面板自带取数与上传，逻辑都在 components/admin/GearPanel.tsx */}
+          {activeTab === "gear" && <GearPanel />}
 
           {/* Blog */}
           {activeTab === "blog" && (

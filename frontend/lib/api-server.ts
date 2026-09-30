@@ -87,14 +87,38 @@ export interface EquipmentStat {
   count: number;
 }
 
+/** 一件器材：gear 表的元数据 + 从照片算出来的实际用量 */
+export interface GearUsage {
+  id: number;
+  kind: "camera" | "lens";
+  brand: string;
+  model: string;
+  label: string;
+  note: string;
+  focal_range: string;
+  max_aperture: string;
+  has_image: boolean;
+  photos: number;
+  share: number;
+  /** 与 EquipmentStats.months 同长的近 12 个月出片数 */
+  series: number[];
+  first_shot: string;
+  last_shot: string;
+}
+
 export interface EquipmentStats {
   total_photos: number;
   cameras: EquipmentStat[];
   lenses: EquipmentStat[];
   focal_lengths: EquipmentStat[];
   apertures: EquipmentStat[];
-  isos: EquipmentStat[];
-  shutter_speeds: EquipmentStat[];
+  iso_ranges: EquipmentStat[];
+  shutter_ranges: EquipmentStat[];
+  camera_brands: EquipmentStat[];
+  lens_brands: EquipmentStat[];
+  yearly: EquipmentStat[];
+  months: string[];
+  gear: GearUsage[];
 }
 
 const _empty_stats: EquipmentStats = {
@@ -103,15 +127,22 @@ const _empty_stats: EquipmentStats = {
   lenses: [],
   focal_lengths: [],
   apertures: [],
-  isos: [],
-  shutter_speeds: [],
+  iso_ranges: [],
+  shutter_ranges: [],
+  camera_brands: [],
+  lens_brands: [],
+  yearly: [],
+  months: [],
+  gear: [],
 };
 
 export async function fetchEquipmentStats(): Promise<EquipmentStats> {
   try {
     const res = await fetch(`${API_BASE}/api/stats/equipment`, { cache: "no-store" });
     if (!res.ok) return _empty_stats;
-    return res.json();
+    const data = (await res.json()) as Partial<EquipmentStats>;
+    // 后端没起来的字段一律补空数组：老缓存或半新半旧的响应不该让页面炸
+    return { ..._empty_stats, ...data, gear: data.gear ?? [] };
   } catch {
     return _empty_stats;
   }
