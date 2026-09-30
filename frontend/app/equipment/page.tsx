@@ -32,16 +32,7 @@ export default async function EquipmentPage() {
       <Navbar />
       {/* 图表要横向空间，原来的 max-w-4xl 会把环形图和柱图挤成一条 */}
       <main className="flex-1 px-4 md:px-grid-margin py-12 max-md:py-8 max-w-6xl mx-auto w-full">
-        {/* 标题下不再重复一遍统计数字，总览那排卡片就是这些数 */}
-        <div className="mb-10 max-md:mb-6">
-          <h1
-            className="text-headline-lg md:text-display-lg text-primary uppercase"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            器材
-          </h1>
-        </div>
-
+        {/* 标题与统计行都删了：导航栏已点亮「器材」，数字总览那排卡片里都有 */}
         {hasData ? (
           <EquipmentStatsView stats={stats} />
         ) : (
