@@ -8,11 +8,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from io import BytesIO
 from PIL import Image, ImageOps
+import brand_norm as bn
 from database import SessionLocal
 from models import Photo
 from routes.photos import (
     _read_exif, _parse_date, _format_focal, _format_aperture,
     _format_shutter, _reverse_geocode, THUMBNAIL_SIZE, _resolve_path,
+    _exif_brands,
 )
 
 db = SessionLocal()
@@ -37,8 +39,11 @@ for p in photos:
             or exif.get("DateTimeDigitized")
             or exif.get("DateTime")
         )
-        p.camera_model = str(exif.get("Model", ""))
-        p.lens_model = str(exif.get("LensModel", "")).replace("\x00", "").strip()
+        brands = _exif_brands(exif)
+        p.camera_model = bn.clean(exif.get("Model"))
+        p.camera_make = brands[0]
+        p.lens_model = bn.clean(exif.get("LensModel"))
+        p.lens_make = brands[1]
         p.focal_length = _format_focal(exif.get("FocalLength"))
         p.aperture = _format_aperture(exif.get("FNumber"))
         p.shutter_speed = _format_shutter(exif.get("ExposureTime"))

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import envfile
 from database import engine, Base
-from routes import auth, photos, settings, articles, albums, comments, services, stats, search, secrets, map_config
+from routes import auth, photos, settings, articles, albums, comments, services, stats, search, secrets, map_config, gear
 
 Base.metadata.create_all(bind=engine)
 
@@ -33,6 +33,7 @@ app.include_router(secrets.router)
 app.include_router(map_config.router)
 app.include_router(stats.router)
 app.include_router(search.router)
+app.include_router(gear.router)
 
 
 @app.get("/api/health")

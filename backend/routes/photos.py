@@ -17,8 +17,10 @@ from database import get_db
 from models import Photo
 from schemas import PhotoOut, PhotoUpdate, BatchDelete, BatchStatus, PhotoLocationUpdate
 from auth import get_current_user, require_admin, user_from_token
+import brand_norm as bn
 import storage
 import ratelimit
+from routes.gear import sync_gear_from_photo
 
 # Register HEIF/HEIC opener so PIL can decode iPhone photos
 try:
@@ -240,6 +242,16 @@ def _read_exif(image: Image.Image) -> dict:
     return exif_data
 
 
+def _exif_brands(exif_data: dict) -> tuple[str, str]:
+    """Make / LensMake → 品牌名（Sony、Sigma…）。
+    副厂手动头装在 Sony 机身上时 LensMake 是空的（实测适马、唯卓仕都不写），
+    只能靠 brand_norm 的型号规则补；两边都认不出来才留空。"""
+    return (
+        bn.camera_brand(exif_data.get("Make"), exif_data.get("Model")),
+        bn.lens_brand(exif_data.get("LensMake"), exif_data.get("LensModel")),
+    )
+
+
 def _parse_date(value) -> datetime.datetime | None:
     if value is None:
         return None
@@ -457,11 +469,18 @@ def _apply_exif_json(photo, data: dict):
     elif data.get("datetime_digitized"):
         photo.shoot_time = _parse_date(str(data["datetime_digitized"]))
     if data.get("model"):
-        photo.camera_model = str(data["model"])
-    if data.get("make") and not photo.camera_model:
-        photo.camera_model = str(data["make"])
+        photo.camera_model = bn.clean(data["model"])
+    make = bn.clean(data.get("make"))
+    if make:
+        # 存归一后的品牌名（'FUJIFILM CORPORATION' → Fujifilm），不是厂商注册串
+        photo.camera_make = make
+        if not photo.camera_model:
+            photo.camera_model = make
     if data.get("lens_model"):
-        photo.lens_model = str(data["lens_model"])
+        photo.lens_model = bn.clean(data["lens_model"])
+    photo.lens_make = bn.clean(data.get("lens_make")) or bn.lens_brand(
+        "", data.get("lens_model") or photo.lens_model
+    )
     if data.get("focal_length") is not None:
         photo.focal_length = _format_focal(data["focal_length"])
     if data.get("f_number") is not None:
@@ -580,6 +599,7 @@ def upload_photo(
             or exif_data.get("DateTimeDigitized")
             or exif_data.get("DateTime")
         )
+        brands = _exif_brands(exif_data)
 
         photo = Photo(
             filename=unique_name,
@@ -590,8 +610,10 @@ def upload_photo(
             thumbnail_path=f"thumb_{os.path.splitext(unique_name)[0]}.jpg",
             file_hash=file_hash,
             shoot_time=shoot_time,
-            camera_model=str(exif_data.get("Model", "")),
-            lens_model=str(exif_data.get("LensModel", "")).replace("\x00", "").strip(),
+            camera_model=bn.clean(exif_data.get("Model")),
+            camera_make=brands[0],
+            lens_model=bn.clean(exif_data.get("LensModel")),
+            lens_make=brands[1],
             focal_length=_format_focal(exif_data.get("FocalLength")),
             aperture=_format_aperture(exif_data.get("FNumber")),
             shutter_speed=_format_shutter(exif_data.get("ExposureTime")),
@@ -609,7 +631,12 @@ def upload_photo(
         # Prefer client-provided EXIF JSON (reliable path for frontend-compressed uploads)
         if exif_json:
             try:
-                _apply_exif_json(photo, json.loads(exif_json))
+                client_exif = json.loads(exif_json)
+                _apply_exif_json(photo, client_exif)
+                # 前端压缩过的文件里 PIL 未必还读得到 LensSpecification，用客户端那份补，
+                # 器材条目的焦段/最大光圈就来自这个 tag
+                if client_exif.get("lens_spec") and not exif_data.get("LensSpecification"):
+                    exif_data["LensSpecification"] = client_exif["lens_spec"]
             except Exception:
                 pass
         # Clean NaN coords that may come from corrupt injected EXIF
@@ -678,6 +705,11 @@ def upload_photo(
             storage.delete_object(r2_thumb)
         raise
     db.refresh(photo)
+    # 器材登记出岔不该让已经落库的照片上传失败，单独吞掉
+    try:
+        sync_gear_from_photo(db, photo, exif_data)
+    except Exception:
+        db.rollback()
     return PhotoOut.model_validate(photo)
 
 
