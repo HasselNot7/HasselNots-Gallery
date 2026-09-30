@@ -107,7 +107,9 @@ export default function GearCard({ gear }: { gear: GearUsage }) {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2 max-md:grid-cols-2">
+        {/* 一行四张时卡片只有 ~256px，瓷砖再按三等分网格切会把「28-70mm」挤断；
+            改成按内容宽度自动换行，宁可多占一行也不截断 */}
+        <div className="flex flex-wrap gap-1.5">
           <Tile icon="photo_library" label="出片" value={`${gear.photos} 张`} />
           <Tile icon="camera" label="最大光圈" value={gear.max_aperture} />
           <Tile icon="straighten" label="焦段" value={gear.focal_range} />
