@@ -95,7 +95,7 @@ export default function GearCard({ gear }: { gear: GearUsage }) {
         <div className="min-w-0">
           <h3
             className="truncate text-headline-mobile text-primary"
-            style={{ fontFamily: "var(--font-display)", fontSize: 18 }}
+            style={{ fontFamily: "var(--font-display)", fontSize: 16 }}
             title={name}
           >
             {name}
