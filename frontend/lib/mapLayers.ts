@@ -56,6 +56,8 @@ export const TILE_LAYERS: TileLayerDef[] = [
   {
     name: "Bing",
     url: "https://dynamic.t0.tiles.ditu.live.com/comp/ch/{q}?it=G,VE,BX,L,LA&mkt=zh-cn,syr&n=z&ur=CN",
+    // ditu.live.com 是 Bing 中国矢量图，境内按 GCJ-02 出图：实测标记会偏出去，与两张高德同类
+    datum: "gcj02",
     options: {
       attribution: "&copy; 必应地图",
       maxZoom: 19,
